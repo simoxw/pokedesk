@@ -6,9 +6,8 @@
   <link rel="icon" type="image/png"
     href="https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/items/poke-ball.png" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-
   <title>Pokedesk</title>
-  <meta name="description" content="Pokémon Browser Edition" />
+
   <link rel="manifest" href="/pokedesk/manifest.json" />
   <meta name="theme-color" content="#0f0f1a" />
 
@@ -21,10 +20,10 @@
   <script>
     if ('serviceWorker' in navigator) {
       window.addEventListener('load', () => {
-        // Percorso corretto per GitHub Pages
+        // IMPORTANTE: il percorso deve includere /pokedesk/
         navigator.serviceWorker.register('/pokedesk/sw.js')
-          .then(reg => console.log('SW Registrato!', reg.scope))
-          .catch(err => console.log('Errore SW:', err));
+          .then(reg => console.log('PWA Registrata con successo!', reg.scope))
+          .catch(err => console.error('Errore registrazione PWA:', err));
       });
     }
   </script>
