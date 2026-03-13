@@ -35,10 +35,20 @@ self.addEventListener('fetch', (event) => {
     return;
   }
 
-  // Risponde con la cache, altrimenti scarica
+  // Rete prima, poi cache (fallback), con gestione errori per evitare crash
   event.respondWith(
-    caches.match(event.request).then((response) => {
-      return response || fetch(event.request);
-    })
+    fetch(event.request)
+      .then((response) => {
+        if (!response || response.status !== 200 || response.type === 'error') {
+          throw new Error('Network response not ok');
+        }
+        return response;
+      })
+      .catch(() => {
+        if (event.request.mode === 'navigate') {
+          return caches.match('index.html');
+        }
+        return caches.match(event.request);
+      })
   );
 });
