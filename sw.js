@@ -29,6 +29,12 @@ self.addEventListener('activate', (event) => {
 });
 
 self.addEventListener('fetch', (event) => {
+  // Forza la fetch di sw.js in modo che il browser non usi una versione cache obsoleta
+  if (event.request.url.endsWith('/sw.js')) {
+    event.respondWith(fetch(event.request, { cache: 'no-store' }));
+    return;
+  }
+
   // Risponde con la cache, altrimenti scarica
   event.respondWith(
     caches.match(event.request).then((response) => {
