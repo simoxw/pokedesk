@@ -2,7 +2,9 @@ const CACHE_NAME = 'pokedesk-v2';
 const ASSETS_TO_CACHE = [
   '/pokedesk/',
   '/pokedesk/index.html',
-  '/pokedesk/manifest.json'
+  '/pokedesk/manifest.json',
+  '/pokedesk/icon-192.png',
+  '/pokedesk/icon-512.png'
 ];
 
 self.addEventListener('install', (event) => {
