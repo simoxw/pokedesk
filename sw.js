@@ -1,10 +1,10 @@
-const CACHE_NAME = 'pokedesk-v2';
+const CACHE_NAME = 'pokedesk-v3';
 const ASSETS_TO_CACHE = [
-  '/pokedesk/',
-  '/pokedesk/index.html',
-  '/pokedesk/manifest.json',
-  '/pokedesk/icon-192.png',
-  '/pokedesk/icon-512.png'
+  './',
+  './index.html',
+  './manifest.json',
+  './icon-192.png',
+  './icon-512.png'
 ];
 
 self.addEventListener('install', (event) => {
@@ -30,6 +30,7 @@ self.addEventListener('activate', (event) => {
 });
 
 self.addEventListener('fetch', (event) => {
+  // Risponde con la cache, altrimenti scarica
   event.respondWith(
     caches.match(event.request).then((response) => {
       return response || fetch(event.request);

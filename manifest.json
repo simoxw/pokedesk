@@ -1,5 +1,5 @@
 {
-  "id": "/pokedesk/",
+  "id": "pokedesk-pwa",
   "short_name": "Pokedesk",
   "name": "Pokedesk - Pokémon Browser Edition",
   "icons": [
@@ -13,17 +13,11 @@
       "src": "icon-512.png",
       "sizes": "512x512",
       "type": "image/png",
-      "purpose": "any"
-    },
-    {
-      "src": "icon-512.png",
-      "sizes": "512x512",
-      "type": "image/png",
       "purpose": "maskable"
     }
   ],
-  "start_url": "/pokedesk/",
-  "scope": "/pokedesk/",
+  "start_url": "./",
+  "scope": "./",
   "display": "standalone",
   "theme_color": "#0f0f1a",
   "background_color": "#0f0f1a",
