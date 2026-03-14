@@ -361,8 +361,75 @@ export default function BattleScreen() {
   return (
     <div className="h-full flex flex-col relative overflow-hidden bg-[#1a1a2e]">
 
-      {/* ARENA */}
-      <div className="flex-1 relative bg-gradient-to-b from-[#1a3a5c] to-[#2d5a3d] overflow-hidden">
+      {/* ARENA */} 
+      <div className="flex-1 relative overflow-hidden"> 
+        {/* Sfondo cielo battaglia */} 
+        <div className="absolute inset-0" style={{ 
+          background: 'linear-gradient(180deg, #0d0d2b 0%, #1a1a5e 35%, #2d3580 60%, #1a3a5c 100%)' 
+        }} /> 
+
+        {/* Stelle animate */} 
+        {Array.from({ length: 20 }).map((_, i) => ( 
+          <motion.div 
+            key={i} 
+            animate={{ opacity: [0.1, 0.6, 0.1] }} 
+            transition={{ duration: 1.5 + Math.random() * 3, repeat: Infinity, delay: Math.random() * 5 }} 
+            className="absolute rounded-full bg-white" 
+            style={{ 
+              width: Math.random() * 2 + 1, 
+              height: Math.random() * 2 + 1, 
+              left: `${Math.random() * 100}%`, 
+              top: `${Math.random() * 50}%`, 
+            }} 
+          /> 
+        ))} 
+
+        {/* Piattaforma nemico */} 
+        <div className="absolute" style={{ top: '42%', left: '50%', transform: 'translateX(-30%)' }}> 
+          <div style={{ 
+            width: 130, 
+            height: 28, 
+            background: 'radial-gradient(ellipse, rgba(180,220,255,0.25) 0%, rgba(100,160,255,0.08) 70%, transparent 100%)', 
+            borderRadius: '50%', 
+            filter: 'blur(2px)', 
+          }} /> 
+        </div> 
+
+        {/* Piattaforma giocatore */} 
+        <div className="absolute" style={{ bottom: '30%', left: '5%' }}> 
+          <div style={{ 
+            width: 150, 
+            height: 32, 
+            background: 'radial-gradient(ellipse, rgba(120,255,180,0.25) 0%, rgba(60,200,100,0.08) 70%, transparent 100%)', 
+            borderRadius: '50%', 
+            filter: 'blur(2px)', 
+          }} /> 
+        </div> 
+
+        {/* Terreno — striscia orizzonte */} 
+        <div className="absolute left-0 right-0" style={{ 
+          bottom: '25%', 
+          height: '2px', 
+          background: 'linear-gradient(90deg, transparent, rgba(100,180,255,0.2), rgba(100,180,255,0.4), rgba(100,180,255,0.2), transparent)', 
+        }} /> 
+
+        {/* Suolo scuro */} 
+        <div className="absolute bottom-0 left-0 right-0" style={{ 
+          height: '25%', 
+          background: 'linear-gradient(180deg, #0a1a0f 0%, #050d08 100%)', 
+        }} /> 
+
+        {/* Griglia suolo */} 
+        <div className="absolute bottom-0 left-0 right-0" style={{ 
+          height: '25%', 
+          backgroundImage: 'linear-gradient(rgba(0,255,100,0.04) 1px, transparent 1px), linear-gradient(90deg, rgba(0,255,100,0.04) 1px, transparent 1px)', 
+          backgroundSize: '30px 20px', 
+        }} /> 
+
+        {/* Vignetta */} 
+        <div className="absolute inset-0 pointer-events-none" 
+          style={{ boxShadow: 'inset 0 0 60px rgba(0,0,0,0.5)' }} 
+        /> 
 
         {/* Enemy Pokemon */}
         <div className="absolute top-6 right-6 left-6">

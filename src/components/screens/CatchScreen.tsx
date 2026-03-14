@@ -165,11 +165,71 @@ export default function CatchScreen() {
 
   return (
     <div className="h-full relative overflow-hidden flex flex-col">
-      {/* Background */}
-      <div className="absolute inset-0 bg-sky-400">
-        <div className="absolute bottom-0 left-0 right-0 h-1/2 bg-green-500" style={{ transform: 'perspective(500px) rotateX(45deg)', transformOrigin: 'bottom' }} />
-        <CloudAnimation />
-      </div>
+      {/* Background */} 
+      <div className="absolute inset-0 overflow-hidden"> 
+        {/* Cielo sfumato */} 
+        <div className="absolute inset-0" style={{ 
+          background: 'linear-gradient(180deg, #1a1a4e 0%, #2d3a8c 30%, #5b8dd9 60%, #87ceeb 80%, #b8e0f0 100%)' 
+        }} /> 
+
+        {/* Stelle in cielo */} 
+        {Array.from({ length: 18 }).map((_, i) => ( 
+          <motion.div 
+            key={i} 
+            animate={{ opacity: [0.2, 0.8, 0.2], scale: [0.8, 1.2, 0.8] }} 
+            transition={{ duration: 2 + Math.random() * 3, repeat: Infinity, delay: Math.random() * 4 }} 
+            className="absolute rounded-full bg-white" 
+            style={{ 
+              width: Math.random() * 3 + 1, 
+              height: Math.random() * 3 + 1, 
+              left: `${Math.random() * 100}%`, 
+              top: `${Math.random() * 45}%`, 
+            }} 
+          /> 
+        ))} 
+
+        {/* Luna */} 
+        <div className="absolute top-6 right-8 w-10 h-10 rounded-full bg-yellow-100 shadow-[0_0_20px_8px_rgba(255,255,200,0.3)]" /> 
+
+        {/* Nuvole */} 
+        <CloudAnimation /> 
+
+        {/* Orizzonte — collina lontana */} 
+        <div className="absolute bottom-0 left-0 right-0" style={{ height: '45%' }}> 
+          {/* Collina sfondo */} 
+          <div className="absolute bottom-0 left-0 right-0" style={{ 
+            height: '80%', 
+            background: 'linear-gradient(180deg, #2d5a1b 0%, #1a3a10 100%)', 
+            borderRadius: '60% 60% 0 0 / 30% 30% 0 0', 
+          }} /> 
+          {/* Erba primo piano */} 
+          <div className="absolute bottom-0 left-0 right-0 h-12" 
+            style={{ background: 'linear-gradient(180deg, #3a7a20 0%, #2a5a15 100%)' }} 
+          /> 
+          {/* Linea separazione erba */} 
+          <div className="absolute left-0 right-0 h-1 bg-green-300/30" 
+            style={{ bottom: '47px' }} 
+          /> 
+          {/* Puntini erba */} 
+          {Array.from({ length: 12 }).map((_, i) => ( 
+            <div 
+              key={i} 
+              className="absolute bottom-10 bg-green-300/40 rounded-full" 
+              style={{ 
+                width: 4 + Math.random() * 6, 
+                height: 8 + Math.random() * 10, 
+                left: `${5 + i * 8 + Math.random() * 4}%`, 
+                borderRadius: '50% 50% 0 0', 
+              }} 
+            /> 
+          ))} 
+        </div> 
+
+        {/* Vignetta bordi */} 
+        <div className="absolute inset-0 pointer-events-none" 
+          style={{ boxShadow: 'inset 0 0 80px rgba(0,0,0,0.4)' }} 
+        /> 
+      </div> 
 
       {/* Pokemon */}
       <div className="flex-1 flex flex-col items-center justify-center relative z-10">
