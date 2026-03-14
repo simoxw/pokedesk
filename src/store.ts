@@ -149,7 +149,12 @@ export const useStore = create<GameStore>()(
         medals: state.medals.map(m => m.id === id ? { ...m, isUnlocked: true } : m)
       })),
       addCharge: (amount) => set((state) => ({ charges: Math.min(6, state.charges + amount) })),
-      consumeCharge: () => set((state) => ({ charges: Math.max(0, state.charges - 1) })),
+      consumeCharge: () => set((state) => {
+        if (state.charges >= 6) {
+          return { charges: 5, lastTickTimestamp: Date.now() };
+        }
+        return { charges: Math.max(0, state.charges - 1) };
+      }),
       updatePokedex: (id, status) => set((state) => ({
         pokedex: { ...state.pokedex, [id]: status === 'caught' ? 'caught' : (state.pokedex[id] === 'caught' ? 'caught' : 'seen') }
       })),

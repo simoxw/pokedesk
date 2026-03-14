@@ -34,11 +34,11 @@ export default function CatchScreen() {
   useEffect(() => {
     const initEncounter = async () => {
       setLoading(true);
+
       const avgLevel = team.length > 0 ? team.reduce((acc, p) => acc + p.level, 0) / team.length : 5;
       const level = Math.max(5, Math.floor(avgLevel + (Math.random() * 10 - 5)));
       
-      // Random pokemon based on medals (simplified pool)
-      const id = Math.floor(Math.random() * 151) + 1; // Gen 1 for now
+      const id = Math.floor(Math.random() * 151) + 1; 
       const data = await api.getPokemon(id);
       const species = await api.getSpecies(id);
       

@@ -6,7 +6,7 @@ import { motion } from 'motion/react';
 import { Zap, Target, Sword } from 'lucide-react';
 
 export default function HubScreen() {
-  const { charges, setScreen, team, updatePokemon } = useStore();
+  const { charges, setScreen, team, updatePokemon, consumeCharge } = useStore();
   const { getTimeToNextTick } = useTickSystem();
 
   useEffect(() => {
@@ -79,7 +79,10 @@ export default function HubScreen() {
             whileHover={{ scale: 1.05 }}
             whileTap={{ scale: 0.95 }}
             disabled={charges === 0}
-            onClick={() => setScreen('CATCH_SCREEN')}
+            onClick={() => {
+              consumeCharge();
+              setScreen('CATCH_SCREEN');
+            }}
             className="w-full bg-[#e63946] disabled:opacity-50 disabled:grayscale p-6 rounded-3xl flex items-center justify-center gap-4 shadow-2xl shadow-[#e63946]/30"
           >
             <Target size={32} />

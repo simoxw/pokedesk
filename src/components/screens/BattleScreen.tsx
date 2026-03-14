@@ -166,9 +166,12 @@ export default function BattleScreen() {
     await executeEnemyTurn(team[idx]);
   };
 
-  const handleUseItem = (itemId: string, itemName: string) => {
-    const pkm = team[activeIdx];
-    if (!pkm) return;
+  const handleUseItem = async (itemId: string, itemName: string) => { 
+    const pkm = team[activeIdx]; 
+    if (!pkm) return; 
+    setShowBagOverlay(false); 
+    setIsAnimating(true); 
+
     if (itemId === 'full_heal') { 
       updatePokemon(pkm.id, { status: null, sleepTurns: undefined }); 
       addLog(`${pkm.name} è guarito dagli effetti di stato!`); 
@@ -179,12 +182,16 @@ export default function BattleScreen() {
       if (itemId === 'hyperpotion') healed = 200; 
       const newHp = Math.min(pkm.stats.hp, pkm.currentHp + healed); 
       updatePokemon(pkm.id, { currentHp: newHp }); 
+      addLog(`${pkm.name} recupera ${Math.min(healed, pkm.stats.hp - pkm.currentHp)} HP!`); 
     } 
-    useItem(itemId);
-    addLog(`Hai usato ${itemName} su ${pkm.name}!`);
-    setShowBagOverlay(false);
-    setTurn('enemy');
-  };
+    useItem(itemId); 
+ 
+    // Turno nemico — leggi stato AGGIORNATO dallo store dopo la cura 
+    setTurn('enemy'); 
+    await new Promise(r => setTimeout(r, 600)); 
+    const freshPkm = useStore.getState().team.find(p => p.id === pkm.id) ?? pkm; 
+    await executeEnemyTurn(freshPkm); 
+  }; 
 
   const addLog = (msg: string) => {
     setLogs(prev => [msg, ...prev].slice(0, 5));
