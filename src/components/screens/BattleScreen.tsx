@@ -526,7 +526,7 @@ export default function BattleScreen() {
       setEnemy((prev: any) => ({ 
         ...prev, 
         currentHp: newEnemyHp,
-        status: newStatus !== undefined ? newStatus : prev.status
+        status: finalStatus !== undefined ? finalStatus : prev.status
       }));
       await new Promise(r => setTimeout(r, 800));
 
@@ -547,12 +547,16 @@ export default function BattleScreen() {
         if (newLevel && newLevel > levelBefore) {
           addLog(`⬆️ ${playerPkmn.name} è salito al livello ${newLevel}!`);
         }
-        addCoins(50);
+        addCoins(Math.floor(50 + (enemy?.level ?? 5) * 2)); 
         incrementStat('totalBattles');
-        team.forEach(p => {
-          const recoveredHp = Math.min(p.stats.hp, p.currentHp + Math.floor(p.stats.hp * 0.3));
-          const recoveredMoves = p.moves.map((m: any) => ({ ...m, pp: m.maxPp }));
-          updatePokemon(p.id, { currentHp: recoveredHp, moves: recoveredMoves });
+        team.forEach(p => { 
+          // Solo PP recuperati per tutti; HP solo al Pokémon attivo (10%) 
+          const isActive = p.id === playerPkmn.id; 
+          const recoveredHp = isActive 
+            ? Math.min(p.stats.hp, p.currentHp + Math.floor(p.stats.hp * 0.1)) 
+            : p.currentHp; 
+          const recoveredMoves = p.moves.map((m: any) => ({ ...m, pp: m.maxPp })); 
+          updatePokemon(p.id, { currentHp: recoveredHp, moves: recoveredMoves }); 
         });
         setPlayerStages({ attack: 0, defense: 0, spAtk: 0, spDef: 0, speed: 0 });
         setEnemyStages({ attack: 0, defense: 0, spAtk: 0, spDef: 0, speed: 0 });
@@ -603,7 +607,7 @@ export default function BattleScreen() {
       setEnemy((prev: any) => ({ 
         ...prev, 
         currentHp: newEnemyHp,
-        status: newStatus !== undefined ? newStatus : prev.status
+        status: finalStatus !== undefined ? finalStatus : prev.status
       }));
       await new Promise(r => setTimeout(r, 800));
 
@@ -624,12 +628,16 @@ export default function BattleScreen() {
         if (newLevel && newLevel > levelBefore) {
           addLog(`⬆️ ${playerPkmn.name} è salito al livello ${newLevel}!`);
         }
-        addCoins(50);
+        addCoins(Math.floor(50 + (enemy?.level ?? 5) * 2)); 
         incrementStat('totalBattles');
-        team.forEach(p => {
-          const recoveredHp = Math.min(p.stats.hp, p.currentHp + Math.floor(p.stats.hp * 0.3));
-          const recoveredMoves = p.moves.map((m: any) => ({ ...m, pp: m.maxPp }));
-          updatePokemon(p.id, { currentHp: recoveredHp, moves: recoveredMoves });
+        team.forEach(p => { 
+          // Solo PP recuperati per tutti; HP solo al Pokémon attivo (10%) 
+          const isActive = p.id === playerPkmn.id; 
+          const recoveredHp = isActive 
+            ? Math.min(p.stats.hp, p.currentHp + Math.floor(p.stats.hp * 0.1)) 
+            : p.currentHp; 
+          const recoveredMoves = p.moves.map((m: any) => ({ ...m, pp: m.maxPp })); 
+          updatePokemon(p.id, { currentHp: recoveredHp, moves: recoveredMoves }); 
         });
         setPlayerStages({ attack: 0, defense: 0, spAtk: 0, spDef: 0, speed: 0 });
         setEnemyStages({ attack: 0, defense: 0, spAtk: 0, spDef: 0, speed: 0 });
@@ -640,25 +648,17 @@ export default function BattleScreen() {
     }
 
 
-    // BRN danno fine turno giocatore 
-    if (playerPkmn.status === 'BRN') {
-      const brnDmg = Math.floor(playerPkmn.stats.hp / 8);
-      updatePokemon(playerPkmn.id, { currentHp: Math.max(0, playerPkmn.currentHp - brnDmg) });
-      addLog(`${playerPkmn.name} è danneggiato dalla scottatura!`);
-    }
-    if (playerPkmn.status === 'PSN') {
-      const psnDmg = Math.floor(playerPkmn.stats.hp / 8);
-      updatePokemon(playerPkmn.id, { currentHp: Math.max(0, playerPkmn.currentHp - psnDmg) });
-      addLog(`${playerPkmn.name} è avvelenato!`);
-    }
-
-    // PAR: 25% skip turno 
-    if (playerPkmn.status === 'PAR' && Math.random() < 0.25) {
-      addLog(`${playerPkmn.name} è paralizzato!`);
-      setIsAnimating(false);
-      setTurn('player');
-      return;
-    }
+    const freshForEndTurn = useStore.getState().team.find((p: any) => p.id === playerPkmn.id) ?? playerPkmn; 
+    if (freshForEndTurn.status === 'BRN') { 
+      const brnDmg = Math.floor(freshForEndTurn.stats.hp / 8); 
+      updatePokemon(freshForEndTurn.id, { currentHp: Math.max(0, freshForEndTurn.currentHp - brnDmg) }); 
+      addLog(`${freshForEndTurn.name} è danneggiato dalla scottatura!`); 
+    } 
+    if (freshForEndTurn.status === 'PSN') { 
+      const psnDmg = Math.floor(freshForEndTurn.stats.hp / 8); 
+      updatePokemon(freshForEndTurn.id, { currentHp: Math.max(0, freshForEndTurn.currentHp - psnDmg) }); 
+      addLog(`${freshForEndTurn.name} è avvelenato!`); 
+    } 
 
     setTurn('player');
     setIsAnimating(false);

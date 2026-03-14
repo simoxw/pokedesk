@@ -2,10 +2,12 @@ import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import { GameState, Pokemon, ScreenName, Medal, Item, Move } from './types';
 import { api } from './api';
+import { BattleEngine } from './BattleEngine';
 
 interface GameStore extends GameState {
   setScreen: (screen: ScreenName) => void;
   setPlayer: (name: string, gender: 'M' | 'F') => void;
+  updatePlayer: (updates: Partial<GameState['player']>) => void;
   addPokemon: (pokemon: Pokemon) => void;
   updatePokemon: (id: string, updates: Partial<Pokemon>) => void;
   releasePokemon: (id: string) => void;
@@ -62,6 +64,7 @@ export const useStore = create<GameStore>()(
 
       setScreen: (screen) => set({ currentScreen: screen }),
       setPlayer: (name, gender) => set({ player: { name, gender, createdAt: Date.now(), playTime: 0 }, isFirstRun: false }),
+      updatePlayer: (updates) => set((state) => ({ player: { ...state.player, ...updates } })),
       addPokemon: (pokemon) => set((state) => {
         if (state.team.length < 4) {
           return { team: [...state.team, pokemon], pokedex: { ...state.pokedex, [pokemon.pokemonId]: 'caught' } };
@@ -73,12 +76,14 @@ export const useStore = create<GameStore>()(
         box: state.box.map(p => p.id === id ? { ...p, ...updates } : p),
       })),
       releasePokemon: (id) => set((state) => {
-        const pkmn = state.box.find(p => p.id === id);
+        const pkmn = [...state.team, ...state.box].find(p => p.id === id);
         if (!pkmn) return {};
-        const candyKey = `candy_${pkmn.pokemonId}`;
+        const candyKey = `candy_${pkmn.baseSpeciesId ?? pkmn.pokemonId}`;
+        const currentAmount = state.inventory[candyKey] || 0;
         return {
+          team: state.team.filter(p => p.id !== id),
           box: state.box.filter(p => p.id !== id),
-          inventory: { ...state.inventory, [candyKey]: (state.inventory[candyKey] || 0) + 1 },
+          inventory: { ...state.inventory, [candyKey]: currentAmount + 1 },
           stats: { ...state.stats, pokemonReleased: state.stats.pokemonReleased + 1 }
         };
       }),
@@ -89,14 +94,13 @@ export const useStore = create<GameStore>()(
         const applyTo = (list: any[]) => list.map(p => {
           if (p.id !== id || p.level >= 100) return p;
           const newLevel = p.level + 1;
-          const newStats = {
-            hp: Math.floor(((2 * p.baseStats.hp + p.ivs.hp) * newLevel) / 100) + newLevel + 10,
-            attack: Math.floor(((2 * p.baseStats.attack + p.ivs.attack) * newLevel) / 100) + 5,
-            defense: Math.floor(((2 * p.baseStats.defense + p.ivs.defense) * newLevel) / 100) + 5,
-            spAtk: Math.floor(((2 * p.baseStats.spAtk + p.ivs.spAtk) * newLevel) / 100) + 5,
-            spDef: Math.floor(((2 * p.baseStats.spDef + p.ivs.spDef) * newLevel) / 100) + 5,
-            speed: Math.floor(((2 * p.baseStats.speed + p.ivs.speed) * newLevel) / 100) + 5,
-          };
+          const newStats = BattleEngine.calculateStats(
+            newLevel,
+            p.baseStats,
+            p.ivs,
+            p.evs ?? { hp: 0, attack: 0, defense: 0, spAtk: 0, spDef: 0, speed: 0 },
+            p.nature
+          );
 
           // Evolution and Move learning check (non-blocking)
           (async () => {
@@ -144,14 +148,13 @@ export const useStore = create<GameStore>()(
         const applyTo = (list: any[]) => list.map(p => {
           if (p.id !== id || (p.pokemonId !== speciesId && p.baseSpeciesId !== speciesId) || p.level >= 100) return p;
           const newLevel = p.level + 1;
-          const newStats = {
-            hp: Math.floor(((2 * p.baseStats.hp + p.ivs.hp) * newLevel) / 100) + newLevel + 10,
-            attack: Math.floor(((2 * p.baseStats.attack + p.ivs.attack) * newLevel) / 100) + 5,
-            defense: Math.floor(((2 * p.baseStats.defense + p.ivs.defense) * newLevel) / 100) + 5,
-            spAtk: Math.floor(((2 * p.baseStats.spAtk + p.ivs.spAtk) * newLevel) / 100) + 5,
-            spDef: Math.floor(((2 * p.baseStats.spDef + p.ivs.spDef) * newLevel) / 100) + 5,
-            speed: Math.floor(((2 * p.baseStats.speed + p.ivs.speed) * newLevel) / 100) + 5,
-          };
+          const newStats = BattleEngine.calculateStats(
+            newLevel,
+            p.baseStats,
+            p.ivs,
+            p.evs ?? { hp: 0, attack: 0, defense: 0, spAtk: 0, spDef: 0, speed: 0 },
+            p.nature
+          );
 
           // Evolution and Move learning check (non-blocking)
           (async () => {
@@ -249,14 +252,13 @@ export const useStore = create<GameStore>()(
           }
           if (newLevel > p.level) {
             // Ricalcola stats al nuovo livello 
-            const newStats = {
-              hp: Math.floor(((2 * p.baseStats.hp + p.ivs.hp) * newLevel) / 100) + newLevel + 10,
-              attack: Math.floor(((2 * p.baseStats.attack + p.ivs.attack) * newLevel) / 100) + 5,
-              defense: Math.floor(((2 * p.baseStats.defense + p.ivs.defense) * newLevel) / 100) + 5,
-              spAtk: Math.floor(((2 * p.baseStats.spAtk + p.ivs.spAtk) * newLevel) / 100) + 5,
-              spDef: Math.floor(((2 * p.baseStats.spDef + p.ivs.spDef) * newLevel) / 100) + 5,
-              speed: Math.floor(((2 * p.baseStats.speed + p.ivs.speed) * newLevel) / 100) + 5,
-            };
+            const newStats = BattleEngine.calculateStats(
+              newLevel,
+              p.baseStats,
+              p.ivs,
+              p.evs ?? { hp: 0, attack: 0, defense: 0, spAtk: 0, spDef: 0, speed: 0 },
+              p.nature
+            );
 
             // Evolution and Move learning check (non-blocking)
             (async () => {

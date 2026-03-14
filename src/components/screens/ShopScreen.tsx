@@ -6,8 +6,7 @@ import { ArrowLeft, Coins, ShoppingCart } from 'lucide-react';
 const SHOP_ITEMS = [ 
   { id: 'pokeball',    name: 'Pokéball',       cost: 200,  icon: '🔴', description: 'Pokéball base' }, 
   { id: 'potion',      name: 'Pozione',         cost: 300,  icon: '🧪', description: 'Cura 20 HP' }, 
-  { id: 'antidote',    name: 'Antidoto',        cost: 150,  icon: '💜', description: 'Cura il veleno' }, 
-  { id: 'full_heal',   name: 'Cura Totale',     cost: 300,  icon: '💊', description: 'Cura qualsiasi stato', unlock: 25 }, 
+  { id: 'full_heal',   name: 'Cura Totale',     cost: 300,  icon: '💊', description: 'Cura qualsiasi stato' }, 
   { id: 'megaball',    name: 'Megaball',        cost: 600,  icon: '🔵', unlock: 5,  description: '1.8x cattura' }, 
   { id: 'superpotion', name: 'Superpozione',    cost: 700,  icon: '🧪', unlock: 8,  description: 'Cura 50 HP' }, 
   { id: 'rare_candy',  name: 'Caramella Rara',  cost: 2500, icon: '🍬', unlock: 8,  description: '+1 livello' }, 
