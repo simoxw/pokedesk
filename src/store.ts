@@ -78,7 +78,7 @@ export const useStore = create<GameStore>()(
         const CANDY_COST = 1;
         if ((state.inventory['rare_candy'] || 0) < CANDY_COST) return {};
         const applyTo = (list: any[]) => list.map(p => {
-          if (p.id !== id || p.level >= 99) return p;
+          if (p.id !== id || p.level >= 100) return p;
           const newLevel = p.level + 1;
           const newStats = {
             hp: Math.floor(((2 * p.baseStats.hp + p.ivs.hp) * newLevel) / 100) + newLevel + 10,
@@ -102,7 +102,7 @@ export const useStore = create<GameStore>()(
         const candyKey = `candy_${speciesId}`;
         if ((state.inventory[candyKey] || 0) < CANDY_COST) return {};
         const applyTo = (list: any[]) => list.map(p => {
-          if (p.id !== id || (p.pokemonId !== speciesId && p.baseSpeciesId !== speciesId) || p.level >= 99) return p;
+          if (p.id !== id || (p.pokemonId !== speciesId && p.baseSpeciesId !== speciesId) || p.level >= 100) return p;
           const newLevel = p.level + 1;
           const newStats = {
             hp: Math.floor(((2 * p.baseStats.hp + p.ivs.hp) * newLevel) / 100) + newLevel + 10,
@@ -209,7 +209,8 @@ export const useStore = create<GameStore>()(
         pokedex: {},
         stats: { totalCaught: 0, totalBattles: 0, shiniesFound: 0, pokemonReleased: 0 },
         isFirstRun: true,
-        currentScreen: 'START_SCREEN'
+        currentScreen: 'START_SCREEN',
+        settings: { audio: true, notifications: true }
       }),
     }),
     {

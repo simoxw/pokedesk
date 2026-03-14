@@ -92,11 +92,42 @@ export const BattleEngine = {
     // HP Formula
     stats.hp = Math.floor(((2 * baseStats.hp + ivs.hp + Math.floor(evs.hp / 4)) * level) / 100) + level + 10;
     
+    // Nature Modifiers Table
+    const NATURE_MODS: Record<string, { up: string; down: string }> = {
+      Lonely:   { up: 'attack',  down: 'defense' },
+      Brave:    { up: 'attack',  down: 'speed'   },
+      Adamant:  { up: 'attack',  down: 'spAtk'   },
+      Naughty:  { up: 'attack',  down: 'spDef'   },
+      Bold:     { up: 'defense', down: 'attack'  },
+      Relaxed:  { up: 'defense', down: 'speed'   },
+      Impish:   { up: 'defense', down: 'spAtk'   },
+      Lax:      { up: 'defense', down: 'spDef'   },
+      Timid:    { up: 'speed',   down: 'attack'  },
+      Hasty:    { up: 'speed',   down: 'defense' },
+      Jolly:    { up: 'speed',   down: 'spAtk'   },
+      Naive:    { up: 'speed',   down: 'spDef'   },
+      Modest:   { up: 'spAtk',   down: 'attack'  },
+      Mild:     { up: 'spAtk',   down: 'defense' },
+      Quiet:    { up: 'spAtk',   down: 'speed'   },
+      Rash:     { up: 'spAtk',   down: 'spDef'   },
+      Calm:     { up: 'spDef',   down: 'attack'  },
+      Gentle:   { up: 'spDef',   down: 'defense' },
+      Sassy:    { up: 'spDef',   down: 'speed'   },
+      Careful:  { up: 'spDef',   down: 'spAtk'   },
+    };
+
     // Other Stats Formula
     const otherStats = ['attack', 'defense', 'spAtk', 'spDef', 'speed'];
     otherStats.forEach(stat => {
       let val = Math.floor(((2 * baseStats[stat] + ivs[stat] + Math.floor(evs[stat] / 4)) * level) / 100) + 5;
-      // Nature modifier (simplified)
+      
+      // Nature modifier
+      const mod = NATURE_MODS[nature];
+      if (mod) {
+        if (mod.up === stat) val = Math.floor(val * 1.1);
+        if (mod.down === stat) val = Math.floor(val * 0.9);
+      }
+      
       stats[stat] = val;
     });
 

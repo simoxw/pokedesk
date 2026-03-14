@@ -11,7 +11,7 @@ export const NotificationService = {
     if (Notification.permission === 'granted') {
       new Notification('Pokedesk', {
         body: message,
-        icon: '/pwa-192x192.png' // Assuming this exists or will be added
+        icon: '/icon-192.png'
       });
     }
   }
