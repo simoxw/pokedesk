@@ -4,7 +4,7 @@ import { motion } from 'motion/react';
 import { ArrowLeft, Package, Heart, Zap, Star } from 'lucide-react';
 
 export default function BagScreen() {
-  const { inventory, setScreen, useItem } = useStore();
+  const { inventory, setScreen, useItem, team, box } = useStore();
   const [tab, setTab] = useState<'balls' | 'heal' | 'candy'>('balls');
 
   const items = {
@@ -21,8 +21,16 @@ export default function BagScreen() {
       { id: 'antidote', name: 'Antidoto', icon: '💊' },
     ],
     candy: [
-      { id: 'rare_candy', name: 'Caramella Rara', icon: '🍬' },
-    ]
+        { id: 'rare_candy', name: 'Caramella Rara', icon: '🍬' },
+        // Caramelle specie dinamiche dai pokemon in squadra/box 
+        ...[...team, ...box].reduce((acc: any[], p) => { 
+          const key = `candy_${p.baseSpeciesId ?? p.pokemonId}`; 
+          if (!acc.find(i => i.id === key) && (inventory[key] || 0) > 0) { 
+            acc.push({ id: key, name: `Caramella ${p.name}`, icon: '🍭' }); 
+          } 
+          return acc; 
+        }, []), 
+      ]
   };
 
   return (

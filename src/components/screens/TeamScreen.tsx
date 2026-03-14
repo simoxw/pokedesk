@@ -22,7 +22,7 @@ import HPBar from '../ui/HPBar';
 import TypeBadge from '../ui/TypeBadge';
 import PokemonDetailsModal from '../ui/PokemonDetailsModal';
 
-function SortableItem({ pokemon, index, onRemove, onSelect }: any) {
+function SortableItem({ pokemon, index, onRemove, onSelect, onUseCandy, onCandyCount }: any) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: pokemon.id });
   const style = {
     transform: CSS.Transform.toString(transform),
@@ -57,6 +57,13 @@ function SortableItem({ pokemon, index, onRemove, onSelect }: any) {
         <button onClick={() => onSelect(pokemon)} className="p-2 bg-white/5 rounded-xl">
           <Info size={16} />
         </button>
+        <button 
+          onClick={() => onUseCandy(pokemon)} 
+          className="p-2 bg-yellow-500/10 rounded-xl text-yellow-400" 
+          title={`Caramelle: ${onCandyCount(pokemon.baseSpeciesId ?? pokemon.pokemonId)}`} 
+        > 
+          🍭 
+        </button> 
         <button onClick={() => onRemove(index)} className="p-2 bg-red-500/10 rounded-xl text-red-400">
           <Trash2 size={16} />
         </button>
@@ -66,7 +73,7 @@ function SortableItem({ pokemon, index, onRemove, onSelect }: any) {
 }
 
 export default function TeamScreen() {
-  const { team, setScreen, removeFromTeam, reorderTeam } = useStore();
+  const { team, setScreen, removeFromTeam, reorderTeam, inventory, useSpeciesCandy, useRareCandy } = useStore();
   const [selectedPkmn, setSelectedPkmn] = useState<any>(null);
   const sensors = useSensors(
     useSensor(PointerSensor),
@@ -101,6 +108,22 @@ export default function TeamScreen() {
                 index={i}
                 onRemove={removeFromTeam}
                 onSelect={setSelectedPkmn}
+                onUseCandy={(p: any) => { 
+                  const candyKey = `candy_${p.baseSpeciesId ?? p.pokemonId}`; 
+                  const owned = inventory[candyKey] || 0; 
+                  if (p.level >= 99) { alert('Livello massimo!'); return; } 
+                  if (owned >= 3) { 
+                    useSpeciesCandy(p.id, p.baseSpeciesId ?? p.pokemonId); 
+                    alert(`+1 livello con Caramella ${p.name}! (${owned - 3} rimaste)`); 
+                  } else if ((inventory['rare_candy'] || 0) > 0) { 
+                    if (confirm(`Poche caramelle (${owned}/3). Usare una Caramella Rara?`)) { 
+                      useRareCandy(p.id); 
+                    } 
+                  } else { 
+                    alert(`Caramelle ${p.name}: ${owned}/3 — cattura più ${p.name} per ottenerle!`); 
+                  } 
+                }} 
+                onCandyCount={(speciesId: number) => inventory[`candy_${speciesId}`] || 0} 
               />
             ))}
           </SortableContext>

@@ -6,7 +6,7 @@ import PokemonDetailsModal from '../ui/PokemonDetailsModal';
 import { ArrowLeft, Search, Filter, Trash2, Users, Info } from 'lucide-react';
 
 export default function BoxScreen() {
-  const { box, setScreen, addToTeam, releasePokemon, team } = useStore();
+  const { box, setScreen, addToTeam, releasePokemon, team, inventory, useSpeciesCandy } = useStore();
   const [search, setSearch] = useState('');
   const [selectedPkmn, setSelectedPkmn] = useState<any>(null);
   const [showDetails, setShowDetails] = useState(false);
@@ -84,29 +84,50 @@ export default function BoxScreen() {
                 </div>
               </div>
 
-              <div className="grid grid-cols-3 gap-3">
+              <div className="grid grid-cols-4 gap-2">
                 <button 
                   onClick={() => handleAddToTeam(selectedPkmn)}
-                  className="flex flex-col items-center justify-center gap-2 bg-[#e63946] py-4 rounded-2xl font-bold text-xs"
+                  className="flex flex-col items-center justify-center gap-2 bg-[#e63946] py-4 rounded-2xl font-bold text-[10px]"
                 >
-                  <Users size={20} /> SQUADRA
+                  <Users size={18} /> SQUADRA
                 </button>
                 <button 
+                  onClick={() => { 
+                    const candyKey = `candy_${selectedPkmn.baseSpeciesId ?? selectedPkmn.pokemonId}`; 
+                    const owned = inventory[candyKey] || 0; 
+                    if (owned < 3) { 
+                      alert(`Caramelle ${selectedPkmn.name}: ${owned}/3 — ne servono 3 per salire di livello!`); 
+                    } else if (selectedPkmn.level >= 99) { 
+                      alert('Livello massimo raggiunto!'); 
+                    } else { 
+                      useSpeciesCandy(selectedPkmn.id, selectedPkmn.baseSpeciesId ?? selectedPkmn.pokemonId); 
+                      alert(`${selectedPkmn.name} è salito al livello ${selectedPkmn.level + 1}! (3 caramelle usate)`); 
+                    } 
+                  }} 
+                  className="flex flex-col items-center justify-center gap-2 bg-white/5 border border-white/10 py-4 rounded-2xl font-bold text-[10px] text-yellow-400" 
+                > 
+                  <span className="text-xl">🍭</span> 
+                  CARAMELLA 
+                  <span className="text-[8px] text-white/40"> 
+                    {inventory[`candy_${selectedPkmn.baseSpeciesId ?? selectedPkmn.pokemonId}`] || 0} poss. 
+                  </span> 
+                </button> 
+                <button 
                   onClick={() => setShowDetails(true)}
-                  className="flex flex-col items-center justify-center gap-2 bg-white/5 border border-white/10 py-4 rounded-2xl font-bold text-xs"
+                  className="flex flex-col items-center justify-center gap-2 bg-white/5 border border-white/10 py-4 rounded-2xl font-bold text-[10px]"
                 >
-                  <Info size={20} /> INFO
+                  <Info size={18} /> INFO
                 </button>
                 <button 
                   onClick={() => {
-                    if(confirm(`Sei sicuro di voler liberare ${selectedPkmn.name}? Riceverai 3 Caramelle.`)) {
+                    if(confirm(`Sei sicuro di voler liberare ${selectedPkmn.name}? Riceverai 1 Caramella ${selectedPkmn.name}.`)) {
                       releasePokemon(selectedPkmn.id);
                       setSelectedPkmn(null);
                     }
                   }}
-                  className="flex flex-col items-center justify-center gap-2 bg-white/5 border border-white/10 py-4 rounded-2xl font-bold text-xs text-red-400"
+                  className="flex flex-col items-center justify-center gap-2 bg-white/5 border border-white/10 py-4 rounded-2xl font-bold text-[10px] text-red-400"
                 >
-                  <Trash2 size={20} /> LIBERA
+                  <Trash2 size={18} /> LIBERA
                 </button>
               </div>
             </motion.div>

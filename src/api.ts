@@ -138,6 +138,18 @@ export const api = {
   },
 
   // Localized description helper
+  async getBaseSpeciesId(speciesData: any): Promise<number> {
+    try {
+      const chain = await this.getEvolutionChain(speciesData.evolution_chain.url);
+      // La forma base è sempre il primo nodo della catena 
+      const baseName = chain.chain.species.name;
+      const basePokemon = await this.getPokemon(baseName);
+      return basePokemon.id;
+    } catch {
+      return speciesData.id; // fallback: usa l'id corrente 
+    }
+  },
+
   getItalianDescription(entries: any[]): string {
     const itEntry = entries.find((e: any) => e.language.name === 'it');
     return itEntry ? (itEntry.flavor_text || itEntry.description || itEntry.text) : entries.find((e: any) => e.language.name === 'en')?.flavor_text || 'Nessuna descrizione disponibile.';

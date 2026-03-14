@@ -9,7 +9,7 @@ import HPBar from '../ui/HPBar';
 import TypeBadge from '../ui/TypeBadge';
 
 export default function BattleScreen() {
-  const { team, setScreen, incrementStat, addCoins, updatePokemon, inventory, useItem } = useStore();
+  const { team, setScreen, incrementStat, addCoins, updatePokemon, inventory, useItem, gainExp } = useStore();
   const [activeIdx, setActiveIdx] = useState(0);
   const [enemy, setEnemy] = useState<any>(null);
   const [loading, setLoading] = useState(true);
@@ -79,10 +79,20 @@ export default function BattleScreen() {
     }
     // SLP: skip 
     if (currentPlayerPkmn.status === 'SLP') {
-      addLog(`${currentPlayerPkmn.name} sta dormendo...`);
-      setTurn('player');
-      setIsAnimating(false);
-      return;
+      const turns = currentPlayerPkmn.sleepTurns ?? Math.floor(Math.random() * 3) + 1;
+      if (currentPlayerPkmn.sleepTurns === undefined) {
+        updatePokemon(currentPlayerPkmn.id, { sleepTurns: turns });
+      }
+      if (turns <= 1) {
+        updatePokemon(currentPlayerPkmn.id, { status: null, sleepTurns: undefined });
+        addLog(`${currentPlayerPkmn.name} si è svegliato!`);
+      } else {
+        updatePokemon(currentPlayerPkmn.id, { sleepTurns: turns - 1 });
+        addLog(`${currentPlayerPkmn.name} sta dormendo...`);
+        setTurn('player');
+        setIsAnimating(false);
+        return;
+      }
     }
     // FRZ: 20% unfreeze else skip 
     if (currentPlayerPkmn.status === 'FRZ') {
@@ -227,6 +237,12 @@ export default function BattleScreen() {
         addLog(`${enemy.name} è esausto!`);
         const exp = BattleEngine.calculateExp(100, enemy.level);
         addLog(`${playerPkmn.name} guadagna ${exp} ESP!`);
+        gainExp(playerPkmn.id, exp);
+        // Controlla level up 
+        const updatedPkmn = team.find(p => p.id === playerPkmn.id);
+        if (updatedPkmn && updatedPkmn.level > playerPkmn.level) {
+          addLog(`${playerPkmn.name} è salito al livello ${updatedPkmn.level}!`);
+        }
         addCoins(50);
         incrementStat('totalBattles');
         team.forEach(p => {
@@ -265,6 +281,14 @@ export default function BattleScreen() {
 
       if (newEnemyHp <= 0) {
         addLog(`${enemy.name} è esausto!`);
+        const exp = BattleEngine.calculateExp(100, enemy.level);
+        addLog(`${playerPkmn.name} guadagna ${exp} ESP!`);
+        gainExp(playerPkmn.id, exp);
+        // Controlla level up 
+        const updatedPkmn = team.find(p => p.id === playerPkmn.id);
+        if (updatedPkmn && updatedPkmn.level > playerPkmn.level) {
+          addLog(`${playerPkmn.name} è salito al livello ${updatedPkmn.level}!`);
+        }
         addCoins(50);
         incrementStat('totalBattles');
         team.forEach(p => {
@@ -322,7 +346,7 @@ export default function BattleScreen() {
                 <span className="font-black text-sm uppercase">{enemy?.name}</span>
                 <div className="flex gap-1">
                   {enemy?.types?.map((t: string) => (
-                    <TypeBadge key={t} type={t} small />
+                    <TypeBadge key={t} type={t as any} small />
                   ))}
                 </div>
               </div>
@@ -374,7 +398,7 @@ export default function BattleScreen() {
               <div className="flex items-center gap-1.5 flex-wrap">
                 <span className="font-black text-sm uppercase">{playerPkmn?.name}</span>
                 {playerPkmn?.types?.map((t: string) => (
-                  <TypeBadge key={t} type={t} small />
+                  <TypeBadge key={t} type={t as any} small />
                 ))}
                 {playerPkmn?.status && (
                   <span className={`text-[9px] font-black px-1.5 py-0.5 rounded-full ${
@@ -442,7 +466,7 @@ export default function BattleScreen() {
                 >
                   <div className="flex justify-between w-full items-center">
                     <span className="font-black text-xs uppercase truncate">{move.name}</span>
-                    <TypeBadge type={move.type} small />
+                    <TypeBadge type={move.type as any} small />
                   </div>
                   <div className="flex justify-between w-full items-center mt-1">
                     <span className="text-[10px] opacity-50 uppercase font-bold">{move.category}</span>

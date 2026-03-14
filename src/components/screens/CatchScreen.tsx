@@ -8,7 +8,7 @@ import { Zap, Sparkles, X } from 'lucide-react';
 import confetti from 'canvas-confetti';
 
 export default function CatchScreen() {
-  const { consumeCharge, addPokemon, setScreen, medals, team, incrementStat } = useStore();
+  const { consumeCharge, addPokemon, setScreen, medals, team, incrementStat, addItem } = useStore();
   const [pokemon, setPokemon] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [isShiny, setIsShiny] = useState(false);
@@ -87,6 +87,7 @@ export default function CatchScreen() {
       const stats = BattleEngine.calculateStats(pokemon.level, baseStats, ivs, { hp: 0, attack: 0, defense: 0, spAtk: 0, spDef: 0, speed: 0 }, nature);
       const moves = await api.getPokemonMoves(pokemon, pokemon.level);
 
+      const baseSpeciesId = await api.getBaseSpeciesId(pokemon.species);
       addPokemon({
         id: Math.random().toString(36).substr(2, 9),
         pokemonId: pokemon.id,
@@ -105,9 +106,12 @@ export default function CatchScreen() {
         isShiny,
         caughtAt: Date.now(),
         growthRate: pokemon.species.growth_rate.name,
+        baseSpeciesId,
       });
       incrementStat('totalCaught');
       if (isShiny) incrementStat('shiniesFound');
+      // +3 caramelle specie alla cattura 
+      addItem(`candy_${baseSpeciesId}`, 3);
     } else {
       // Fallito: controlla se ha ancora tentativi 
       if (newAttempts >= maxAttempts) {

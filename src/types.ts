@@ -60,9 +60,11 @@ export interface Pokemon {
   moves: Move[];
   currentHp: number;
   status: StatusEffect;
+  sleepTurns?: number;
   isShiny: boolean;
   caughtAt: number;
   growthRate: string;
+  baseSpeciesId: number;
 }
 
 export interface Item {

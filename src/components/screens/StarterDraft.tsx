@@ -45,6 +45,7 @@ export default function StarterDraft() {
 
         const stats = BattleEngine.calculateStats(5, baseStats, ivs, { hp: 0, attack: 0, defense: 0, spAtk: 0, spDef: 0, speed: 0 }, nature);
         const moves = await api.getPokemonMoves(data, 5);
+        const baseSpeciesId = await api.getBaseSpeciesId(species);
 
         const pokemon: Pokemon = {
           id: Math.random().toString(36).substr(2, 9),
@@ -64,6 +65,7 @@ export default function StarterDraft() {
           isShiny: false,
           caughtAt: Date.now(),
           growthRate: species.growth_rate.name,
+          baseSpeciesId,
         };
         addPokemon(pokemon);
       }

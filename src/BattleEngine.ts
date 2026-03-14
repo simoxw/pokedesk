@@ -51,7 +51,7 @@ export const BattleEngine = {
     const random = 0.85 + Math.random() * 0.15;
     damage = Math.floor(damage * random);
 
-    // Status Modifiers
+    // BRN: -50% attacco fisico 
     if (attacker.status === 'BRN' && move.category === 'physical') {
       damage = Math.floor(damage * 0.5);
     }
