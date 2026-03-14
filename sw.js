@@ -35,20 +35,38 @@ self.addEventListener('fetch', (event) => {
     return;
   }
 
-  // Rete prima, poi cache (fallback), con gestione errori per evitare crash
-  event.respondWith(
-    fetch(event.request)
-      .then((response) => {
-        if (!response || response.status !== 200 || response.type === 'error') {
-          throw new Error('Network response not ok');
-        }
-        return response;
-      })
-      .catch(() => {
-        if (event.request.mode === 'navigate') {
-          return caches.match('index.html');
-        }
-        return caches.match(event.request);
-      })
-  );
+  // Network-first per risorse stesse origini + fallback cache;
+  // per risorse esterne (es. raw.githubusercontent.com) usiamo solo rete,
+  // perché spesso restituiscono risposte opache/di terze parti che possono fallire con cache.put.
+  const requestIsSameOrigin = new URL(event.request.url).origin === self.location.origin;
+
+  if (!requestIsSameOrigin) {
+    event.respondWith(
+      fetch(event.request).catch(() => caches.match(event.request))
+    );
+    return;
+  }
+
+  event.respondWith((async () => {
+    try {
+      const response = await fetch(event.request);
+      if (response && response.ok) {
+        const cache = await caches.open(CACHE_NAME);
+        cache.put(event.request, response.clone());
+      }
+      return response;
+    } catch (e) {
+      // Rete fallita, proveremo la cache
+    }
+
+    const cached = await caches.match(event.request);
+    if (cached) return cached;
+
+    if (event.request.mode === 'navigate') {
+      return caches.match('index.html');
+    }
+
+    return Response.error();
+  })());
 });
+
