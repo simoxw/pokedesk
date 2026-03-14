@@ -1,14 +1,85 @@
 import React, { useState } from 'react';
+import {
+  DndContext,
+  closestCenter,
+  PointerSensor,
+  TouchSensor,
+  useSensor,
+  useSensors,
+  DragEndEvent,
+} from '@dnd-kit/core';
+import {
+  SortableContext,
+  verticalListSortingStrategy,
+  useSortable,
+  arrayMove,
+} from '@dnd-kit/sortable';
+import { CSS } from '@dnd-kit/utilities';
+import { GripVertical, ArrowLeft, Trash2, Shield, Box, Info } from 'lucide-react';
 import { useStore } from '../../store';
 import { motion } from 'motion/react';
-import { ArrowLeft, Trash2, Shield, Box, Info } from 'lucide-react';
 import HPBar from '../ui/HPBar';
 import TypeBadge from '../ui/TypeBadge';
 import PokemonDetailsModal from '../ui/PokemonDetailsModal';
 
+function SortableItem({ pokemon, index, onRemove, onSelect }: any) {
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: pokemon.id });
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    opacity: isDragging ? 0.5 : 1,
+  };
+
+  return (
+    <div ref={setNodeRef} style={style} className="bg-[#1a1a2e] rounded-2xl p-4 border border-white/5 flex gap-4 items-center">
+      <button {...attributes} {...listeners} className="text-white/20 hover:text-white/60 cursor-grab active:cursor-grabbing p-1">
+        <GripVertical size={20} />
+      </button>
+      <img
+        src={`https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/${pokemon.pokemonId}.png`}
+        alt={pokemon.name}
+        className="w-16 h-16 object-contain"
+      />
+      <div className="flex-1 min-w-0">
+        <div className="flex items-center gap-2">
+          <span className="font-black text-sm uppercase truncate">{pokemon.name}</span>
+          <span className="text-[10px] bg-[#e63946] px-2 py-0.5 rounded-full font-bold">Lv.{pokemon.level}</span>
+        </div>
+        <div className="text-xs text-white/40 mt-1">HP {pokemon.currentHp}/{pokemon.stats.hp}</div>
+        <div className="w-full bg-white/10 rounded-full h-1.5 mt-1">
+          <div
+            className="bg-green-400 h-1.5 rounded-full"
+            style={{ width: `${(pokemon.currentHp / pokemon.stats.hp) * 100}%` }}
+          />
+        </div>
+      </div>
+      <div className="flex flex-col gap-2">
+        <button onClick={() => onSelect(pokemon)} className="p-2 bg-white/5 rounded-xl">
+          <Info size={16} />
+        </button>
+        <button onClick={() => onRemove(index)} className="p-2 bg-red-500/10 rounded-xl text-red-400">
+          <Trash2 size={16} />
+        </button>
+      </div>
+    </div>
+  );
+}
+
 export default function TeamScreen() {
-  const { team, setScreen, removeFromTeam } = useStore();
+  const { team, setScreen, removeFromTeam, reorderTeam } = useStore();
   const [selectedPkmn, setSelectedPkmn] = useState<any>(null);
+  const sensors = useSensors(
+    useSensor(PointerSensor),
+    useSensor(TouchSensor, { activationConstraint: { delay: 200, tolerance: 5 } })
+  );
+
+  const handleDragEnd = (event: DragEndEvent) => {
+    const { active, over } = event;
+    if (!over || active.id === over.id) return;
+    const oldIndex = team.findIndex(p => p.id === active.id);
+    const newIndex = team.findIndex(p => p.id === over.id);
+    reorderTeam(oldIndex, newIndex);
+  };
 
   return (
     <div className="h-full flex flex-col bg-[#0f0f1a]">
@@ -21,95 +92,24 @@ export default function TeamScreen() {
       </div>
 
       <div className="flex-1 overflow-y-auto p-6 space-y-4">
-        {Array.from({ length: 4 }).map((_, i) => {
-          const pokemon = team[i];
-          if (!pokemon) {
-            return (
-              <div key={i} className="h-32 rounded-2xl border-2 border-dashed border-white/10 flex items-center justify-center text-white/20 font-bold">
-                SLOT VUOTO
-              </div>
-            );
-          }
-
-          return (
-            <motion.div
-              key={pokemon.id}
-              initial={{ opacity: 0, x: -20 }}
-              animate={{ opacity: 1, x: 0 }}
-              transition={{ delay: i * 0.1 }}
-              className="bg-[#1a1a2e] rounded-2xl p-4 border border-white/5"
-            >
-              <div className="flex gap-4">
-                <div className="w-24 h-24 bg-white/5 rounded-xl p-2 relative flex items-center justify-center">
-                  <img 
-                    src={`https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/${pokemon.pokemonId}.png`}
-                    alt={pokemon.name}
-                    className="w-full h-full object-contain"
-                  />
-                  <div className="absolute -top-2 -left-2 bg-[#e63946] text-[10px] font-bold px-2 py-0.5 rounded-full">
-                    Lv. {pokemon.level}
-                  </div>
-                </div>
-
-                <div className="flex-1">
-                  <div className="flex justify-between items-start mb-2">
-                    <div>
-                      <h3 className="font-bold text-lg uppercase">{pokemon.name}</h3>
-                      <div className="flex gap-1 mt-1">
-                        {pokemon.types.map(t => <TypeBadge key={t} type={t} />)}
-                      </div>
-                    </div>
-                    <div className="flex gap-1">
-                      <button 
-                        onClick={() => setSelectedPkmn(pokemon)}
-                        className="p-2 text-white/30 hover:text-blue-400 transition-colors"
-                      >
-                        <Info size={18} />
-                      </button>
-                      <button 
-                        onClick={() => removeFromTeam(i)}
-                        className="p-2 text-white/30 hover:text-red-500 transition-colors"
-                      >
-                        <Box size={18} />
-                      </button>
-                    </div>
-                  </div>
-
-                  <div className="space-y-1">
-                    <div className="flex justify-between text-[10px] font-bold text-white/50 mb-1">
-                      <span>HP</span>
-                      <span>{pokemon.currentHp} / {pokemon.stats.hp}</span>
-                    </div>
-                    <HPBar current={pokemon.currentHp} max={pokemon.stats.hp} />
-                  </div>
-                </div>
-              </div>
-
-              {/* Moves List */}
-              <div className="mt-4 grid grid-cols-2 gap-2">
-                {pokemon.moves.map(move => (
-                  <div key={move.id} className="bg-white/5 rounded-lg p-2 flex flex-col border border-white/5">
-                    <div className="flex justify-between items-center mb-1">
-                      <span className="text-[10px] font-bold uppercase opacity-70 truncate">{move.name}</span>
-                      <span className="text-[10px] opacity-50">{move.pp}/{move.maxPp}</span>
-                    </div>
-                    <div className="w-full h-1 bg-white/10 rounded-full overflow-hidden">
-                      <div 
-                        className="h-full bg-blue-400" 
-                        style={{ width: `${(move.pp / move.maxPp) * 100}%` }}
-                      />
-                    </div>
-                  </div>
-                ))}
-                {Array.from({ length: 4 - pokemon.moves.length }).map((_, i) => (
-                  <div key={i} className="bg-white/5 rounded-lg p-2 border border-dashed border-white/10 flex items-center justify-center">
-                    <span className="text-[10px] opacity-20 italic">Slot Vuoto</span>
-                  </div>
-                ))}
-              </div>
-            </motion.div>
-          );
-        })}
+        <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
+          <SortableContext items={team.map(p => p.id)} strategy={verticalListSortingStrategy}>
+            {team.map((pokemon, i) => (
+              <SortableItem
+                key={pokemon.id}
+                pokemon={pokemon}
+                index={i}
+                onRemove={removeFromTeam}
+                onSelect={setSelectedPkmn}
+              />
+            ))}
+          </SortableContext>
+        </DndContext>
+        {Array.from({ length: 4 - team.length }).map((_, i) => (
+          <div key={i} className="h-20 rounded-2xl border-2 border-dashed border-white/10 flex items-center justify-center text-white/20 font-bold text-sm">
+            SLOT VUOTO
+          </div>
+        ))}
       </div>
 
       <PokemonDetailsModal 

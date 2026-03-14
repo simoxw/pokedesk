@@ -10,6 +10,7 @@ interface GameStore extends GameState {
   releasePokemon: (id: string) => void;
   addToTeam: (pokemon: Pokemon, index: number) => void;
   removeFromTeam: (index: number) => void;
+  reorderTeam: (oldIndex: number, newIndex: number) => void;
   addCoins: (amount: number) => void;
   addItem: (itemId: string, amount: number) => void;
   useItem: (itemId: string) => void;
@@ -74,6 +75,12 @@ export const useStore = create<GameStore>()(
         const newTeam = [...state.team];
         const removed = newTeam.splice(index, 1)[0];
         return { team: newTeam, box: [...state.box, removed] };
+      }),
+      reorderTeam: (oldIndex, newIndex) => set((state) => {
+        const newTeam = [...state.team];
+        const [moved] = newTeam.splice(oldIndex, 1);
+        newTeam.splice(newIndex, 0, moved);
+        return { team: newTeam };
       }),
       addCoins: (amount) => set((state) => ({ coins: state.coins + amount })),
       addItem: (itemId, amount) => set((state) => ({
