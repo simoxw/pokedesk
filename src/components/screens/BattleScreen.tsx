@@ -10,7 +10,8 @@ import TypeBadge from '../ui/TypeBadge';
 import confetti from 'canvas-confetti';
 
 export default function BattleScreen() {
-  const { team, setScreen, incrementStat, addCoins, updatePokemon, inventory, useItem, gainExp, currentBattlePath, recordBattleWin } = useStore();
+  const { team, setScreen, incrementStat, addCoins, updatePokemon, inventory, useItem, gainExp, currentBattlePath, recordBattleWin, medals } = useStore();
+  const medalsCount = medals.filter((m: any) => m.isUnlocked).length;
   const [activeIdx, setActiveIdx] = useState(0);
   const [enemy, setEnemy] = useState<any>(null);
   const [loading, setLoading] = useState(true);
@@ -47,17 +48,36 @@ export default function BattleScreen() {
     const initBattle = async () => {
       setLoading(true);
       
-      // Generate random enemy trainer pkmn (Gen 1-4 weighted)
-      const roll = Math.random();
-      const id = roll < 0.50 ? Math.floor(Math.random() * 151) + 1    // Gen 1: 50% 
-                : roll < 0.75 ? Math.floor(Math.random() * 100) + 152  // Gen 2: 25% 
-                : roll < 0.90 ? Math.floor(Math.random() * 135) + 252  // Gen 3: 15% 
-                :               Math.floor(Math.random() * 107) + 387; // Gen 4: 10%
+      // Gen sbloccate progressivamente con le medaglie 
+      const getRandomPokemonId = (medals: number): number => { 
+        const ranges: Array<{min: number, max: number, weight: number}> = [ 
+          { min: 1, max: 151, weight: 40 }, 
+        ]; 
+        if (medals >= 1)  ranges.push({ min: 152, max: 251, weight: 25 }); 
+        if (medals >= 5)  ranges.push({ min: 252, max: 386, weight: 20 }); 
+        if (medals >= 10) ranges.push({ min: 387, max: 493, weight: 15 }); 
+        if (medals >= 20) ranges.push({ min: 494, max: 649, weight: 10 }); 
+        if (medals >= 30) ranges.push({ min: 650, max: 721, weight: 5  }); 
+
+        const totalWeight = ranges.reduce((sum, r) => sum + r.weight, 0); 
+        let roll = Math.random() * totalWeight; 
+        for (const range of ranges) { 
+          roll -= range.weight; 
+          if (roll <= 0) { 
+            return Math.floor(Math.random() * (range.max - range.min + 1)) + range.min; 
+          } 
+        } 
+        return Math.floor(Math.random() * 151) + 1; 
+      }; 
+      
+      const id = getRandomPokemonId(medalsCount);
                 
       const data = await api.getPokemon(id);
       const species = await api.getSpecies(id);
       
-      let level = Math.max(5, playerPkmn.level + Math.floor(Math.random() * 3 - 1));
+      const teamAvgLevel = team.reduce((acc, p) => acc + p.level, 0) / team.length; 
+      const variance = Math.floor(Math.random() * 5) - 2; // da -2 a +2 
+      let level = Math.max(5, Math.floor(teamAvgLevel + variance)); 
       let enemyName = api.getItalianName(species.names);
 
       if (isBoss) {
@@ -338,6 +358,31 @@ export default function BattleScreen() {
       return {}; 
     } 
   
+    // --- DRAIN MOVES: danno + cura metà danno --- 
+    const DRAIN_MOVES = new Set([ 
+      'mega-drain', 'giga-drain', 'absorb', 'leech-life', 
+      'drain-punch', 'dream-eater', 'horn-leech', 'oblivion-wing', 
+    ]); 
+    if (DRAIN_MOVES.has(move.name.toLowerCase().replace(/ /g, '-')) || 
+        DRAIN_MOVES.has(move.id)) { 
+      // Il danno viene calcolato normalmente in handleMove, 
+      // qui calcoliamo solo la cura (metà del danno che verrà inflitto) 
+      // Usiamo una stima basata sul power della mossa 
+      const estimatedDamage = BattleEngine.calculateDamage( 
+        playerPkmn, currentEnemy, move, false 
+      ); 
+      const healing = Math.floor(estimatedDamage / 2); 
+      if (healing > 0) { 
+        const newHp = Math.min(playerPkmn.stats.hp, playerPkmn.currentHp + healing); 
+        const actualHeal = newHp - playerPkmn.currentHp; 
+        if (actualHeal > 0) { 
+          updatePokemon(playerPkmn.id, { currentHp: newHp }); 
+          addLog(`${playerPkmn.name} ha assorbito ${actualHeal} HP!`); 
+        } 
+      } 
+      return {}; 
+    } 
+
     // --- MOSSE OFFENSIVE con effetto stato secondario --- 
     if (move.statusEffect && !currentEnemy.status && move.effectChance) { 
       if (Math.random() * 100 < move.effectChance) { 
@@ -474,17 +519,14 @@ export default function BattleScreen() {
         if (isImmuneToStatus(enemy.types, newStatus)) {
           addLog(`${enemy.name} è immune a ${newStatus}!`);
         } else {
-          const chance = (!move.effectChance || move.effectChance === 0) ? 100 : move.effectChance; 
-          if (Math.random() * 100 < chance) {
-            finalStatus = newStatus;
-          }
+          finalStatus = newStatus;
         }
       }
 
       setEnemy((prev: any) => ({ 
         ...prev, 
         currentHp: newEnemyHp,
-        status: finalStatus
+        status: newStatus !== undefined ? newStatus : prev.status
       }));
       await new Promise(r => setTimeout(r, 800));
 
@@ -554,17 +596,14 @@ export default function BattleScreen() {
         if (isImmuneToStatus(enemy.types, newStatus)) {
           addLog(`${enemy.name} è immune a ${newStatus}!`);
         } else {
-          const chance = (!move.effectChance || move.effectChance === 0) ? 100 : move.effectChance; 
-          if (Math.random() * 100 < chance) {
-            finalStatus = newStatus;
-          }
+          finalStatus = newStatus;
         }
       }
 
       setEnemy((prev: any) => ({ 
         ...prev, 
         currentHp: newEnemyHp,
-        status: finalStatus
+        status: newStatus !== undefined ? newStatus : prev.status
       }));
       await new Promise(r => setTimeout(r, 800));
 

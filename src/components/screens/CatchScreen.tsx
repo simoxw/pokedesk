@@ -9,6 +9,7 @@ import confetti from 'canvas-confetti';
 
 export default function CatchScreen() {
   const { consumeCharge, addPokemon, setScreen, medals, team, incrementStat, addItem, inventory } = useStore();
+  const medalsCount = medals.filter(m => m.isUnlocked).length;
   const [pokemon, setPokemon] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [isShiny, setIsShiny] = useState(false);
@@ -38,11 +39,31 @@ export default function CatchScreen() {
       const avgLevel = team.length > 0 ? team.reduce((acc, p) => acc + p.level, 0) / team.length : 5;
       const level = Math.max(5, Math.floor(avgLevel + (Math.random() * 10 - 5)));
       
-      const roll = Math.random();
-      const id = roll < 0.50 ? Math.floor(Math.random() * 151) + 1    // Gen 1: 50% 
-                : roll < 0.75 ? Math.floor(Math.random() * 100) + 152  // Gen 2: 25% 
-                : roll < 0.90 ? Math.floor(Math.random() * 135) + 252  // Gen 3: 15% 
-                :               Math.floor(Math.random() * 107) + 387; // Gen 4: 10%
+      // Gen sbloccate progressivamente con le medaglie 
+      const getRandomPokemonId = (medals: number): number => { 
+        // Costruisci pool di range disponibili 
+        const ranges: Array<{min: number, max: number, weight: number}> = [ 
+          { min: 1, max: 151, weight: 40 },    // Gen 1: sempre disponibile 
+        ]; 
+        if (medals >= 1)  ranges.push({ min: 152, max: 251, weight: 25 });  // Gen 2 
+        if (medals >= 5)  ranges.push({ min: 252, max: 386, weight: 20 });  // Gen 3 
+        if (medals >= 10) ranges.push({ min: 387, max: 493, weight: 15 });  // Gen 4 
+        if (medals >= 20) ranges.push({ min: 494, max: 649, weight: 10 });  // Gen 5 
+        if (medals >= 30) ranges.push({ min: 650, max: 721, weight: 5  });  // Gen 6 
+
+        // Selezione pesata 
+        const totalWeight = ranges.reduce((sum, r) => sum + r.weight, 0); 
+        let roll = Math.random() * totalWeight; 
+        for (const range of ranges) { 
+          roll -= range.weight; 
+          if (roll <= 0) { 
+            return Math.floor(Math.random() * (range.max - range.min + 1)) + range.min; 
+          } 
+        } 
+        return Math.floor(Math.random() * 151) + 1; // fallback Gen 1 
+      }; 
+      
+      const id = getRandomPokemonId(medalsCount); 
                 
       const data = await api.getPokemon(id);
       const species = await api.getSpecies(id);

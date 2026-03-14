@@ -16,10 +16,10 @@ export default function BagScreen() {
       { id: 'masterball', name: 'Masterball', icon: '🟣' },
     ],
     heal: [
-      { id: 'potion', name: 'Pozione', icon: '🧪' },
-      { id: 'superpotion', name: 'Superpozione', icon: '🧪' },
-      { id: 'hyperpotion', name: 'Iperpozione', icon: '🧪' },
-      { id: 'full_heal', name: 'Cura Totale', icon: '💊' },
+      { id: 'potion', name: 'Pozione', icon: '🧪', description: 'Ripristina 20 HP' },
+      { id: 'superpotion', name: 'Superpozione', icon: '🧪', description: 'Ripristina 50 HP' },
+      { id: 'hyperpotion', name: 'Iperpozione', icon: '🧪', description: 'Ripristina 200 HP' },
+      { id: 'full_heal', name: 'Cura Totale', icon: '💊', description: 'Cura qualsiasi stato alterato (PSN, BRN, PAR, SLP, FRZ)' },
     ],
     candy: [
         { id: 'rare_candy', name: 'Caramella Rara', icon: '🍬' },
@@ -61,6 +61,9 @@ export default function BagScreen() {
               <span className="text-3xl">{item.icon}</span>
               <div>
                 <h4 className="font-bold uppercase text-sm">{item.name}</h4>
+                {'description' in item && ( 
+                  <p className="text-[10px] text-white/50 mt-0.5">{(item as any).description}</p> 
+                )} 
                 <p className="text-xs text-white/30">Posseduti: {inventory[item.id] || 0}</p>
               </div>
             </div>

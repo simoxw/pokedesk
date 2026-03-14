@@ -3,15 +3,19 @@ import { useStore } from '../../store';
 import { motion } from 'motion/react';
 import { ArrowLeft, Coins, ShoppingCart } from 'lucide-react';
 
-const SHOP_ITEMS = [
-  { id: 'pokeball', name: 'Pokéball', cost: 200, icon: '🔴' },
-  { id: 'megaball', name: 'Megaball', cost: 600, icon: '🔵', unlock: 5 },
-  { id: 'ultraball', name: 'Ultraball', cost: 1200, icon: '🟡', unlock: 15 },
-  { id: 'potion', name: 'Pozione', cost: 300, icon: '🧪' },
-  { id: 'superpotion', name: 'Superpozione', cost: 700, icon: '🧪', unlock: 10 },
-  { id: 'full_heal', name: 'Cura Totale', cost: 300, icon: '💊', description: 'Cura qualsiasi stato alterato' },
-  { id: 'rare_candy', name: 'Caramella Rara', cost: 2500, icon: '🍬', unlock: 10 },
-];
+const SHOP_ITEMS = [ 
+  { id: 'pokeball',    name: 'Pokéball',       cost: 200,  icon: '🔴', description: 'Pokéball base' }, 
+  { id: 'potion',      name: 'Pozione',         cost: 300,  icon: '🧪', description: 'Cura 20 HP' }, 
+  { id: 'antidote',    name: 'Antidoto',        cost: 150,  icon: '💜', description: 'Cura il veleno' }, 
+  { id: 'full_heal',   name: 'Cura Totale',     cost: 300,  icon: '💊', description: 'Cura qualsiasi stato', unlock: 25 }, 
+  { id: 'megaball',    name: 'Megaball',        cost: 600,  icon: '🔵', unlock: 5,  description: '1.8x cattura' }, 
+  { id: 'superpotion', name: 'Superpozione',    cost: 700,  icon: '🧪', unlock: 8,  description: 'Cura 50 HP' }, 
+  { id: 'rare_candy',  name: 'Caramella Rara',  cost: 2500, icon: '🍬', unlock: 8,  description: '+1 livello' }, 
+  { id: 'ultraball',   name: 'Ultraball',       cost: 1200, icon: '🟡', unlock: 15, description: '3x cattura' }, 
+  { id: 'hyperpotion', name: 'Iperpozione',     cost: 1500, icon: '💊', unlock: 15, description: 'Cura 200 HP' }, 
+  { id: 'masterball',  name: 'Masterball',      cost: 9999, icon: '🟣', unlock: 3,  description: 'Cattura garantita' }, 
+]; 
+
 
 export default function ShopScreen() {
   const { coins, inventory, setScreen, addCoins, addItem, medals } = useStore();
@@ -54,8 +58,11 @@ export default function ShopScreen() {
                 <span className="text-3xl">{item.icon}</span>
                 <div>
                   <h4 className="font-bold uppercase text-sm">{item.name}</h4>
+                  {item.description && ( 
+                    <p className="text-[10px] text-white/40 mt-0.5">{item.description}</p> 
+                  )} 
                   <p className="text-xs text-yellow-500 font-black">{item.cost}¢</p>
-                  {isLocked && <p className="text-[10px] text-red-400 mt-1">Sblocca con {item.unlock} medaglie</p>}
+                  {isLocked && <span className="text-[10px] text-white/30">🔒 {item.unlock} medaglie</span>}
                 </div>
               </div>
               <button 

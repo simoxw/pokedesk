@@ -6,7 +6,7 @@ import { motion } from 'motion/react';
 import { Zap, Target, Sword } from 'lucide-react';
 
 export default function HubScreen() {
-  const { charges, setScreen, team, updatePokemon, consumeCharge } = useStore();
+  const { charges, setScreen, team, updatePokemon, consumeCharge, currentBattlePath } = useStore();
   const { getTimeToNextTick } = useTickSystem();
 
   useEffect(() => {
@@ -73,6 +73,41 @@ export default function HubScreen() {
             PROSSIMA CARICA IN {minutes}:{seconds.toString().padStart(2, '0')}
           </p>
         </div>
+
+        {/* Progresso verso Capopalestra */} 
+        <div className="w-full max-w-sm"> 
+          {currentBattlePath.nextIsBoss ? ( 
+            <motion.div 
+              animate={{ scale: [1, 1.03, 1] }} 
+              transition={{ duration: 1.5, repeat: Infinity }} 
+              className="bg-yellow-500/10 border border-yellow-500/40 rounded-2xl px-4 py-3 text-center" 
+            > 
+              <p className="text-yellow-400 font-black text-sm uppercase tracking-widest"> 
+                ⚔️ CAPOPALESTRA DISPONIBILE! 
+              </p> 
+              <p className="text-yellow-300/60 text-[10px] mt-1">La prossima lotta è contro il Capopalestra</p> 
+            </motion.div> 
+          ) : ( 
+            <div className="bg-[#1a1a2e]/60 border border-white/5 rounded-2xl px-4 py-3"> 
+              <div className="flex justify-between items-center mb-2"> 
+                <span className="text-[10px] font-bold text-white/40 uppercase tracking-widest">Progresso Palestra</span> 
+                <span className="text-[10px] font-bold text-white/60"> 
+                  {currentBattlePath.battlesWon % 10}/10 
+                </span> 
+              </div> 
+              <div className="w-full bg-white/10 rounded-full h-2 overflow-hidden"> 
+                <motion.div 
+                  className="h-full rounded-full bg-gradient-to-r from-indigo-500 to-purple-500" 
+                  animate={{ width: `${(currentBattlePath.battlesWon % 10) * 10}%` }} 
+                  transition={{ duration: 0.5 }} 
+                /> 
+              </div> 
+              <p className="text-[10px] text-white/30 mt-1.5 text-center"> 
+                {10 - (currentBattlePath.battlesWon % 10)} battaglie al prossimo Capopalestra 
+              </p> 
+            </div> 
+          )} 
+        </div> 
 
         {/* Team Preview */}
         {team.length > 0 && (
