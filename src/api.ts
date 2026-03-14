@@ -1,7 +1,18 @@
 import { Pokemon, Move, Item, Medal, GameState, ScreenName, PokemonSpecies, EvolutionChain } from './types';
 
 const BASE_URL = 'https://pokeapi.co/api/v2';
+const MAX_CACHE = 200;
 const cache = new Map<string, any>();
+
+function cacheSet(key: string, value: any) {
+  if (cache.size >= MAX_CACHE) {
+    const firstKey = cache.keys().next().value;
+    if (firstKey !== undefined) {
+      cache.delete(firstKey);
+    }
+  }
+  cache.set(key, value);
+}
 
 // Helper for rate limiting and delay
 const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
@@ -14,7 +25,7 @@ async function fetchWithCache(url: string) {
   if (!response.ok) throw new Error(`API error: ${response.status}`);
   
   const data = await response.ok ? await response.json() : null;
-  if (data) cache.set(url, data);
+  if (data) cacheSet(url, data);
   return data;
 }
 
@@ -90,23 +101,39 @@ export const api = {
       .slice(0, 4);
 
     const moves: Move[] = [];
+
     for (const m of levelUpMoves) {
       try {
         const moveData = await this.getMove(m.name);
         if (!moveData) continue;
         
-        moves.push({
-          id: moveData.id.toString(),
-          name: this.getItalianName(moveData.names),
-          type: moveData.type.name,
-          power: moveData.power || 0,
-          accuracy: moveData.accuracy || 100,
-          pp: moveData.pp,
-          maxPp: moveData.pp,
-          priority: moveData.priority || 0,
-          category: moveData.damage_class.name as any,
-          description: this.getItalianDescription(moveData.flavor_text_entries),
-        });
+        moves.push({ 
+          id: moveData.id.toString(), 
+          name: this.getItalianName(moveData.names), 
+          type: moveData.type.name, 
+          power: moveData.power || 0, 
+          accuracy: moveData.accuracy || 100, 
+          pp: moveData.pp, 
+          maxPp: moveData.pp, 
+          priority: moveData.priority || 0, 
+          category: moveData.damage_class.name as any, 
+          description: this.getItalianDescription(moveData.flavor_text_entries), 
+          statusEffect: (() => { 
+            const a = moveData.meta?.ailment?.name; 
+            if (!a || a === 'none' || a === 'unknown') return undefined; 
+            if (a === 'sleep') return 'SLP' as const; 
+            if (a === 'poison' || a === 'bad-poison') return 'PSN' as const; 
+            if (a === 'burn') return 'BRN' as const; 
+            if (a === 'paralysis') return 'PAR' as const; 
+            if (a === 'freeze') return 'FRZ' as const; 
+            return undefined; 
+          })(), 
+          effectChance: (() => { 
+            const ac = moveData.meta?.ailment_chance; 
+            if (ac && ac > 0) return ac; 
+            return moveData.effect_chance ?? undefined; 
+          })(), 
+        }); 
       } catch (e) {
         console.error(`Error fetching move ${m.name}:`, e);
       }
@@ -147,6 +174,88 @@ export const api = {
       return basePokemon.id;
     } catch {
       return speciesData.id; // fallback: usa l'id corrente 
+    }
+  },
+
+  async getEvolutionTarget(speciesData: any, currentLevel: number): Promise<{ newId: number; newName: string } | null> {
+    try {
+      const chain = await this.getEvolutionChain(speciesData.evolution_chain.url);
+      
+      // Percorri la catena cercando il nodo con species.name === speciesData.name
+      let currentNode = chain.chain;
+      const findNode = (node: any, targetName: string): any => {
+        if (node.species.name === targetName) return node;
+        for (const nextNode of node.evolves_to) {
+          const found = findNode(nextNode, targetName);
+          if (found) return found;
+        }
+        return null;
+      };
+
+      const node = findNode(currentNode, speciesData.name);
+      if (!node || !node.evolves_to || node.evolves_to.length === 0) return null;
+
+      // Se quel nodo ha evolves_to con almeno un elemento, prendi il primo
+      const evolution = node.evolves_to[0];
+      const details = evolution.evolution_details[0];
+
+      // Controlla se evolution_details[0].min_level esiste e currentLevel >= min_level
+      // Controlla che trigger sia 'level-up'
+      if (details && details.trigger.name === 'level-up' && details.min_level !== null && currentLevel >= details.min_level) {
+        const nextPokemon = await this.getPokemon(evolution.species.name);
+        const nextSpecies = await this.getSpecies(evolution.species.name);
+        return {
+          newId: nextPokemon.id,
+          newName: this.getItalianName(nextSpecies.names)
+        };
+      }
+
+      return null;
+    } catch (e) {
+      console.error("Error in getEvolutionTarget:", e);
+      return null;
+    }
+  },
+
+  async getMovesLearnedAtLevel(pokemonData: any, level: number): Promise<Move[]> {
+    const candidateMove = pokemonData.moves.find((m: any) =>
+      m.version_group_details.some((v: any) => v.move_learn_method.name === 'level-up' && v.level_learned_at === level)
+    );
+
+    if (!candidateMove) return [];
+
+    try {
+      const moveData = await this.getMove(candidateMove.move.name);
+      if (!moveData) return [];
+
+      return [{
+        id: moveData.id.toString(),
+        name: this.getItalianName(moveData.names),
+        type: moveData.type.name,
+        power: moveData.power || 0,
+        accuracy: moveData.accuracy || 100,
+        pp: moveData.pp,
+        maxPp: moveData.pp,
+        priority: moveData.priority || 0,
+        category: moveData.damage_class.name as any,
+        description: this.getItalianDescription(moveData.flavor_text_entries),
+        statusEffect: (() => { 
+          const ailment = moveData.meta?.ailment?.name; 
+          if (!ailment || ailment === 'none' || ailment === 'unknown') return undefined; 
+          if (ailment === 'sleep') return 'SLP'; 
+          if (ailment === 'poison' || ailment === 'bad-poison') return 'PSN'; 
+          if (ailment === 'burn') return 'BRN'; 
+          if (ailment === 'paralysis') return 'PAR'; 
+          if (ailment === 'freeze') return 'FRZ'; 
+          return undefined; 
+        })(), 
+        effectChance: moveData.meta?.ailment_chance > 0 
+          ? moveData.meta.ailment_chance 
+          : (moveData.effect_chance ?? undefined),
+      }];
+    } catch (e) {
+      console.error(`Error fetching move ${candidateMove.move.name}:`, e);
+      return [];
     }
   },
 

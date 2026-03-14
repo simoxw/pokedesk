@@ -20,14 +20,38 @@ export default function TradeScreen() {
     try {
       const json = atob(code);
       const pkmn = JSON.parse(json);
-      // Basic validation
-      if (pkmn.name && pkmn.level && pkmn.pokemonId) {
-        addPokemon({ ...pkmn, id: Math.random().toString(36).substr(2, 9) });
-        alert(`${pkmn.name} importato con successo!`);
-        setCode('');
+      
+      // Robust validation
+      const isValid = 
+        pkmn.name && typeof pkmn.name === 'string' &&
+        pkmn.level && typeof pkmn.level === 'number' && pkmn.level >= 1 && pkmn.level <= 100 &&
+        pkmn.pokemonId && typeof pkmn.pokemonId === 'number' && pkmn.pokemonId >= 1 && pkmn.pokemonId <= 1025 &&
+        Array.isArray(pkmn.moves) && pkmn.moves.length >= 1 &&
+        pkmn.stats && typeof pkmn.stats === 'object' &&
+        ['hp', 'attack', 'defense', 'spAtk', 'spDef', 'speed'].every(s => typeof pkmn.stats[s] === 'number' && pkmn.stats[s] > 0) &&
+        pkmn.ivs && typeof pkmn.ivs === 'object' &&
+        ['hp', 'attack', 'defense', 'spAtk', 'spDef', 'speed'].every(s => typeof pkmn.ivs[s] === 'number') &&
+        Array.isArray(pkmn.types) && pkmn.types.length > 0 &&
+        typeof pkmn.isShiny === 'boolean' &&
+        pkmn.nature && typeof pkmn.nature === 'string' &&
+        pkmn.growthRate && typeof pkmn.growthRate === 'string';
+
+      if (!isValid) {
+        alert("Pokémon non valido o corrotto!");
+        return;
       }
+
+      const newPkmn = { 
+        ...pkmn, 
+        id: Math.random().toString(36).substr(2, 9),
+        currentHp: pkmn.stats.hp 
+      };
+      
+      addPokemon(newPkmn);
+      alert(`${pkmn.name} importato con successo!`);
+      setCode('');
     } catch (e) {
-      alert("Codice non valido!");
+      alert("Pokémon non valido o corrotto!");
     }
   };
 

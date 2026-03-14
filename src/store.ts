@@ -1,6 +1,7 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
-import { GameState, Pokemon, ScreenName, Medal, Item } from './types';
+import { GameState, Pokemon, ScreenName, Medal, Item, Move } from './types';
+import { api } from './api';
 
 interface GameStore extends GameState {
   setScreen: (screen: ScreenName) => void;
@@ -24,6 +25,12 @@ interface GameStore extends GameState {
   updatePlayTime: (seconds: number) => void;
   gainExp: (pokemonId: string, amount: number) => void;
   resetGame: () => void;
+  confirmEvolution: () => void;
+  dismissEvolution: () => void;
+  dismissNewMove: () => void;
+  replaceMove: (pokemonId: string, oldMoveId: string, newMove: Move) => void;
+  updateSettings: (settings: Partial<GameState['settings']>) => void;
+  recordBattleWin: () => void;
 }
 
 const INITIAL_MEDALS: Medal[] = Array.from({ length: 40 }, (_, i) => ({
@@ -48,6 +55,8 @@ export const useStore = create<GameStore>()(
       pokedex: {},
       stats: { totalCaught: 0, totalBattles: 0, shiniesFound: 0, pokemonReleased: 0 },
       settings: { audio: true, notifications: true },
+      pendingEvolution: null,
+      pendingNewMove: null,
       isFirstRun: true,
       currentScreen: 'START_SCREEN',
 
@@ -88,6 +97,37 @@ export const useStore = create<GameStore>()(
             spDef: Math.floor(((2 * p.baseStats.spDef + p.ivs.spDef) * newLevel) / 100) + 5,
             speed: Math.floor(((2 * p.baseStats.speed + p.ivs.speed) * newLevel) / 100) + 5,
           };
+
+          // Evolution and Move learning check (non-blocking)
+          (async () => {
+            try {
+              const pokemonData = await api.getPokemon(p.pokemonId);
+              const speciesData = await api.getSpecies(p.pokemonId);
+              
+              // Moves check
+              const learnedMoves = await api.getMovesLearnedAtLevel(pokemonData, newLevel);
+              if (learnedMoves.length > 0) {
+                const newMove = learnedMoves[0];
+                const alreadyHas = p.moves.some(m => m.id === newMove.id);
+                if (!alreadyHas) {
+                  if (p.moves.length < 4) {
+                    useStore.getState().updatePokemon(p.id, { moves: [...p.moves, newMove] });
+                  } else {
+                    set({ pendingNewMove: { pokemonId: p.id, move: newMove } });
+                  }
+                }
+              }
+
+              // Evolution check
+              const evolution = await api.getEvolutionTarget(speciesData, newLevel);
+              if (evolution) {
+                set({ pendingEvolution: { pokemonId: p.id, newPokemonId: evolution.newId, newName: evolution.newName } });
+              }
+            } catch (e) {
+              console.error("Error checking for evolution/moves:", e);
+            }
+          })();
+
           return { ...p, level: newLevel, stats: newStats, currentHp: p.currentHp + (newStats.hp - p.stats.hp) };
         });
         return {
@@ -112,6 +152,37 @@ export const useStore = create<GameStore>()(
             spDef: Math.floor(((2 * p.baseStats.spDef + p.ivs.spDef) * newLevel) / 100) + 5,
             speed: Math.floor(((2 * p.baseStats.speed + p.ivs.speed) * newLevel) / 100) + 5,
           };
+
+          // Evolution and Move learning check (non-blocking)
+          (async () => {
+            try {
+              const pokemonData = await api.getPokemon(p.pokemonId);
+              const speciesData = await api.getSpecies(p.pokemonId);
+              
+              // Moves check
+              const learnedMoves = await api.getMovesLearnedAtLevel(pokemonData, newLevel);
+              if (learnedMoves.length > 0) {
+                const newMove = learnedMoves[0];
+                const alreadyHas = p.moves.some(m => m.id === newMove.id);
+                if (!alreadyHas) {
+                  if (p.moves.length < 4) {
+                    useStore.getState().updatePokemon(p.id, { moves: [...p.moves, newMove] });
+                  } else {
+                    set({ pendingNewMove: { pokemonId: p.id, move: newMove } });
+                  }
+                }
+              }
+
+              // Evolution check
+              const evolution = await api.getEvolutionTarget(speciesData, newLevel);
+              if (evolution) {
+                set({ pendingEvolution: { pokemonId: p.id, newPokemonId: evolution.newId, newName: evolution.newName } });
+              }
+            } catch (e) {
+              console.error("Error checking for evolution/moves:", e);
+            }
+          })();
+
           return { ...p, level: newLevel, stats: newStats, currentHp: p.currentHp + (newStats.hp - p.stats.hp) };
         });
         return {
@@ -186,6 +257,37 @@ export const useStore = create<GameStore>()(
               spDef: Math.floor(((2 * p.baseStats.spDef + p.ivs.spDef) * newLevel) / 100) + 5,
               speed: Math.floor(((2 * p.baseStats.speed + p.ivs.speed) * newLevel) / 100) + 5,
             };
+
+            // Evolution and Move learning check (non-blocking)
+            (async () => {
+              try {
+                const pokemonData = await api.getPokemon(p.pokemonId);
+                const speciesData = await api.getSpecies(p.pokemonId);
+                
+                // Moves check
+                const learnedMoves = await api.getMovesLearnedAtLevel(pokemonData, newLevel);
+                if (learnedMoves.length > 0) {
+                  const newMove = learnedMoves[0];
+                  const alreadyHas = p.moves.some(m => m.id === newMove.id);
+                  if (!alreadyHas) {
+                    if (p.moves.length < 4) {
+                      useStore.getState().updatePokemon(p.id, { moves: [...p.moves, newMove] });
+                    } else {
+                      set({ pendingNewMove: { pokemonId: p.id, move: newMove } });
+                    }
+                  }
+                }
+
+                // Evolution check
+                const evolution = await api.getEvolutionTarget(speciesData, newLevel);
+                if (evolution) {
+                  set({ pendingEvolution: { pokemonId: p.id, newPokemonId: evolution.newId, newName: evolution.newName } });
+                }
+              } catch (e) {
+                console.error("Error checking for evolution/moves:", e);
+              }
+            })();
+
             return { ...p, level: newLevel, exp: remainingExp, stats: newStats, currentHp: p.currentHp + (newStats.hp - p.stats.hp) };
           }
           return { ...p, exp: remainingExp };
@@ -196,6 +298,58 @@ export const useStore = create<GameStore>()(
         };
       }),
       updatePlayTime: (seconds) => set((state) => ({ player: { ...state.player, playTime: state.player.playTime + seconds } })),
+      confirmEvolution: () => set((state) => {
+        const { pendingEvolution } = state;
+        if (!pendingEvolution) return {};
+        const { pokemonId, newPokemonId, newName } = pendingEvolution;
+        const updatePkmn = (p: Pokemon) => p.id === pokemonId ? { ...p, pokemonId: newPokemonId, name: newName } : p;
+        return {
+          team: state.team.map(updatePkmn),
+          box: state.box.map(updatePkmn),
+          pendingEvolution: null
+        };
+      }),
+      dismissEvolution: () => set({ pendingEvolution: null }),
+      dismissNewMove: () => set({ pendingNewMove: null }),
+      replaceMove: (pokemonId, oldMoveId, newMove) => set((state) => {
+        const updatePkmn = (p: Pokemon) => {
+          if (p.id !== pokemonId) return p;
+          const moves = [...p.moves];
+          const index = moves.findIndex(m => m.id === oldMoveId);
+          if (index !== -1) {
+            moves[index] = newMove;
+          } else if (moves.length < 4) {
+            moves.push(newMove);
+          }
+          return { ...p, moves };
+        };
+        return {
+          team: state.team.map(updatePkmn),
+          box: state.box.map(updatePkmn),
+          pendingNewMove: null
+        };
+      }),
+      updateSettings: (updates) => set((state) => ({ settings: { ...state.settings, ...updates } })),
+      recordBattleWin: () => set((state) => {
+        let { battlesWon, nextIsBoss } = state.currentBattlePath;
+        if (!nextIsBoss) {
+          battlesWon += 1;
+          if (battlesWon % 10 === 0) {
+            nextIsBoss = true;
+          }
+          return { currentBattlePath: { battlesWon, nextIsBoss } };
+        } else {
+          const nextMedal = state.medals.find(m => !m.isUnlocked);
+          let newMedals = state.medals;
+          if (nextMedal) {
+            newMedals = state.medals.map(m => m.id === nextMedal.id ? { ...m, isUnlocked: true } : m);
+          }
+          return {
+            currentBattlePath: { battlesWon: 0, nextIsBoss: false },
+            medals: newMedals
+          };
+        }
+      }),
       resetGame: () => set({
         player: { name: '', gender: 'M', createdAt: Date.now(), playTime: 0 },
         team: [],

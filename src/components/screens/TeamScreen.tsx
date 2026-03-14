@@ -45,7 +45,10 @@ function PokemonSlot({ pokemon, index, onRemove, onSelect, onUseCandy, onCandyCo
       />
       <div className="flex-1 min-w-0">
         <div className="flex items-center gap-2">
-          <span className="font-black text-sm uppercase truncate">{pokemon.name}</span>
+          <span className="font-black text-sm uppercase truncate">
+            {pokemon.name}
+            {pokemon.isShiny && <span className="ml-1 text-yellow-400">✨</span>}
+          </span>
           <span className="text-[10px] bg-[#e63946] px-2 py-0.5 rounded-full font-bold">Lv.{pokemon.level}</span>
         </div>
         <div className="text-xs text-white/40 mt-1">HP {pokemon.currentHp}/{pokemon.stats.hp}</div>
@@ -63,6 +66,13 @@ function PokemonSlot({ pokemon, index, onRemove, onSelect, onUseCandy, onCandyCo
             /> 
           </div> 
         )} 
+        <div className="flex items-center gap-3 mt-1">
+          <span className="text-white/40 text-[10px] uppercase">[{pokemon.nature}]</span>
+          <span className="text-white/40 text-[10px]">IV: {
+            (pokemon.ivs.hp + pokemon.ivs.attack + pokemon.ivs.defense + 
+             pokemon.ivs.spAtk + pokemon.ivs.spDef + pokemon.ivs.speed)
+          }/186</span>
+        </div>
       </div>
       <div className="flex flex-col gap-2" onClick={e => e.stopPropagation()}> 
         <button onClick={() => onSelect(pokemon)} className="p-2 bg-white/5 rounded-xl"> 

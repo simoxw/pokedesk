@@ -4,7 +4,7 @@ import { motion } from 'motion/react';
 import { ArrowLeft, Copy, Download, Upload, Trash2, Volume2, VolumeX, Bell, BellOff } from 'lucide-react';
 
 export default function OptionsScreen() {
-  const { settings, setScreen, resetGame } = useStore();
+  const { settings, setScreen, resetGame, updateSettings } = useStore();
 
   const handleExport = () => {
     const data = localStorage.getItem('pokedesk-save');
@@ -69,13 +69,13 @@ export default function OptionsScreen() {
               icon={settings.audio ? <Volume2 size={20} /> : <VolumeX size={20} />}
               label="Audio di gioco"
               active={settings.audio}
-              onClick={() => useStore.setState({ settings: { ...settings, audio: !settings.audio } })}
+              onClick={() => updateSettings({ audio: !settings.audio })}
             />
             <OptionToggle 
               icon={settings.notifications ? <Bell size={20} /> : <BellOff size={20} />}
               label="Notifiche PWA"
               active={settings.notifications}
-              onClick={() => useStore.setState({ settings: { ...settings, notifications: !settings.notifications } })}
+              onClick={() => updateSettings({ notifications: !settings.notifications })}
             />
           </div>
         </section>

@@ -112,6 +112,15 @@ export interface GameState {
     audio: boolean;
     notifications: boolean;
   };
+  pendingEvolution: {
+    pokemonId: string;
+    newPokemonId: number;
+    newName: string;
+  } | null;
+  pendingNewMove: {
+    pokemonId: string;
+    move: Move;
+  } | null;
   isFirstRun: boolean;
   currentScreen: ScreenName;
 }

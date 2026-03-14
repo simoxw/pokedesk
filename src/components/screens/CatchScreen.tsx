@@ -38,7 +38,12 @@ export default function CatchScreen() {
       const avgLevel = team.length > 0 ? team.reduce((acc, p) => acc + p.level, 0) / team.length : 5;
       const level = Math.max(5, Math.floor(avgLevel + (Math.random() * 10 - 5)));
       
-      const id = Math.floor(Math.random() * 151) + 1; 
+      const roll = Math.random();
+      const id = roll < 0.50 ? Math.floor(Math.random() * 151) + 1    // Gen 1: 50% 
+                : roll < 0.75 ? Math.floor(Math.random() * 100) + 152  // Gen 2: 25% 
+                : roll < 0.90 ? Math.floor(Math.random() * 135) + 252  // Gen 3: 15% 
+                :               Math.floor(Math.random() * 107) + 387; // Gen 4: 10%
+                
       const data = await api.getPokemon(id);
       const species = await api.getSpecies(id);
       
@@ -171,22 +176,6 @@ export default function CatchScreen() {
         <div className="absolute inset-0" style={{ 
           background: 'linear-gradient(180deg, #1a1a4e 0%, #2d3a8c 30%, #5b8dd9 60%, #87ceeb 80%, #b8e0f0 100%)' 
         }} /> 
-
-        {/* Stelle in cielo */} 
-        {Array.from({ length: 18 }).map((_, i) => ( 
-          <motion.div 
-            key={i} 
-            animate={{ opacity: [0.2, 0.8, 0.2], scale: [0.8, 1.2, 0.8] }} 
-            transition={{ duration: 2 + Math.random() * 3, repeat: Infinity, delay: Math.random() * 4 }} 
-            className="absolute rounded-full bg-white" 
-            style={{ 
-              width: Math.random() * 3 + 1, 
-              height: Math.random() * 3 + 1, 
-              left: `${Math.random() * 100}%`, 
-              top: `${Math.random() * 45}%`, 
-            }} 
-          /> 
-        ))} 
 
         {/* Luna */} 
         <div className="absolute top-6 right-8 w-10 h-10 rounded-full bg-yellow-100 shadow-[0_0_20px_8px_rgba(255,255,200,0.3)]" /> 

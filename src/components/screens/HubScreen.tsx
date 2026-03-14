@@ -74,6 +74,46 @@ export default function HubScreen() {
           </p>
         </div>
 
+        {/* Team Preview */}
+        {team.length > 0 && (
+          <div className="w-full max-w-sm bg-[#1a1a2e]/60 backdrop-blur-md rounded-2xl p-3 border border-white/5">
+            <div className="flex justify-around gap-2">
+              {team.map(pkmn => (
+                <div key={pkmn.id} className="flex flex-col items-center gap-1 flex-1 min-w-0">
+                  <div className="relative">
+                    <img 
+                      src={`https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/${pkmn.pokemonId}.png`} 
+                      alt={pkmn.name}
+                      className="w-10 h-10 object-contain"
+                    />
+                    {pkmn.status && (
+                      <span className={`absolute -top-1 -right-1 text-[7px] font-black px-1 py-0.5 rounded shadow-sm ${
+                        pkmn.status === 'SLP' ? 'bg-purple-500' :
+                        pkmn.status === 'PSN' ? 'bg-purple-700' :
+                        pkmn.status === 'BRN' ? 'bg-orange-500' :
+                        pkmn.status === 'PAR' ? 'bg-yellow-400 text-black' :
+                        pkmn.status === 'FRZ' ? 'bg-blue-400' : ''
+                      }`}>{pkmn.status}</span>
+                    )}
+                  </div>
+                  <span className="text-[9px] font-bold uppercase truncate w-full text-center text-white/70">
+                    {pkmn.name.slice(0, 8)}
+                  </span>
+                  <div className="w-full bg-white/10 rounded-full h-[3px] mt-0.5 overflow-hidden">
+                    <div 
+                      className={`h-full transition-all duration-500 ${
+                        (pkmn.currentHp / pkmn.stats.hp) > 0.5 ? 'bg-emerald-400' : 
+                        (pkmn.currentHp / pkmn.stats.hp) > 0.2 ? 'bg-yellow-400' : 'bg-red-500'
+                      }`}
+                      style={{ width: `${(pkmn.currentHp / pkmn.stats.hp) * 100}%` }}
+                    />
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
         <div className="flex flex-col gap-4 w-full max-w-xs">
           <motion.button
             whileHover={{ scale: 1.05 }}
