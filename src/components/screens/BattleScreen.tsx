@@ -616,11 +616,14 @@ export default function BattleScreen() {
         addLog(`${playerPkmn.name} guadagna ${exp} ESP!`);
         const levelBefore = playerPkmn.level;
         gainExp(playerPkmn.id, exp);
-        // Leggi lo stato aggiornato direttamente dallo store 
-        const newLevel = (useStore.getState() as any).team.find((p: any) => p.id === playerPkmn.id)?.level;
-        if (newLevel && newLevel > levelBefore) {
-          addLog(`⬆️ ${playerPkmn.name} è salito al livello ${newLevel}!`);
-        }
+        
+        // Controllo immediato del nuovo livello dallo store aggiornato
+        setTimeout(() => {
+          const freshPkmn = useStore.getState().team.find((p: any) => p.id === playerPkmn.id);
+          if (freshPkmn && freshPkmn.level > levelBefore) {
+            addLog(`🎊 LIVELLO SUPERATO! ${freshPkmn.name} è ora al Lv. ${freshPkmn.level}!`);
+          }
+        }, 100);
         addCoins(Math.floor(50 + (enemy?.level ?? 5) * 2)); 
         incrementStat('totalBattles');
         team.forEach(p => { 
@@ -702,11 +705,14 @@ export default function BattleScreen() {
         addLog(`${playerPkmn.name} guadagna ${exp} ESP!`);
         const levelBefore = playerPkmn.level;
         gainExp(playerPkmn.id, exp);
-        // Leggi lo stato aggiornato direttamente dallo store 
-        const newLevel = (useStore.getState() as any).team.find((p: any) => p.id === playerPkmn.id)?.level;
-        if (newLevel && newLevel > levelBefore) {
-          addLog(`⬆️ ${playerPkmn.name} è salito al livello ${newLevel}!`);
-        }
+        
+        // Controllo immediato del nuovo livello dallo store aggiornato
+        setTimeout(() => {
+          const freshPkmn = useStore.getState().team.find((p: any) => p.id === playerPkmn.id);
+          if (freshPkmn && freshPkmn.level > levelBefore) {
+            addLog(`🎊 LIVELLO SUPERATO! ${freshPkmn.name} è ora al Lv. ${freshPkmn.level}!`);
+          }
+        }, 100);
         addCoins(Math.floor(50 + (enemy?.level ?? 5) * 2)); 
         incrementStat('totalBattles');
         team.forEach(p => { 

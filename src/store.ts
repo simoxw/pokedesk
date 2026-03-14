@@ -236,9 +236,9 @@ export const useStore = create<GameStore>()(
       gainExp: (id, amount) => set((state) => {
         const expTable: Record<string, (lvl: number) => number> = {
           'slow': (l) => Math.floor(5 * l ** 3 / 4),
-          'medium-slow': (l) => l < 2 ? 0 : Math.max(0, Math.floor(6/5 * l**3 - 15*l**2 + 100*l - 140)),
-          'medium': (l) => Math.floor(l ** 3),
-          'fast': (l) => Math.floor(4 * l ** 3 / 5),
+          'medium-slow': (l) => Math.floor((6/5) * Math.pow(l, 3) - 15 * Math.pow(l, 2) + 100 * l - 140),
+          'medium': (l) => Math.floor(Math.pow(l, 3)),
+          'fast': (l) => Math.floor(4 * Math.pow(l, 3) / 5),
         };
         const updateTeamOrBox = (list: any[]) => list.map(p => {
           if (p.id !== id) return p;
