@@ -17,6 +17,30 @@ export default function OptionsScreen() {
     a.click();
   };
 
+  const handleImport = () => {
+    const input = document.createElement('input');
+    input.type = 'file';
+    input.accept = '.json';
+    input.onchange = (e: any) => {
+      const file = e.target.files[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = (ev) => {
+        try {
+          const text = ev.target?.result as string;
+          JSON.parse(text); // valida che sia JSON
+          localStorage.setItem('pokedesk-save', text);
+          alert('Salvataggio importato! Ricarica la pagina.');
+          window.location.reload();
+        } catch {
+          alert('File non valido!');
+        }
+      };
+      reader.readAsText(file);
+    };
+    input.click();
+  };
+
   const handleReset = () => {
     const confirm1 = confirm("Sei sicuro di voler resettare la partita? Perderai tutti i progressi.");
     if (confirm1) {
@@ -68,7 +92,7 @@ export default function OptionsScreen() {
             </button>
             <button 
               className="bg-[#1a1a2e] border border-white/5 p-4 rounded-2xl flex flex-col items-center gap-2"
-              onClick={() => alert("Funzione non ancora disponibile")}
+              onClick={handleImport}
             >
               <Upload size={24} className="text-emerald-400" />
               <span className="text-xs font-bold">IMPORT JSON</span>
