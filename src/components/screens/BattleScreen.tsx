@@ -4,12 +4,12 @@ import { api } from '../../api';
 import { BattleEngine } from '../../BattleEngine';
 import { CatchEngine } from '../../CatchEngine';
 import { motion, AnimatePresence } from 'motion/react';
-import { Sword, Backpack, ArrowLeftRight, Shield, ArrowLeft } from 'lucide-react';
+import { Sword, Backpack, ArrowLeftRight, Shield, ArrowLeft, X, Heart } from 'lucide-react';
 import HPBar from '../ui/HPBar';
 import TypeBadge from '../ui/TypeBadge';
 
 export default function BattleScreen() {
-  const { team, setScreen, incrementStat, addCoins, updatePokemon } = useStore();
+  const { team, setScreen, incrementStat, addCoins, updatePokemon, inventory, useItem } = useStore();
   const [activeIdx, setActiveIdx] = useState(0);
   const [enemy, setEnemy] = useState<any>(null);
   const [loading, setLoading] = useState(true);
@@ -17,6 +17,9 @@ export default function BattleScreen() {
   const [logs, setLogs] = useState<string[]>(['Inizia la battaglia!']);
   const [isFinished, setIsFinished] = useState(false);
   const [isAnimating, setIsAnimating] = useState(false);
+  const [showTeamOverlay, setShowTeamOverlay] = useState(false);
+  const [showBagOverlay, setShowBagOverlay] = useState(false);
+  const [attackAnim, setAttackAnim] = useState(false);
 
   const playerPkmn = team[activeIdx];
 
@@ -57,6 +60,29 @@ export default function BattleScreen() {
     initBattle();
   }, []);
 
+  const handleSwitchPokemon = (idx: number) => {
+    if (idx === activeIdx || !team[idx] || team[idx].currentHp <= 0) return;
+    setActiveIdx(idx);
+    addLog(`Vai ${team[idx].name}!`);
+    setShowTeamOverlay(false);
+    setTurn('enemy');
+  };
+
+  const handleUseItem = (itemId: string, itemName: string) => {
+    const pkm = team[activeIdx];
+    if (!pkm) return;
+    let healed = 0;
+    if (itemId === 'potion') healed = 20;
+    if (itemId === 'superpotion') healed = 50;
+    if (itemId === 'hyperpotion') healed = 200;
+    const newHp = Math.min(pkm.stats.hp, pkm.currentHp + healed);
+    updatePokemon(pkm.id, { currentHp: newHp });
+    useItem(itemId);
+    addLog(`Hai usato ${itemName} su ${pkm.name}!`);
+    setShowBagOverlay(false);
+    setTurn('enemy');
+  };
+
   const addLog = (msg: string) => {
     setLogs(prev => [msg, ...prev].slice(0, 5));
   };
@@ -64,6 +90,8 @@ export default function BattleScreen() {
   const handleMove = async (move: any) => {
     if (turn !== 'player' || isFinished || isAnimating) return;
     setIsAnimating(true);
+    setAttackAnim(true);
+    setTimeout(() => setAttackAnim(false), 400);
 
     // Player Turn
     const isCrit = Math.random() < 0.06;
@@ -116,115 +144,146 @@ export default function BattleScreen() {
     setIsAnimating(false);
   };
 
-  if (loading || !enemy) return <div className="h-full flex items-center justify-center bg-[#0f0f1a]">Inizializzazione lotta...</div>;
+  if (loading || !enemy) return (
+    <div className="h-full flex items-center justify-center bg-[#0f0f1a]">
+      <div className="text-white/50 animate-pulse font-bold">Caricamento battaglia...</div>
+    </div>
+  );
 
   return (
-    <div className="h-full flex flex-col bg-[#0f0f1a]">
-      {/* Battle Scene */}
-      <div className="relative h-2/3 overflow-hidden bg-gradient-to-b from-sky-900 to-sky-600">
-        {/* Background Elements */}
-        <div className="absolute bottom-0 left-0 right-0 h-1/3 bg-green-800/40 skew-y-2 origin-bottom-left" />
-        
-        {/* Enemy Info */}
-        <div className="absolute top-8 right-4 z-10 bg-black/40 backdrop-blur-md p-3 rounded-xl border border-white/10 w-48 shadow-2xl">
-          <div className="flex justify-between items-center mb-1">
-            <span className="font-bold text-sm uppercase truncate">{enemy.name}</span>
-            <span className="text-xs font-bold">Lv.{enemy.level}</span>
+    <div className="h-full flex flex-col relative overflow-hidden bg-[#1a1a2e]">
+
+      {/* ARENA */}
+      <div className="flex-1 relative bg-gradient-to-b from-[#1a3a5c] to-[#2d5a3d] overflow-hidden">
+
+        {/* Enemy Pokemon */}
+        <div className="absolute top-6 right-6 left-6">
+          <div className="bg-black/40 backdrop-blur rounded-2xl p-3 mb-3 flex items-center justify-between">
+            <div>
+              <div className="flex items-center gap-2">
+                <span className="font-black text-sm uppercase">{enemy?.name}</span>
+                <div className="flex gap-1">
+                  {enemy?.types?.map((t: string) => (
+                    <TypeBadge key={t} type={t} small />
+                  ))}
+                </div>
+              </div>
+              <div className="text-[10px] text-white/50 font-bold mt-0.5">Lv. {enemy?.level}</div>
+              <div className="flex items-center gap-2 mt-1.5">
+                <div className="flex-1 bg-white/10 rounded-full h-2">
+                  <div
+                    className="h-2 rounded-full transition-all duration-500"
+                    style={{
+                      width: `${((enemy?.currentHp ?? 0) / (enemy?.maxHp ?? 1)) * 100}%`,
+                      backgroundColor: (enemy?.currentHp / enemy?.maxHp) > 0.5 ? '#4ade80' : (enemy?.currentHp / enemy?.maxHp) > 0.2 ? '#facc15' : '#ef4444'
+                    }}
+                  />
+                </div>
+                <span className="text-[10px] font-bold text-white/70">{enemy?.currentHp}/{enemy?.maxHp}</span>
+              </div>
+            </div>
           </div>
-          <HPBar current={enemy.currentHp} max={enemy.maxHp} />
-          <div className="text-[10px] text-right mt-1 opacity-50 font-bold">{enemy.currentHp} / {enemy.maxHp}</div>
+
+          <motion.img
+            animate={{ y: [0, -6, 0] }}
+            transition={{ duration: 2, repeat: Infinity }}
+            src={enemy?.sprites?.front_default}
+            className="w-32 h-32 object-contain mx-auto drop-shadow-2xl"
+          />
         </div>
 
-        {/* Enemy Sprite */}
-        <motion.img
-          initial={{ x: 100, opacity: 0 }}
-          animate={{ x: 0, opacity: 1, y: [0, -5, 0] }}
-          transition={{ duration: 0.5, y: { duration: 2, repeat: Infinity } }}
-          src={enemy.sprites.front_default}
-          className="absolute top-16 right-12 w-44 h-44 object-contain drop-shadow-[0_20px_50px_rgba(0,0,0,0.5)]"
-        />
-
-        {/* Player Info */}
-        <div className="absolute bottom-16 left-4 z-10 bg-black/40 backdrop-blur-md p-3 rounded-xl border border-white/10 w-48 shadow-2xl">
-          <div className="flex justify-between items-center mb-1">
-            <span className="font-bold text-sm uppercase truncate">{playerPkmn.name}</span>
-            <span className="text-xs font-bold">Lv.{playerPkmn.level}</span>
-          </div>
-          <HPBar current={playerPkmn.currentHp} max={playerPkmn.stats.hp} />
-          <div className="text-[10px] text-right mt-1 opacity-50 font-bold">
-            {playerPkmn.currentHp} / {playerPkmn.stats.hp}
+        {/* Player Pokemon */}
+        <div className="absolute bottom-4 left-4 right-4 flex items-end gap-4">
+          <motion.img
+            animate={attackAnim ? { x: [0, 15, 0] } : { x: 0 }}
+            transition={{ duration: 0.3 }}
+            src={`https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/back/${playerPkmn?.isShiny ? 'shiny/' : ''}${playerPkmn?.pokemonId}.png`}
+            className="w-28 h-28 object-contain drop-shadow-2xl"
+          />
+          <div className="flex-1 bg-black/40 backdrop-blur rounded-2xl p-3">
+            <div className="flex items-center justify-between">
+              <span className="font-black text-sm uppercase">{playerPkmn?.name}</span>
+              <span className="text-[10px] bg-[#e63946] px-2 py-0.5 rounded-full font-bold">Lv.{playerPkmn?.level}</span>
+            </div>
+            <div className="flex items-center gap-2 mt-1.5">
+              <div className="flex-1 bg-white/10 rounded-full h-2">
+                <div
+                  className="h-2 rounded-full transition-all duration-500"
+                  style={{
+                    width: `${((playerPkmn?.currentHp ?? 0) / (playerPkmn?.stats?.hp ?? 1)) * 100}%`,
+                    backgroundColor: (playerPkmn?.currentHp / playerPkmn?.stats?.hp) > 0.5 ? '#4ade80' : (playerPkmn?.currentHp / playerPkmn?.stats?.hp) > 0.2 ? '#facc15' : '#ef4444'
+                  }}
+                />
+              </div>
+              <span className="text-[10px] font-bold text-white/70">{playerPkmn?.currentHp}/{playerPkmn?.stats?.hp} HP</span>
+            </div>
           </div>
         </div>
-
-        {/* Player Sprite */}
-        <motion.img
-          initial={{ x: -100, opacity: 0 }}
-          animate={{ x: 0, opacity: 1 }}
-          src={`https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/back/${playerPkmn.pokemonId}.png`}
-          className="absolute bottom-4 left-8 w-56 h-56 object-contain drop-shadow-[0_20px_50px_rgba(0,0,0,0.5)]"
-        />
       </div>
 
-      {/* Controls */}
-      <div className="flex-1 bg-[#1a1a2e] p-4 flex flex-col gap-4 border-t-4 border-[#e63946]">
+      {/* LOG + CONTROLLI */}
+      <div className="bg-[#0f0f1a] border-t border-white/5 p-4 space-y-3">
+
+        {/* Log */}
+        <div className="bg-[#1a1a2e] rounded-xl px-4 py-2 min-h-[36px] flex items-center">
+          <p className="text-sm font-bold text-white/80">{logs[0]}</p>
+        </div>
+
         {isFinished ? (
-          <div className="flex-1 flex flex-col items-center justify-center gap-4">
-            <div className="bg-black/20 p-4 rounded-2xl text-center w-full mb-4">
-              <p className="text-lg font-bold italic opacity-70">"{logs[0]}"</p>
-            </div>
-            <button 
-              onClick={() => setScreen('HUB_SCREEN')}
-              className="w-full bg-[#e63946] py-4 rounded-2xl font-black text-xl shadow-xl active:scale-95 transition-transform"
-            >
-              CONTINUA
-            </button>
-          </div>
+          <button
+            onClick={() => setScreen('HUB_SCREEN')}
+            className="w-full bg-[#e63946] py-4 rounded-2xl font-black text-lg"
+          >
+            TORNA ALL'HUB
+          </button>
         ) : (
           <>
-            <div className="bg-black/40 rounded-xl p-3 h-16 flex items-center mb-2">
-              <p className="text-sm font-bold leading-tight italic">{logs[0]}</p>
-            </div>
-            <div className="grid grid-cols-2 gap-2 flex-1">
-              {playerPkmn.moves.map((move, i) => (
+            {/* Mosse */}
+            <div className="grid grid-cols-2 gap-2">
+              {playerPkmn?.moves?.map((move: any) => (
                 <button
-                  key={i}
-                  disabled={turn !== 'player' || isAnimating}
+                  key={move.id}
                   onClick={() => handleMove(move)}
-                  className="bg-[#252545] border border-white/5 rounded-xl p-3 flex flex-col items-start justify-between active:bg-[#e63946]/20 disabled:opacity-50 transition-colors"
+                  disabled={turn !== 'player' || isAnimating || move.pp <= 0}
+                  className="bg-[#1a1a2e] border border-white/10 rounded-xl p-3 flex flex-col items-start justify-between active:bg-[#e63946]/20 disabled:opacity-40 transition-colors"
                 >
                   <div className="flex justify-between w-full items-center">
                     <span className="font-black text-xs uppercase truncate">{move.name}</span>
                     <TypeBadge type={move.type} small />
                   </div>
-                  <div className="flex justify-between w-full items-center mt-2">
+                  <div className="flex justify-between w-full items-center mt-1">
                     <span className="text-[10px] opacity-50 uppercase font-bold">{move.category}</span>
                     <span className="text-[10px] font-bold">PP {move.pp}/{move.maxPp}</span>
                   </div>
                 </button>
               ))}
-              {Array.from({ length: 4 - playerPkmn.moves.length }).map((_, i) => (
-                <div key={i} className="bg-[#252545]/30 border border-dashed border-white/5 rounded-xl flex items-center justify-center text-[10px] opacity-20 italic">
+              {Array.from({ length: 4 - (playerPkmn?.moves?.length ?? 0) }).map((_, i) => (
+                <div key={i} className="bg-[#1a1a2e]/30 border border-dashed border-white/5 rounded-xl flex items-center justify-center text-[10px] opacity-20 italic h-16">
                   Slot Vuoto
                 </div>
               ))}
             </div>
+
+            {/* Bottoni azione */}
             <div className="flex gap-2">
-              <button 
+              <button
                 disabled={isAnimating}
                 onClick={() => setScreen('HUB_SCREEN')}
-                className="flex-1 bg-red-600/20 border border-red-500/30 py-3 rounded-xl flex items-center justify-center gap-2 text-[10px] font-bold uppercase tracking-wider text-red-400"
+                className="flex-1 bg-red-600/20 border border-red-500/30 py-3 rounded-xl flex items-center justify-center gap-1 text-[10px] font-black uppercase text-red-400"
               >
                 <ArrowLeft size={14} /> Fuga
               </button>
-              <button 
+              <button
                 disabled={isAnimating}
-                className="flex-1 bg-indigo-600/20 border border-indigo-500/30 py-3 rounded-xl flex items-center justify-center gap-2 text-[10px] font-bold uppercase tracking-wider"
+                onClick={() => setShowTeamOverlay(true)}
+                className="flex-1 bg-indigo-600/20 border border-indigo-500/30 py-3 rounded-xl flex items-center justify-center gap-1 text-[10px] font-black uppercase"
               >
                 <ArrowLeftRight size={14} /> Squadra
               </button>
-              <button 
+              <button
                 disabled={isAnimating}
-                className="flex-1 bg-emerald-600/20 border border-emerald-500/30 py-3 rounded-xl flex items-center justify-center gap-2 text-[10px] font-bold uppercase tracking-wider"
+                onClick={() => setShowBagOverlay(true)}
+                className="flex-1 bg-emerald-600/20 border border-emerald-500/30 py-3 rounded-xl flex items-center justify-center gap-1 text-[10px] font-black uppercase"
               >
                 <Backpack size={14} /> Zaino
               </button>
@@ -232,6 +291,106 @@ export default function BattleScreen() {
           </>
         )}
       </div>
+
+      {/* OVERLAY SQUADRA */}
+      <AnimatePresence>
+        {showTeamOverlay && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="absolute inset-0 bg-black/80 backdrop-blur-sm z-50 flex flex-col justify-end"
+          >
+            <motion.div
+              initial={{ y: '100%' }}
+              animate={{ y: 0 }}
+              exit={{ y: '100%' }}
+              className="bg-[#1a1a2e] rounded-t-3xl p-6 space-y-3"
+            >
+              <div className="flex items-center justify-between mb-2">
+                <h3 className="font-black text-lg">CAMBIA POKÉMON</h3>
+                <button onClick={() => setShowTeamOverlay(false)} className="p-2 bg-white/10 rounded-xl">
+                  <X size={18} />
+                </button>
+              </div>
+              {team.map((p, idx) => (
+                <button
+                  key={p.id}
+                  onClick={() => handleSwitchPokemon(idx)}
+                  disabled={idx === activeIdx || p.currentHp <= 0}
+                  className={`w-full flex items-center gap-4 p-3 rounded-2xl border transition-all disabled:opacity-40 ${
+                    idx === activeIdx ? 'border-[#e63946] bg-[#e63946]/10' : 'border-white/10 bg-white/5 active:bg-white/10'
+                  }`}
+                >
+                  <img
+                    src={`https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/${p.pokemonId}.png`}
+                    className="w-12 h-12 object-contain"
+                  />
+                  <div className="flex-1 text-left">
+                    <div className="font-black text-sm uppercase">{p.name}</div>
+                    <div className="flex items-center gap-2 mt-1">
+                      <div className="flex-1 bg-white/10 rounded-full h-1.5">
+                        <div
+                          className="h-1.5 rounded-full bg-green-400"
+                          style={{ width: `${(p.currentHp / p.stats.hp) * 100}%` }}
+                        />
+                      </div>
+                      <span className="text-[10px] text-white/50">{p.currentHp}/{p.stats.hp}</span>
+                    </div>
+                  </div>
+                  {idx === activeIdx && <span className="text-[10px] text-[#e63946] font-bold">IN CAMPO</span>}
+                </button>
+              ))}
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* OVERLAY ZAINO */}
+      <AnimatePresence>
+        {showBagOverlay && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="absolute inset-0 bg-black/80 backdrop-blur-sm z-50 flex flex-col justify-end"
+          >
+            <motion.div
+              initial={{ y: '100%' }}
+              animate={{ y: 0 }}
+              exit={{ y: '100%' }}
+              className="bg-[#1a1a2e] rounded-t-3xl p-6 space-y-3"
+            >
+              <div className="flex items-center justify-between mb-2">
+                <h3 className="font-black text-lg">ZAINO</h3>
+                <button onClick={() => setShowBagOverlay(false)} className="p-2 bg-white/10 rounded-xl">
+                  <X size={18} />
+                </button>
+              </div>
+              {[
+                { id: 'potion', name: 'Pozione', heal: 20, icon: '🧪' },
+                { id: 'superpotion', name: 'Superpozione', heal: 50, icon: '🧪' },
+                { id: 'hyperpotion', name: 'Iperpozione', heal: 200, icon: '💊' },
+              ].map(item => (
+                <button
+                  key={item.id}
+                  onClick={() => handleUseItem(item.id, item.name)}
+                  disabled={!inventory[item.id] || inventory[item.id] <= 0}
+                  className="w-full flex items-center gap-4 p-3 rounded-2xl border border-white/10 bg-white/5 active:bg-white/10 disabled:opacity-30 transition-all"
+                >
+                  <span className="text-3xl">{item.icon}</span>
+                  <div className="flex-1 text-left">
+                    <div className="font-black text-sm">{item.name}</div>
+                    <div className="text-[10px] text-white/50">Ripristina {item.heal} HP</div>
+                  </div>
+                  <span className="text-sm font-bold text-white/60">x{inventory[item.id] ?? 0}</span>
+                </button>
+              ))}
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
     </div>
   );
 }
