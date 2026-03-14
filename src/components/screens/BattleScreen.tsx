@@ -22,42 +22,26 @@ export default function BattleScreen() {
   const [showBagOverlay, setShowBagOverlay] = useState(false);
   const [attackAnim, setAttackAnim] = useState(false);
   const [statChanges, setStatChanges] = useState<{ label: string; positive: boolean } | null>(null);
-  const [playerStages, setPlayerStages] = useState({ attack: 0, defense: 0, spAtk: 0, spDef: 0, speed: 0 }); 
-  const [enemyStages, setEnemyStages] = useState({ attack: 0, defense: 0, spAtk: 0, spDef: 0, speed: 0 }); 
+  const [playerStages, setPlayerStages] = useState<Record<string, number>>({ attack: 0, defense: 0, spAtk: 0, spDef: 0, speed: 0 }); 
+  const [enemyStages, setEnemyStages] = useState<Record<string, number>>({ attack: 0, defense: 0, spAtk: 0, spDef: 0, speed: 0 }); 
   const [activeMoveTooltip, setActiveMoveTooltip] = useState<any>(null);
   const tooltipTimeout = React.useRef<any>(null);
 
   const playerPkmn = team[activeIdx];
   const isBoss = currentBattlePath.nextIsBoss;
 
-  const applyStageMultiplier = (baseStat: number, stage: number) => { 
-    const mult = stage >= 0 ? (2 + stage) / 2 : 2 / (2 - stage); 
-    return Math.floor(baseStat * mult); 
+  const applyStage = (base: number, stage: number) => { 
+    const s = Math.max(-6, Math.min(6, stage)); 
+    return Math.floor(base * (s >= 0 ? (2 + s) / 2 : 2 / (2 - s))); 
   }; 
 
-  const getEffectivePlayer = () => ({
-    ...playerPkmn,
-    stats: {
-      ...playerPkmn.stats,
-      attack: applyStageMultiplier(playerPkmn.stats.attack, playerStages.attack),
-      defense: applyStageMultiplier(playerPkmn.stats.defense, playerStages.defense),
-      spAtk: applyStageMultiplier(playerPkmn.stats.spAtk, playerStages.spAtk),
-      spDef: applyStageMultiplier(playerPkmn.stats.spDef, playerStages.spDef),
-      speed: applyStageMultiplier(playerPkmn.stats.speed, playerStages.speed),
-    }
-  });
-
-  const getEffectiveEnemy = () => ({
-    ...enemy,
-    stats: {
-      ...enemy.stats,
-      attack: applyStageMultiplier(enemy.stats.attack, enemyStages.attack),
-      defense: applyStageMultiplier(enemy.stats.defense, enemyStages.defense),
-      spAtk: applyStageMultiplier(enemy.stats.spAtk, enemyStages.spAtk),
-      spDef: applyStageMultiplier(enemy.stats.spDef, enemyStages.spDef),
-      speed: applyStageMultiplier(enemy.stats.speed, enemyStages.speed),
-    }
-  });
+  const isImmuneToStatus = (pokemonTypes: string[], status: string): boolean => { 
+    if (status === 'BRN' && pokemonTypes.includes('fire')) return true; 
+    if (status === 'PAR' && pokemonTypes.includes('electric')) return true; 
+    if (status === 'FRZ' && pokemonTypes.includes('ice')) return true; 
+    if (status === 'PSN' && (pokemonTypes.includes('poison') || pokemonTypes.includes('steel'))) return true; 
+    return false; 
+  }; 
 
   useEffect(() => {
     const initBattle = async () => {
@@ -115,8 +99,17 @@ export default function BattleScreen() {
     await new Promise(r => setTimeout(r, 800));
 
     const validMoves = enemy.moves.filter((m: any) => m.pp > 0 && m.category !== 'status');
-    const enemyMove = validMoves.length > 0 
-      ? validMoves[Math.floor(Math.random() * validMoves.length)] 
+    
+    // Costruisci pool pesato: mosse super efficaci 3x, normali 1x, non efficaci 0.5x 
+    const movePool: any[] = []; 
+    validMoves.forEach((m: any) => { 
+      const eff = BattleEngine.getTypeEffectiveness(m.type, currentPlayerPkmn.types); 
+      const weight = eff > 1 ? 3 : eff < 1 ? 1 : 2; 
+      for (let i = 0; i < weight; i++) movePool.push(m); 
+    }); 
+    
+    const enemyMove = movePool.length > 0 
+      ? movePool[Math.floor(Math.random() * movePool.length)] 
       : { name: 'Lotta', type: 'normal', power: 40, category: 'physical', pp: 1, maxPp: 1, id: '0', accuracy: 100, priority: 0, description: '' };
 
     // PAR: 25% skip 
@@ -159,8 +152,12 @@ export default function BattleScreen() {
 
     // Applica effetto di stato nemico 
     if (enemyMove.statusEffect && !currentPlayerPkmn.status && Math.random() * 100 < (enemyMove.effectChance || 0)) {
-      updatePokemon(currentPlayerPkmn.id, { status: enemyMove.statusEffect });
-      addLog(`${currentPlayerPkmn.name} è ora ${enemyMove.statusEffect}!`);
+      if (isImmuneToStatus(currentPlayerPkmn.types, enemyMove.statusEffect)) { 
+        addLog(`${currentPlayerPkmn.name} è immune a ${enemyMove.statusEffect}!`); 
+      } else { 
+        updatePokemon(currentPlayerPkmn.id, { status: enemyMove.statusEffect }); 
+        addLog(`${currentPlayerPkmn.name} è ora ${enemyMove.statusEffect}!`); 
+      } 
     }
 
     const newPlayerHp = Math.max(0, currentPlayerPkmn.currentHp - enemyDamage);
@@ -372,7 +369,8 @@ export default function BattleScreen() {
         addLog(`${playerPkmn.name} sta dormendo profondamente...`); 
         await new Promise(r => setTimeout(r, 800)); 
         setTurn('enemy'); 
-        await executeEnemyTurn(useStore.getState().team.find((p: any) => p.id === playerPkmn.id) ?? playerPkmn); 
+        const fresh = (useStore.getState() as any).team.find((p: any) => p.id === playerPkmn.id) ?? playerPkmn; 
+        await executeEnemyTurn(fresh); 
         setIsAnimating(false); 
         return; 
       } 
@@ -397,7 +395,7 @@ export default function BattleScreen() {
 
     if (playerPkmn.status === 'PAR' && Math.random() < 0.25) { 
       setIsAnimating(true); 
-      addLog(`${playerPkmn.name} è paralizzato e non riesce a muoversi!`); 
+      addLog(`${playerPkmn.name} è paralizzato!`); 
       await new Promise(r => setTimeout(r, 800)); 
       setTurn('enemy'); 
       await executeEnemyTurn(playerPkmn); 
@@ -406,14 +404,13 @@ export default function BattleScreen() {
     } 
     // --- FINE CHECK STATUS --- 
 
-    // Controllo accuratezza 
-    if (move.category !== 'status' || move.accuracy < 100) { 
-      const acc = move.accuracy ?? 100; 
-      if (Math.random() * 100 >= acc) { 
-        setIsAnimating(true);
+    // Accuracy Check
+    if (move.category !== 'status' && move.accuracy && move.accuracy < 100) { 
+      if (Math.random() * 100 >= move.accuracy) { 
+        setIsAnimating(true); 
         addLog(`${playerPkmn.name} usa ${move.name}!`); 
-        addLog('Ma ha mancato il bersaglio!'); 
-        await new Promise(r => setTimeout(r, 800));
+        addLog('Ma ha mancato!'); 
+        await new Promise(r => setTimeout(r, 800)); 
         setTurn('enemy'); 
         await executeEnemyTurn(playerPkmn); 
         setIsAnimating(false); 
@@ -432,28 +429,62 @@ export default function BattleScreen() {
     updatePokemon(playerPkmn.id, { moves: updatedMoves });
 
     // Player Turn — order by speed 
-    const effectivePlayer = getEffectivePlayer();
-    const effectiveEnemy = getEffectiveEnemy();
-    const playerFirst = effectivePlayer.stats.speed >= (effectiveEnemy?.stats?.speed ?? 0) || move.priority > 0;
+    const effPlayer = { 
+      ...playerPkmn, 
+      stats: { 
+        ...playerPkmn.stats, 
+        attack: applyStage(playerPkmn.stats.attack, playerStages.attack), 
+        spAtk: applyStage(playerPkmn.stats.spAtk, playerStages.spAtk), 
+        defense: applyStage(playerPkmn.stats.defense, playerStages.defense), 
+        spDef: applyStage(playerPkmn.stats.spDef, playerStages.spDef), 
+      } 
+    }; 
+    const effEnemy = { 
+      ...enemy, 
+      stats: { 
+        ...enemy.stats, 
+        attack: applyStage(enemy.stats.attack, enemyStages.attack), 
+        spAtk: applyStage(enemy.stats.spAtk, enemyStages.spAtk), 
+        defense: applyStage(enemy.stats.defense, enemyStages.defense), 
+        spDef: applyStage(enemy.stats.spDef, enemyStages.spDef), 
+      } 
+    }; 
+
+    const playerFirst = effPlayer.stats.speed >= (effEnemy?.stats?.speed ?? 0) || move.priority > 0;
 
     if (playerFirst) {
       const isCrit = Math.random() < 0.06;
-      const damage = BattleEngine.calculateDamage(effectivePlayer as any, effectiveEnemy as any, move, isCrit);
-      const typeMultiplier = BattleEngine.getTypeEffectiveness(move.type, effectiveEnemy.types);
+      const damage = BattleEngine.calculateDamage(effPlayer as any, effEnemy as any, move, isCrit);
+      const typeMultiplier = BattleEngine.getTypeEffectiveness(move.type, effEnemy.types);
       const effLabel = BattleEngine.getTypeEffectivenessLabel(typeMultiplier);
       const newEnemyHp = Math.max(0, (enemy?.currentHp ?? 0) - damage);
 
       addLog(`${playerPkmn.name} usa ${move.name}!`);
+      
+      // Status e Healing logica
       const { newStatus, message } = applyPlayerMoveEffects(move, enemy);
       if (message) addLog(message);
 
       if (isCrit) addLog('Brutto colpo!');
       if (effLabel) addLog(effLabel);
 
+      // Applica stato con immunità
+      let finalStatus = enemy.status;
+      if (newStatus && !enemy.status) {
+        if (isImmuneToStatus(enemy.types, newStatus)) {
+          addLog(`${enemy.name} è immune a ${newStatus}!`);
+        } else {
+          const chance = (!move.effectChance || move.effectChance === 0) ? 100 : move.effectChance; 
+          if (Math.random() * 100 < chance) {
+            finalStatus = newStatus;
+          }
+        }
+      }
+
       setEnemy((prev: any) => ({ 
         ...prev, 
         currentHp: newEnemyHp,
-        status: newStatus || prev.status
+        status: finalStatus
       }));
       await new Promise(r => setTimeout(r, 800));
 
@@ -494,7 +525,8 @@ export default function BattleScreen() {
       // Nemico più veloce: attacca prima 
       setTurn('enemy');
       await executeEnemyTurn(playerPkmn);
-      if (playerPkmn.currentHp <= 0) {
+      const freshPlayerPkmn = useStore.getState().team.find((p: any) => p.id === playerPkmn.id) ?? playerPkmn;
+      if (freshPlayerPkmn.currentHp <= 0) {
         setPlayerStages({ attack: 0, defense: 0, spAtk: 0, spDef: 0, speed: 0 });
         setEnemyStages({ attack: 0, defense: 0, spAtk: 0, spDef: 0, speed: 0 });
         setIsAnimating(false);
@@ -502,22 +534,37 @@ export default function BattleScreen() {
       }
 
       const isCrit = Math.random() < 0.06;
-      const damage = BattleEngine.calculateDamage(effectivePlayer as any, effectiveEnemy as any, move, isCrit);
-      const typeMultiplier = BattleEngine.getTypeEffectiveness(move.type, effectiveEnemy.types);
+      const damage = BattleEngine.calculateDamage(effPlayer as any, effEnemy as any, move, isCrit);
+      const typeMultiplier = BattleEngine.getTypeEffectiveness(move.type, effEnemy.types);
       const effLabel = BattleEngine.getTypeEffectivenessLabel(typeMultiplier);
       const newEnemyHp = Math.max(0, (enemy?.currentHp ?? 0) - damage);
 
       addLog(`${playerPkmn.name} usa ${move.name}!`);
+      
+      // Status e Healing logica
       const { newStatus, message } = applyPlayerMoveEffects(move, enemy);
       if (message) addLog(message);
 
       if (isCrit) addLog('Brutto colpo!');
       if (effLabel) addLog(effLabel);
 
+      // Applica stato con immunità
+      let finalStatus = enemy.status;
+      if (newStatus && !enemy.status) {
+        if (isImmuneToStatus(enemy.types, newStatus)) {
+          addLog(`${enemy.name} è immune a ${newStatus}!`);
+        } else {
+          const chance = (!move.effectChance || move.effectChance === 0) ? 100 : move.effectChance; 
+          if (Math.random() * 100 < chance) {
+            finalStatus = newStatus;
+          }
+        }
+      }
+
       setEnemy((prev: any) => ({ 
         ...prev, 
         currentHp: newEnemyHp,
-        status: newStatus || prev.status
+        status: finalStatus
       }));
       await new Promise(r => setTimeout(r, 800));
 
@@ -552,6 +599,7 @@ export default function BattleScreen() {
         return;
       }
     }
+
 
     // BRN danno fine turno giocatore 
     if (playerPkmn.status === 'BRN') {
