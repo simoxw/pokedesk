@@ -40,10 +40,45 @@ export const api = {
   },
 
   async getPokemonMoves(pokemonData: any, level: number): Promise<Move[]> {
-    // Filter moves by level-up and current level
-    // We try to get moves from the most recent version group if possible, or just any level-up move
+    const BANNED_MOVES = new Set([
+      'protect','detect','endure','quick-guard','wide-guard','substitute','splash','celebrate',
+      'hold-hands','kings-shield','spiky-shield','baneful-bunker','mat-block','crafty-shield',
+      'confuse-ray','swagger','flatter','supersonic','teeter-dance','attract','captivate',
+      'sunny-day','rain-dance','sandstorm','hail','snow',
+      'grassy-terrain','misty-terrain','electric-terrain','psychic-terrain','gravity',
+      'magic-room','wonder-room','mud-sport','water-sport','trick-room',
+      'spikes','stealth-rock','toxic-spikes','sticky-web',
+      'whirlwind','roar','circle-throw','dragon-tail','mean-look','block','spider-web',
+      'baton-pass','u-turn','volt-switch','parting-shot',
+      'reflect','light-screen','aurora-veil','safeguard','mist','tailwind','lucky-chant',
+      'healing-wish','lunar-dance','helping-hand','follow-me','rage-powder','spotlight',
+      'ally-switch','after-you','quash','aromatherapy',
+      'transform','mirror-move','mimic','sketch','copycat','me-first','assist','metronome',
+      'sleep-talk','snore','nature-power','instruct','conversion','conversion2','camouflage',
+      'magnitude','present','natural-gift','hidden-power','weather-ball','judgment',
+      'techno-blast','revelation-dance','wring-out','crush-grip','trump-card','flail',
+      'reversal','fury-cutter','rollout','ice-ball','echoed-voice','triple-kick','punishment',
+      'stored-power','acrobatics','facade','electrify',
+      'grass-knot','low-kick','heavy-slam','heat-crash',
+      'sonic-boom','dragon-rage','night-shade','seismic-toss','super-fang','psywave',
+      'fissure','guillotine','horn-drill','sheer-cold',
+      'self-destruct','explosion','memento','final-gambit','destiny-bond','counter',
+      'mirror-coat','metal-burst','bide','focus-punch','shell-trap','endeavor','pain-split',
+      'stockpile','swallow','spit-up','future-sight','doom-desire',
+      'haze','topsy-turvy','power-trick','power-split','guard-split','power-swap',
+      'guard-swap','heart-swap','speed-swap','skill-swap','role-play','entrainment',
+      'simple-beam','worry-seed','lock-on','mind-reader','focus-energy','psych-up',
+      'taunt','encore','torment','disable','spite','grudge','trick','switcheroo','fling',
+      'bestow','embargo','heal-block','perish-song','yawn','imprison',
+      'frustration','return','beat-up',
+      'leech-seed','ingrain','aqua-ring','curse','nightmare','telekinesis','magnet-rise',
+      'autotomize','charge','recycle','belch','false-swipe','wish','struggle',
+    ]);
+
     const levelUpMoves = pokemonData.moves
-      .filter((m: any) => m.version_group_details.some((v: any) => v.move_learn_method.name === 'level-up' && v.level_learned_at <= level))
+      .filter((m: any) =>
+        !BANNED_MOVES.has(m.move.name) &&
+        m.version_group_details.some((v: any) => v.move_learn_method.name === 'level-up' && v.level_learned_at <= level))
       .map((m: any) => {
         const detail = m.version_group_details.find((v: any) => v.move_learn_method.name === 'level-up' && v.level_learned_at <= level);
         return {

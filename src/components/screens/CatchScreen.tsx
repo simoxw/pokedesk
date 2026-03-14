@@ -4,7 +4,7 @@ import { api } from '../../api';
 import { CatchEngine } from '../../CatchEngine';
 import { BattleEngine } from '../../BattleEngine';
 import { motion, AnimatePresence } from 'motion/react';
-import { Zap, Sparkles } from 'lucide-react';
+import { Zap, Sparkles, X } from 'lucide-react';
 import confetti from 'canvas-confetti';
 
 export default function CatchScreen() {
@@ -16,6 +16,10 @@ export default function CatchScreen() {
   const [catching, setCatching] = useState(false);
   const [result, setResult] = useState<'success' | 'fail' | null>(null);
   const [circleSize, setCircleSize] = useState(100);
+  const [attempts, setAttempts] = useState(0);
+  const [ballPos, setBallPos] = useState<{ x: number; y: number } | null>(null);
+  const [ballVisible, setBallVisible] = useState(false);
+  const maxAttempts = 3;
 
   useEffect(() => {
     const initEncounter = async () => {
@@ -45,8 +49,12 @@ export default function CatchScreen() {
 
   const handleCatch = async () => {
     if (catching || result) return;
+    if (attempts >= maxAttempts) return;
     setCatching(true);
-    consumeCharge();
+
+    // Animazione palla: parte dal basso al centro 
+    setBallVisible(true);
+    setBallPos({ x: 0, y: 0 });
 
     // Bonus based on circle size
     let bonus = 1.0;
@@ -54,8 +62,12 @@ export default function CatchScreen() {
     else if (circleSize < 70) bonus = 1.5;
 
     const success = CatchEngine.calculateCatchRate(pokemon.species, ballType, bonus, isShiny);
+    const newAttempts = attempts + 1;
+    setAttempts(newAttempts);
     
-    await new Promise(r => setTimeout(r, 2000)); // Ball animation time
+    await new Promise(r => setTimeout(r, 1200)); // animazione volo palla 
+    setBallVisible(false);
+    await new Promise(r => setTimeout(r, 300));
 
     if (success) {
       setResult('success');
@@ -97,7 +109,13 @@ export default function CatchScreen() {
       incrementStat('totalCaught');
       if (isShiny) incrementStat('shiniesFound');
     } else {
-      setResult('fail');
+      // Fallito: controlla se ha ancora tentativi 
+      if (newAttempts >= maxAttempts) {
+        setResult('fail'); // Scappato dopo 3 tentativi 
+      } else {
+        // Può riprovare 
+        setCatching(false);
+      }
     }
   };
 
@@ -118,30 +136,53 @@ export default function CatchScreen() {
           <p className="font-bold opacity-70">Lv. {pokemon.level}</p>
         </div>
 
-        <div className="relative">
+        <div className="relative flex items-center justify-center" style={{ height: 260 }}>
+          {/* Pokémon */}
           <motion.img
-            animate={{ y: [0, -10, 0] }}
-            transition={{ duration: 3, repeat: Infinity }}
+            animate={catching ? { scale: [1, 0.8, 1] } : { y: [0, -10, 0] }}
+            transition={catching ? { duration: 0.4 } : { duration: 3, repeat: Infinity }}
             src={isShiny ? pokemon.sprites.front_shiny : pokemon.sprites.front_default}
-            className="w-64 h-64 object-contain drop-shadow-2xl"
+            className="w-52 h-52 object-contain drop-shadow-2xl"
           />
-          {isShiny && (
+          {isShiny && !catching && (
             <motion.div
               animate={{ opacity: [0, 1, 0], scale: [0.5, 1.2, 0.5] }}
               transition={{ duration: 1, repeat: Infinity }}
-              className="absolute inset-0 flex items-center justify-center text-yellow-300"
+              className="absolute inset-0 flex items-center justify-center text-yellow-300 pointer-events-none"
             >
-              <Sparkles size={120} />
+              <Sparkles size={100} />
             </motion.div>
           )}
-          
-          {/* Catch Circle */}
+
+          {/* Cerchio di mira */}
           {!catching && !result && (
-            <div 
-              className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 border-2 border-white/50 rounded-full pointer-events-none"
-              style={{ width: circleSize * 2, height: circleSize * 2 }}
+            <div
+              className="absolute border-2 border-white/50 rounded-full pointer-events-none transition-all"
+              style={{
+                width: circleSize * 2,
+                height: circleSize * 2,
+                borderColor: circleSize < 40 ? '#4ade80' : circleSize < 70 ? '#facc15' : '#ffffff80'
+              }}
             />
           )}
+
+          {/* Animazione pokéball che vola */}
+          <AnimatePresence>
+            {ballVisible && (
+              <motion.img
+                src={`https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/items/${
+                  ballType === 'megaball' ? 'great-ball' :
+                  ballType === 'ultraball' ? 'ultra-ball' :
+                  ballType === 'masterball' ? 'master-ball' : 'poke-ball'
+                }.png`}
+                initial={{ y: 160, x: 0, scale: 0.8, opacity: 1 }}
+                animate={{ y: -20, x: [0, -15, 15, 0], scale: [0.8, 1.2, 1], rotate: [0, 360, 720] }}
+                exit={{ scale: 0, opacity: 0 }}
+                transition={{ duration: 1.0, ease: 'easeOut' }}
+                className="absolute w-14 h-14 object-contain drop-shadow-xl pointer-events-none"
+              />
+            )}
+          </AnimatePresence>
         </div>
       </div>
 
@@ -154,12 +195,22 @@ export default function CatchScreen() {
               animate={{ opacity: 1, y: 0 }}
               className="text-center"
             >
-              <h3 className="text-2xl font-bold mb-4">
-                {result === 'success' ? 'CATTURATO!' : 'FUGGITO...'}
-              </h3>
-              <button 
+              {result === 'success' ? (
+                <>
+                  <div className="text-5xl mb-3">🎉</div>
+                  <h3 className="text-2xl font-black mb-1">CATTURATO!</h3>
+                  <p className="text-white/60 text-sm mb-4">{pokemon && (pokemon.species?.names ? api.getItalianName(pokemon.species.names) : pokemon.name)} aggiunto alla squadra!</p>
+                </>
+              ) : (
+                <>
+                  <div className="text-5xl mb-3">💨</div>
+                  <h3 className="text-2xl font-black mb-1">FUGGITO!</h3>
+                  <p className="text-white/60 text-sm mb-4">Il Pokémon selvaggio è scappato dopo {maxAttempts} tentativi.</p>
+                </>
+              )}
+              <button
                 onClick={() => setScreen('HUB_SCREEN')}
-                className="bg-white text-black px-8 py-3 rounded-full font-bold"
+                className="bg-white text-black px-8 py-3 rounded-2xl font-black"
               >
                 TORNA ALL'HUB
               </button>
@@ -173,14 +224,32 @@ export default function CatchScreen() {
                     onClick={() => setBallType(ball)}
                     className={`flex-shrink-0 p-2 rounded-xl border-2 transition-all ${ballType === ball ? 'border-[#e63946] bg-[#e63946]/20' : 'border-white/10'}`}
                   >
-                    <img src={`/balls/${ball}.png`} alt={ball} className="w-12 h-12" onError={(e) => (e.currentTarget.src = 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/items/poke-ball.png')} />
+                    <img src={`/balls/${ball}.png`} alt={ball} className="w-12 h-12" onError={(e) => (e.currentTarget.src = `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/items/${ball === 'megaball' ? 'great-ball' : ball === 'ultraball' ? 'ultra-ball' : ball === 'masterball' ? 'master-ball' : 'poke-ball'}.png`)} />
                   </button>
                 ))}
               </div>
+
+              {/* Indicatore tentativi */}
+              <div className="flex justify-center gap-2 mb-2">
+                {Array.from({ length: maxAttempts }).map((_, i) => (
+                  <div
+                    key={i}
+                    className={`w-3 h-3 rounded-full transition-all ${
+                      i < attempts ? 'bg-red-500' : 'bg-white/30'
+                    }`}
+                  />
+                ))}
+              </div>
+              <p className="text-center text-xs text-white/50 mb-3">
+                {attempts < maxAttempts
+                  ? `Tentativi rimasti: ${maxAttempts - attempts}`
+                  : 'Nessun tentativo rimasto!'}
+              </p>
+
               <button
-                disabled={catching}
+                disabled={catching || attempts >= maxAttempts}
                 onClick={handleCatch}
-                className="w-full bg-[#e63946] py-4 rounded-2xl font-black text-xl shadow-xl active:scale-95 transition-transform"
+                className="w-full bg-[#e63946] py-4 rounded-2xl font-black text-xl shadow-xl active:scale-95 transition-transform disabled:opacity-50"
               >
                 {catching ? 'LANCIO...' : 'LANCIA POKÉBALL'}
               </button>

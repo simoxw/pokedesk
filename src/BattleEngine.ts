@@ -59,6 +59,13 @@ export const BattleEngine = {
     return Math.max(1, damage);
   },
 
+  getTypeEffectivenessLabel(multiplier: number): string | null {
+    if (multiplier === 0) return 'Non ha effetto!';
+    if (multiplier < 1) return 'Non molto efficace...';
+    if (multiplier >= 2) return 'È superefficace!';
+    return null;
+  },
+
   getTypeEffectiveness(moveType: PokemonType, defenderTypes: PokemonType[]): number {
     let multiplier = 1.0;
     for (const defType of defenderTypes) {

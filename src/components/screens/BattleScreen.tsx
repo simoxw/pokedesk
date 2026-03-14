@@ -20,6 +20,7 @@ export default function BattleScreen() {
   const [showTeamOverlay, setShowTeamOverlay] = useState(false);
   const [showBagOverlay, setShowBagOverlay] = useState(false);
   const [attackAnim, setAttackAnim] = useState(false);
+  const [statChanges, setStatChanges] = useState<{ label: string; positive: boolean } | null>(null);
 
   const playerPkmn = team[activeIdx];
 
@@ -60,12 +61,99 @@ export default function BattleScreen() {
     initBattle();
   }, []);
 
-  const handleSwitchPokemon = (idx: number) => {
+  const executeEnemyTurn = async (currentPlayerPkmn: any) => {
+    if (!enemy || enemy.currentHp <= 0) return;
+    await new Promise(r => setTimeout(r, 800));
+
+    const validMoves = enemy.moves.filter((m: any) => m.pp > 0 && m.category !== 'status');
+    const enemyMove = validMoves.length > 0 
+      ? validMoves[Math.floor(Math.random() * validMoves.length)] 
+      : { name: 'Lotta', type: 'normal', power: 40, category: 'physical', pp: 1, maxPp: 1, id: '0', accuracy: 100, priority: 0, description: '' };
+
+    // PAR: 25% skip 
+    if (currentPlayerPkmn.status === 'PAR' && Math.random() < 0.25) {
+      addLog(`${currentPlayerPkmn.name} è paralizzato e non riesce a muoversi!`);
+      setTurn('player');
+      setIsAnimating(false);
+      return;
+    }
+    // SLP: skip 
+    if (currentPlayerPkmn.status === 'SLP') {
+      addLog(`${currentPlayerPkmn.name} sta dormendo...`);
+      setTurn('player');
+      setIsAnimating(false);
+      return;
+    }
+    // FRZ: 20% unfreeze else skip 
+    if (currentPlayerPkmn.status === 'FRZ') {
+      if (Math.random() < 0.2) {
+        updatePokemon(currentPlayerPkmn.id, { status: null });
+        addLog(`${currentPlayerPkmn.name} si è scongelato!`);
+      } else {
+        addLog(`${currentPlayerPkmn.name} è congelato!`);
+        setTurn('player');
+        setIsAnimating(false);
+        return;
+      }
+    }
+
+    addLog(`${enemy.name} usa ${enemyMove.name}!`);
+    const enemyDamage = BattleEngine.calculateDamage(enemy, currentPlayerPkmn, enemyMove, false);
+    const typeMultiplier = BattleEngine.getTypeEffectiveness(enemyMove.type, currentPlayerPkmn.types);
+    const effLabel = BattleEngine.getTypeEffectivenessLabel(typeMultiplier);
+    if (effLabel) addLog(effLabel);
+
+    // Applica effetto di stato nemico 
+    if (enemyMove.statusEffect && !currentPlayerPkmn.status && Math.random() * 100 < (enemyMove.effectChance || 0)) {
+      updatePokemon(currentPlayerPkmn.id, { status: enemyMove.statusEffect });
+      addLog(`${currentPlayerPkmn.name} è ora ${enemyMove.statusEffect}!`);
+    }
+
+    const newPlayerHp = Math.max(0, currentPlayerPkmn.currentHp - enemyDamage);
+    updatePokemon(currentPlayerPkmn.id, { currentHp: newPlayerHp });
+
+    // BRN danno fine turno 
+    if (currentPlayerPkmn.status === 'BRN') {
+      const brnDmg = Math.floor(currentPlayerPkmn.stats.hp / 8);
+      const brnHp = Math.max(0, newPlayerHp - brnDmg);
+      updatePokemon(currentPlayerPkmn.id, { currentHp: brnHp });
+      addLog(`${currentPlayerPkmn.name} è danneggiato dalla scottatura!`);
+    }
+    // PSN danno fine turno 
+    if (currentPlayerPkmn.status === 'PSN') {
+      const psnDmg = Math.floor(currentPlayerPkmn.stats.hp / 8);
+      const psnHp = Math.max(0, newPlayerHp - psnDmg);
+      updatePokemon(currentPlayerPkmn.id, { currentHp: psnHp });
+      addLog(`${currentPlayerPkmn.name} è danneggiato dal veleno!`);
+    }
+
+    await new Promise(r => setTimeout(r, 800));
+
+    if (newPlayerHp <= 0) {
+      addLog(`${currentPlayerPkmn.name} è esausto!`);
+      const nextAvailable = team.findIndex((p, i) => p.currentHp > 0 && i !== activeIdx);
+      if (nextAvailable === -1) {
+        addLog('Hai perso la sfida...');
+        setIsFinished(true);
+      } else {
+        setActiveIdx(nextAvailable);
+        addLog(`Vai ${team[nextAvailable].name}!`);
+      }
+    }
+
+    setTurn('player');
+    setIsAnimating(false);
+  };
+
+  const handleSwitchPokemon = async (idx: number) => {
     if (idx === activeIdx || !team[idx] || team[idx].currentHp <= 0) return;
-    setActiveIdx(idx);
-    addLog(`Vai ${team[idx].name}!`);
     setShowTeamOverlay(false);
-    setTurn('enemy');
+    setIsAnimating(true);
+    addLog(`Vai ${team[idx].name}!`);
+    setActiveIdx(idx);
+    // Dopo il cambio il nemico attacca 
+    await new Promise(r => setTimeout(r, 600));
+    await executeEnemyTurn(team[idx]);
   };
 
   const handleUseItem = (itemId: string, itemName: string) => {
@@ -88,58 +176,128 @@ export default function BattleScreen() {
   };
 
   const handleMove = async (move: any) => {
-    if (turn !== 'player' || isFinished || isAnimating) return;
+    if (turn !== 'player' || isFinished || isAnimating || move.pp <= 0) return;
     setIsAnimating(true);
     setAttackAnim(true);
     setTimeout(() => setAttackAnim(false), 400);
 
-    // Player Turn
-    const isCrit = Math.random() < 0.06;
-    const damage = BattleEngine.calculateDamage(playerPkmn, enemy, move, isCrit);
-    const newEnemyHp = Math.max(0, enemy.currentHp - damage);
-    
-    addLog(`${playerPkmn.name} usa ${move.name}!`);
-    if (isCrit) addLog("Brutto colpo!");
-    
-    setEnemy({ ...enemy, currentHp: newEnemyHp });
-    await new Promise(r => setTimeout(r, 1000));
+    // Scala i PP della mossa nel team 
+    const updatedMoves = playerPkmn.moves.map((m: any) =>
+      m.id === move.id ? { ...m, pp: Math.max(0, m.pp - 1) } : m
+    );
+    updatePokemon(playerPkmn.id, { moves: updatedMoves });
 
-    if (newEnemyHp === 0) {
-      addLog(`${enemy.name} è esausto!`);
-      setIsFinished(true);
-      const exp = BattleEngine.calculateExp(100, enemy.level);
-      addLog(`${playerPkmn.name} guadagna ${exp} Punti ESP!`);
-      addCoins(50);
-      incrementStat('totalBattles');
+    // Player Turn — order by speed 
+    const playerFirst = playerPkmn.stats.speed >= (enemy?.stats?.speed ?? 0) || move.priority > 0;
+
+    if (playerFirst) {
+      const isCrit = Math.random() < 0.06;
+      const damage = BattleEngine.calculateDamage(playerPkmn, enemy, move, isCrit);
+      const typeMultiplier = BattleEngine.getTypeEffectiveness(move.type, enemy.types);
+      const effLabel = BattleEngine.getTypeEffectivenessLabel(typeMultiplier);
+      const newEnemyHp = Math.max(0, enemy.currentHp - damage);
+
+      addLog(`${playerPkmn.name} usa ${move.name}!`);
+      if (move.category === 'status') {
+        // Mosse di boost/debuff 
+        if (['swordsdance', 'growl', 'tailwhip', 'leer', 'screech', 'agility', 'amnesia'].includes(move.id)) {
+          const isBoost = ['swordsdance', 'agility', 'amnesia'].includes(move.id);
+          setStatChanges({ label: isBoost ? '↑ STAT +' : '↓ STAT −', positive: isBoost });
+          setTimeout(() => setStatChanges(null), 2500);
+        }
+        // Applica effetti di stato al nemico 
+        if (move.statusEffect && enemy) {
+          setEnemy((prev: any) => ({ ...prev, status: move.statusEffect }));
+          addLog(`${enemy.name} è ora ${move.statusEffect}!`);
+        }
+      }
+      if (isCrit) addLog('Brutto colpo!');
+      if (effLabel) addLog(effLabel);
+
+      // Applica stato al nemico 
+      if (move.statusEffect && !enemy.status && Math.random() * 100 < (move.effectChance || 0)) {
+        setEnemy((prev: any) => ({ ...prev, status: move.statusEffect }));
+        addLog(`${enemy.name} è ora ${move.statusEffect}!`);
+      }
+
+      setEnemy((prev: any) => ({ ...prev, currentHp: newEnemyHp }));
+      await new Promise(r => setTimeout(r, 800));
+
+      if (newEnemyHp <= 0) {
+        addLog(`${enemy.name} è esausto!`);
+        const exp = BattleEngine.calculateExp(100, enemy.level);
+        addLog(`${playerPkmn.name} guadagna ${exp} ESP!`);
+        addCoins(50);
+        incrementStat('totalBattles');
+        team.forEach(p => {
+          const recoveredHp = Math.min(p.stats.hp, p.currentHp + Math.floor(p.stats.hp * 0.3));
+          const recoveredMoves = p.moves.map((m: any) => ({ ...m, pp: m.maxPp }));
+          updatePokemon(p.id, { currentHp: recoveredHp, moves: recoveredMoves });
+        });
+        setIsFinished(true);
+        setIsAnimating(false);
+        return;
+      }
+
+      setTurn('enemy');
+      await executeEnemyTurn(playerPkmn);
+    } else {
+      // Nemico più veloce: attacca prima 
+      setTurn('enemy');
+      await executeEnemyTurn(playerPkmn);
+      if (playerPkmn.currentHp <= 0) {
+        setIsAnimating(false);
+        return;
+      }
+
+      const isCrit = Math.random() < 0.06;
+      const damage = BattleEngine.calculateDamage(playerPkmn, enemy, move, isCrit);
+      const typeMultiplier = BattleEngine.getTypeEffectiveness(move.type, enemy.types);
+      const effLabel = BattleEngine.getTypeEffectivenessLabel(typeMultiplier);
+      const newEnemyHp = Math.max(0, enemy.currentHp - damage);
+
+      addLog(`${playerPkmn.name} usa ${move.name}!`);
+      if (isCrit) addLog('Brutto colpo!');
+      if (effLabel) addLog(effLabel);
+
+      setEnemy((prev: any) => ({ ...prev, currentHp: newEnemyHp }));
+      await new Promise(r => setTimeout(r, 800));
+
+      if (newEnemyHp <= 0) {
+        addLog(`${enemy.name} è esausto!`);
+        addCoins(50);
+        incrementStat('totalBattles');
+        team.forEach(p => {
+          const recoveredHp = Math.min(p.stats.hp, p.currentHp + Math.floor(p.stats.hp * 0.3));
+          const recoveredMoves = p.moves.map((m: any) => ({ ...m, pp: m.maxPp }));
+          updatePokemon(p.id, { currentHp: recoveredHp, moves: recoveredMoves });
+        });
+        setIsFinished(true);
+        setIsAnimating(false);
+        return;
+      }
+    }
+
+    // BRN danno fine turno giocatore 
+    if (playerPkmn.status === 'BRN') {
+      const brnDmg = Math.floor(playerPkmn.stats.hp / 8);
+      updatePokemon(playerPkmn.id, { currentHp: Math.max(0, playerPkmn.currentHp - brnDmg) });
+      addLog(`${playerPkmn.name} è danneggiato dalla scottatura!`);
+    }
+    if (playerPkmn.status === 'PSN') {
+      const psnDmg = Math.floor(playerPkmn.stats.hp / 8);
+      updatePokemon(playerPkmn.id, { currentHp: Math.max(0, playerPkmn.currentHp - psnDmg) });
+      addLog(`${playerPkmn.name} è avvelenato!`);
+    }
+
+    // PAR: 25% skip turno 
+    if (playerPkmn.status === 'PAR' && Math.random() < 0.25) {
+      addLog(`${playerPkmn.name} è paralizzato!`);
       setIsAnimating(false);
+      setTurn('player');
       return;
     }
 
-    setTurn('enemy');
-    await new Promise(r => setTimeout(r, 1000));
-
-    // Enemy Turn
-    const enemyMove = enemy.moves[Math.floor(Math.random() * enemy.moves.length)] || { name: 'Azione', type: 'normal', power: 40, category: 'physical' };
-    addLog(`${enemy.name} usa ${enemyMove.name}!`);
-    
-    const enemyDamage = BattleEngine.calculateDamage(enemy, playerPkmn, enemyMove, false);
-    const newPlayerHp = Math.max(0, playerPkmn.currentHp - enemyDamage);
-    
-    updatePokemon(playerPkmn.id, { currentHp: newPlayerHp });
-    await new Promise(r => setTimeout(r, 1000));
-
-    if (newPlayerHp === 0) {
-      addLog(`${playerPkmn.name} è esausto!`);
-      const nextAvailable = team.findIndex((p, i) => p.currentHp > 0 && i !== activeIdx);
-      if (nextAvailable === -1) {
-        addLog('Hai perso la sfida...');
-        setIsFinished(true);
-      } else {
-        setActiveIdx(nextAvailable);
-        addLog(`Vai ${team[nextAvailable].name}!`);
-      }
-    }
-    
     setTurn('player');
     setIsAnimating(false);
   };
@@ -158,8 +316,8 @@ export default function BattleScreen() {
 
         {/* Enemy Pokemon */}
         <div className="absolute top-6 right-6 left-6">
-          <div className="bg-black/40 backdrop-blur rounded-2xl p-3 mb-3 flex items-center justify-between">
-            <div>
+          <div className="bg-black/40 backdrop-blur rounded-2xl p-3 mb-3">
+            <div className="flex items-center justify-between mb-1">
               <div className="flex items-center gap-2">
                 <span className="font-black text-sm uppercase">{enemy?.name}</span>
                 <div className="flex gap-1">
@@ -168,19 +326,30 @@ export default function BattleScreen() {
                   ))}
                 </div>
               </div>
-              <div className="text-[10px] text-white/50 font-bold mt-0.5">Lv. {enemy?.level}</div>
-              <div className="flex items-center gap-2 mt-1.5">
-                <div className="flex-1 bg-white/10 rounded-full h-2">
-                  <div
-                    className="h-2 rounded-full transition-all duration-500"
-                    style={{
-                      width: `${((enemy?.currentHp ?? 0) / (enemy?.maxHp ?? 1)) * 100}%`,
-                      backgroundColor: (enemy?.currentHp / enemy?.maxHp) > 0.5 ? '#4ade80' : (enemy?.currentHp / enemy?.maxHp) > 0.2 ? '#facc15' : '#ef4444'
-                    }}
-                  />
-                </div>
-                <span className="text-[10px] font-bold text-white/70">{enemy?.currentHp}/{enemy?.maxHp}</span>
+              <div className="flex items-center gap-1.5">
+                {enemy?.status && (
+                  <span className={`text-[9px] font-black px-1.5 py-0.5 rounded-full ${
+                    enemy.status === 'PSN' ? 'bg-purple-500' :
+                    enemy.status === 'BRN' ? 'bg-orange-500' :
+                    enemy.status === 'PAR' ? 'bg-yellow-400 text-black' :
+                    enemy.status === 'SLP' ? 'bg-blue-400' :
+                    enemy.status === 'FRZ' ? 'bg-cyan-300 text-black' : ''
+                  }`}>{enemy.status}</span>
+                )}
+                <span className="text-[10px] text-white/50 font-bold">Lv. {enemy?.level}</span>
               </div>
+            </div>
+            <div className="flex items-center gap-2">
+              <div className="flex-1 bg-white/10 rounded-full h-2.5">
+                <div
+                  className="h-2.5 rounded-full transition-all duration-500"
+                  style={{
+                    width: `${((enemy?.currentHp ?? 0) / (enemy?.maxHp ?? 1)) * 100}%`,
+                    backgroundColor: (enemy?.currentHp / enemy?.maxHp) > 0.5 ? '#4ade80' : (enemy?.currentHp / enemy?.maxHp) > 0.2 ? '#facc15' : '#ef4444'
+                  }}
+                />
+              </div>
+              <span className="text-[10px] font-bold text-white/70 w-16 text-right">{enemy?.currentHp}/{enemy?.maxHp}</span>
             </div>
           </div>
 
@@ -188,7 +357,7 @@ export default function BattleScreen() {
             animate={{ y: [0, -6, 0] }}
             transition={{ duration: 2, repeat: Infinity }}
             src={enemy?.sprites?.front_default}
-            className="w-32 h-32 object-contain mx-auto drop-shadow-2xl"
+            className="w-44 h-44 object-contain mx-auto drop-shadow-2xl"
           />
         </div>
 
@@ -198,13 +367,37 @@ export default function BattleScreen() {
             animate={attackAnim ? { x: [0, 15, 0] } : { x: 0 }}
             transition={{ duration: 0.3 }}
             src={`https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/back/${playerPkmn?.isShiny ? 'shiny/' : ''}${playerPkmn?.pokemonId}.png`}
-            className="w-28 h-28 object-contain drop-shadow-2xl"
+            className="w-36 h-36 object-contain drop-shadow-2xl"
           />
           <div className="flex-1 bg-black/40 backdrop-blur rounded-2xl p-3">
             <div className="flex items-center justify-between">
-              <span className="font-black text-sm uppercase">{playerPkmn?.name}</span>
+              <div className="flex items-center gap-1.5 flex-wrap">
+                <span className="font-black text-sm uppercase">{playerPkmn?.name}</span>
+                {playerPkmn?.types?.map((t: string) => (
+                  <TypeBadge key={t} type={t} small />
+                ))}
+                {playerPkmn?.status && (
+                  <span className={`text-[9px] font-black px-1.5 py-0.5 rounded-full ${
+                    playerPkmn.status === 'PSN' ? 'bg-purple-500' :
+                    playerPkmn.status === 'BRN' ? 'bg-orange-500' :
+                    playerPkmn.status === 'PAR' ? 'bg-yellow-400 text-black' :
+                    playerPkmn.status === 'SLP' ? 'bg-blue-400' :
+                    playerPkmn.status === 'FRZ' ? 'bg-cyan-300 text-black' : 'bg-white/20'
+                  }`}>{playerPkmn.status}</span>
+                )}
+              </div>
               <span className="text-[10px] bg-[#e63946] px-2 py-0.5 rounded-full font-bold">Lv.{playerPkmn?.level}</span>
             </div>
+            {statChanges && (
+              <motion.div
+                initial={{ opacity: 0, y: -8 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0 }}
+                className={`text-[10px] font-black px-2 py-0.5 rounded-full w-fit mb-1 ${statChanges.positive ? 'bg-blue-500/30 text-blue-300' : 'bg-red-500/30 text-red-300'}`}
+              >
+                {statChanges.label}
+              </motion.div>
+            )}
             <div className="flex items-center gap-2 mt-1.5">
               <div className="flex-1 bg-white/10 rounded-full h-2">
                 <div
