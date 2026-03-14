@@ -31,6 +31,7 @@ export interface Move {
   description: string;
   effectChance?: number;
   statusEffect?: StatusEffect;
+  meta?: any;
 }
 
 export type StatusEffect = 'PSN' | 'BRN' | 'PAR' | 'SLP' | 'FRZ' | null;

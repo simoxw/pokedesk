@@ -23,8 +23,10 @@ export default function BattleScreen() {
   const [showBagOverlay, setShowBagOverlay] = useState(false);
   const [attackAnim, setAttackAnim] = useState(false);
   const [statChanges, setStatChanges] = useState<{ label: string; positive: boolean } | null>(null);
-  const [playerStages, setPlayerStages] = useState<Record<string, number>>({ attack: 0, defense: 0, spAtk: 0, spDef: 0, speed: 0 }); 
-  const [enemyStages, setEnemyStages] = useState<Record<string, number>>({ attack: 0, defense: 0, spAtk: 0, spDef: 0, speed: 0 }); 
+  const [playerStages, setPlayerStages] = useState<Record<string, number>>({ attack: 0, defense: 0, spAtk: 0, spDef: 0, speed: 0, accuracy: 0, evasion: 0 }); 
+  const [enemyStages, setEnemyStages] = useState<Record<string, number>>({ attack: 0, defense: 0, spAtk: 0, spDef: 0, speed: 0, accuracy: 0, evasion: 0 }); 
+  const [enemyFlinch, setEnemyFlinch] = useState(false);
+  const [playerFlinch, setPlayerFlinch] = useState(false);
   const [activeMoveTooltip, setActiveMoveTooltip] = useState<any>(null);
   const tooltipTimeout = React.useRef<any>(null);
 
@@ -132,6 +134,43 @@ export default function BattleScreen() {
       ? movePool[Math.floor(Math.random() * movePool.length)] 
       : { name: 'Lotta', type: 'normal', power: 40, category: 'physical', pp: 1, maxPp: 1, id: '0', accuracy: 100, priority: 0, description: '' };
 
+    // --- CHECK STATUS NEMICO: blocca il turno se necessario ---
+    // SLP: 20% chance di svegliarsi ogni turno
+    if (enemy.status === 'SLP') {
+      if (Math.random() < 0.2) {
+        setEnemy((prev: any) => ({ ...prev, status: null }));
+        addLog(`${enemy.name} si è svegliato!`);
+        // Prosegue con l'attacco dopo essersi svegliato
+      } else {
+        addLog(`${enemy.name} sta dormendo profondamente...`);
+        setTurn('player');
+        setIsAnimating(false);
+        return;
+      }
+    }
+
+    // FRZ: 20% unfreeze else skip 
+    if (enemy.status === 'FRZ') {
+      if (Math.random() < 0.2) {
+        setEnemy((prev: any) => ({ ...prev, status: null }));
+        addLog(`${enemy.name} si è scongelato!`);
+      } else {
+        addLog(`${enemy.name} è congelato!`);
+        setTurn('player');
+        setIsAnimating(false);
+        return;
+      }
+    }
+
+    // PAR: 25% skip
+    if (enemy.status === 'PAR' && Math.random() < 0.25) {
+      addLog(`${enemy.name} è paralizzato e non riesce a muoversi!`);
+      setTurn('player');
+      setIsAnimating(false);
+      return;
+    }
+    // --- FINE CHECK STATUS NEMICO ---
+
     // PAR: 25% skip 
     if (currentPlayerPkmn.status === 'PAR' && Math.random() < 0.25) {
       addLog(`${currentPlayerPkmn.name} è paralizzato e non riesce a muoversi!`);
@@ -164,8 +203,17 @@ export default function BattleScreen() {
       }
     }
 
-    addLog(`${enemy.name} usa ${enemyMove.name}!`);
+    // Check Flinch
+    if (playerFlinch) {
+      addLog(`${currentPlayerPkmn.name} ha tentennato e non può muoversi!`);
+      setPlayerFlinch(false);
+      setTurn('player');
+      setIsAnimating(false);
+      return;
+    }
+
     const enemyDamage = BattleEngine.calculateDamage(enemy, currentPlayerPkmn, enemyMove, false);
+    addLog(`${enemy.name} usa ${enemyMove.name}! (${enemyDamage} danni)`);
     const typeMultiplier = BattleEngine.getTypeEffectiveness(enemyMove.type, currentPlayerPkmn.types);
     const effLabel = BattleEngine.getTypeEffectivenessLabel(typeMultiplier);
     if (effLabel) addLog(effLabel);
@@ -281,6 +329,18 @@ export default function BattleScreen() {
   };
 
   const applyPlayerMoveEffects = (move: any, currentEnemy: any): { newStatus?: any, message?: string } => { 
+    // --- FLINCH ---
+    if (move.meta?.flinch_chance > 0) {
+      if (Math.random() * 100 < move.meta.flinch_chance) {
+        setEnemyFlinch(true);
+      }
+    }
+
+    // --- ACCURACY / EVASION ---
+    if (move.id === '139') { // Poison Gas -> example for status
+       // already handled below
+    }
+
     // --- HEALING MOVES (cura il giocatore) --- 
     const HEAL_MOVES: Record<string, number> = { 
       'recover': 0.5,       // Recupero: 50% HP max 
@@ -402,7 +462,17 @@ export default function BattleScreen() {
   const handleMove = async (move: any) => {
     if (turn !== 'player' || isFinished || isAnimating || move.pp <= 0) return;
 
-    // --- CHECK STATUS GIOCATORE: blocca il turno se necessario --- 
+    // --- CHECK FLINCH ---
+    if (enemyFlinch) {
+      addLog(`${playerPkmn.name} ha tentennato!`);
+      setEnemyFlinch(false);
+      setTurn('enemy');
+      const fresh = (useStore.getState() as any).team.find((p: any) => p.id === playerPkmn.id) ?? playerPkmn; 
+      await executeEnemyTurn(fresh);
+      return;
+    }
+
+    // --- CHECK STATUS GIOCATORE ---
     if (playerPkmn.status === 'SLP') { 
       setIsAnimating(true); 
       if (Math.random() < 0.2) { 
@@ -450,8 +520,12 @@ export default function BattleScreen() {
     // --- FINE CHECK STATUS --- 
 
     // Accuracy Check
+    const accStage = playerStages.accuracy - enemyStages.evasion;
+    const accMultiplier = accStage >= 0 ? (3 + accStage) / 3 : 3 / (3 - accStage);
+    const finalAccuracy = (move.accuracy || 100) * accMultiplier;
+
     if (move.category !== 'status' && move.accuracy && move.accuracy < 100) { 
-      if (Math.random() * 100 >= move.accuracy) { 
+      if (Math.random() * 100 >= finalAccuracy) { 
         setIsAnimating(true); 
         addLog(`${playerPkmn.name} usa ${move.name}!`); 
         addLog('Ma ha mancato!'); 
@@ -504,7 +578,7 @@ export default function BattleScreen() {
       const effLabel = BattleEngine.getTypeEffectivenessLabel(typeMultiplier);
       const newEnemyHp = Math.max(0, (enemy?.currentHp ?? 0) - damage);
 
-      addLog(`${playerPkmn.name} usa ${move.name}!`);
+      addLog(`${playerPkmn.name} usa ${move.name}! (${damage} danni)`);
       
       // Status e Healing logica
       const { newStatus, message } = applyPlayerMoveEffects(move, enemy);
@@ -559,13 +633,16 @@ export default function BattleScreen() {
           updatePokemon(p.id, { currentHp: recoveredHp, moves: recoveredMoves }); 
         });
         setPlayerStages({ attack: 0, defense: 0, spAtk: 0, spDef: 0, speed: 0 });
-        setEnemyStages({ attack: 0, defense: 0, spAtk: 0, spDef: 0, speed: 0 });
+        setEnemyStages({ attack: 0, defense: 0, spAtk: 0, spDef: 0, speed: 0, accuracy: 0, evasion: 0 });
+        setEnemyFlinch(false);
+        setPlayerFlinch(false);
         setIsFinished(true);
         setIsAnimating(false);
         return;
       }
 
       setTurn('enemy');
+      setEnemyFlinch(false); // Reset flinch at end of turn
       await executeEnemyTurn(playerPkmn);
     } else {
       // Nemico più veloce: attacca prima 
@@ -573,8 +650,10 @@ export default function BattleScreen() {
       await executeEnemyTurn(playerPkmn);
       const freshPlayerPkmn = useStore.getState().team.find((p: any) => p.id === playerPkmn.id) ?? playerPkmn;
       if (freshPlayerPkmn.currentHp <= 0) {
-        setPlayerStages({ attack: 0, defense: 0, spAtk: 0, spDef: 0, speed: 0 });
-        setEnemyStages({ attack: 0, defense: 0, spAtk: 0, spDef: 0, speed: 0 });
+        setPlayerStages({ attack: 0, defense: 0, spAtk: 0, spDef: 0, speed: 0, accuracy: 0, evasion: 0 });
+        setEnemyStages({ attack: 0, defense: 0, spAtk: 0, spDef: 0, speed: 0, accuracy: 0, evasion: 0 });
+        setEnemyFlinch(false);
+        setPlayerFlinch(false);
         setIsAnimating(false);
         return;
       }
@@ -585,7 +664,7 @@ export default function BattleScreen() {
       const effLabel = BattleEngine.getTypeEffectivenessLabel(typeMultiplier);
       const newEnemyHp = Math.max(0, (enemy?.currentHp ?? 0) - damage);
 
-      addLog(`${playerPkmn.name} usa ${move.name}!`);
+      addLog(`${playerPkmn.name} usa ${move.name}! (${damage} danni)`);
       
       // Status e Healing logica
       const { newStatus, message } = applyPlayerMoveEffects(move, enemy);
@@ -640,14 +719,17 @@ export default function BattleScreen() {
           updatePokemon(p.id, { currentHp: recoveredHp, moves: recoveredMoves }); 
         });
         setPlayerStages({ attack: 0, defense: 0, spAtk: 0, spDef: 0, speed: 0 });
-        setEnemyStages({ attack: 0, defense: 0, spAtk: 0, spDef: 0, speed: 0 });
+        setEnemyStages({ attack: 0, defense: 0, spAtk: 0, spDef: 0, speed: 0, accuracy: 0, evasion: 0 });
+        setEnemyFlinch(false);
+        setPlayerFlinch(false);
         setIsFinished(true);
         setIsAnimating(false);
         return;
       }
     }
-
-
+    
+    setEnemyFlinch(false);
+    setPlayerFlinch(false);
     const freshForEndTurn = useStore.getState().team.find((p: any) => p.id === playerPkmn.id) ?? playerPkmn; 
     if (freshForEndTurn.status === 'BRN') { 
       const brnDmg = Math.floor(freshForEndTurn.stats.hp / 8); 
@@ -671,64 +753,63 @@ export default function BattleScreen() {
   );
 
   return (
-    <div className="h-full flex flex-col relative overflow-hidden bg-[#1a1a2e]">
+    <div className="h-full flex flex-col relative overflow-hidden bg-[#87ceeb]">
+      {/* SFONDO GLOBALE (Cielo Azzurro) */}
+      <div className="absolute inset-0 z-0" style={{ 
+        background: 'linear-gradient(180deg, #4fa8ff 0%, #87ceeb 40%, #b0e2ff 60%)' 
+      }} />
 
-      {/* ARENA */} 
-      <div className="relative overflow-hidden" style={{ flex: '0 0 62%' }}> 
-        {/* Sfondo cielo battaglia */} 
-        <div className="absolute inset-0" style={{ 
-          background: 'linear-gradient(180deg, #0d0d2b 0%, #1a1a5e 35%, #2d3580 60%, #1a3a5c 100%)' 
-        }} /> 
-
-        {/* Stelle animate */} 
-        {Array.from({ length: 20 }).map((_, i) => ( 
-          <motion.div 
-            key={i} 
-            animate={{ opacity: [0.1, 0.6, 0.1] }} 
-            transition={{ duration: 1.5 + Math.random() * 3, repeat: Infinity, delay: Math.random() * 5 }} 
-            className="absolute rounded-full bg-white" 
+      {/* Nuvole animate (Globali) */} 
+      <div className="absolute inset-0 z-0 overflow-hidden pointer-events-none">
+        {[1, 2, 3].map(i => (
+          <motion.div
+            key={i}
+            initial={{ x: -200 }}
+            animate={{ x: '100vw' }}
+            transition={{ duration: 25 + i * 8, repeat: Infinity, ease: 'linear', delay: i * 5 }}
+            className="absolute bg-white/60 rounded-full blur-2xl"
             style={{ 
-              width: Math.random() * 2 + 1, 
-              height: Math.random() * 2 + 1, 
-              left: `${Math.random() * 100}%`, 
-              top: `${Math.random() * 50}%`, 
-            }} 
-          /> 
-        ))} 
+              width: 150 + i * 60, 
+              height: 50 + i * 20, 
+              top: `${10 + i * 15}%`,
+              left: -200
+            }}
+          />
+        ))}
+      </div>
 
-        {/* Terreno — striscia orizzonte */} 
-        <div className="absolute left-0 right-0" style={{ 
-          bottom: '25%', 
-          height: '2px', 
-          background: 'linear-gradient(90deg, transparent, rgba(100,180,255,0.2), rgba(100,180,255,0.4), rgba(100,180,255,0.2), transparent)', 
+      {/* TERRENO (PRATO VERDE) GLOBALE - SOTTO TUTTO */}
+      <div className="absolute inset-x-0 bottom-0 z-0" style={{ height: '75%' }}>
+        {/* Prato verde scuro/naturale */} 
+        <div className="absolute inset-0" style={{ 
+          background: 'linear-gradient(180deg, #3d7a25 0%, #2d5a1b 100%)', 
         }} /> 
-
-        {/* Suolo scuro */} 
-        <div className="absolute bottom-0 left-0 right-0" style={{ 
-          height: '25%', 
-          background: 'linear-gradient(180deg, #0a1a0f 0%, #050d08 100%)', 
+        {/* Griglia prato (molto sottile) */} 
+        <div className="absolute inset-0 opacity-10" style={{ 
+          backgroundImage: 'linear-gradient(rgba(255,255,255,0.1) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.1) 1px, transparent 1px)', 
+          backgroundSize: '40px 30px', 
         }} /> 
+        {/* Linea Orizzonte (Sfumata) */}
+        <div className="absolute top-0 left-0 right-0 h-[4px]" style={{ 
+          background: 'linear-gradient(180deg, rgba(0,0,0,0.1), transparent)', 
+        }} />
+      </div>
 
-        {/* Griglia suolo */} 
-        <div className="absolute bottom-0 left-0 right-0" style={{ 
-          height: '25%', 
-          backgroundImage: 'linear-gradient(rgba(0,255,100,0.04) 1px, transparent 1px), linear-gradient(90deg, rgba(0,255,100,0.04) 1px, transparent 1px)', 
-          backgroundSize: '30px 20px', 
-        }} /> 
-
-        {/* Vignetta */} 
+      {/* ARENA (Contiene i Pokémon) */} 
+      <div className="relative flex-1 flex flex-col z-10 overflow-hidden"> 
+        {/* Vignetta leggera */} 
         <div className="absolute inset-0 pointer-events-none" 
-          style={{ boxShadow: 'inset 0 0 60px rgba(0,0,0,0.5)' }} 
+          style={{ boxShadow: 'inset 0 0 100px rgba(0,0,0,0.15)' }} 
         /> 
 
-        {/* Enemy Pokemon */}
-        <div className="absolute top-6 right-6 left-6">
-          <div className="bg-black/40 backdrop-blur rounded-2xl p-3 mb-3">
+        {/* Enemy Pokemon Area */}
+        <div className="relative pt-6 px-6 h-[40%] flex flex-col items-center">
+          <div className="w-full bg-black/40 backdrop-blur rounded-2xl p-3 mb-2 max-w-sm">
             <div className="flex items-center justify-between mb-1">
               <div className="flex items-center gap-2">
-                <span className="font-black text-sm uppercase">{enemy?.name}</span>
+                <span className="font-black text-xs uppercase truncate max-w-[100px]">{enemy?.name}</span>
                 {enemy?.status && ( 
-                  <span className={`text-[9px] font-black px-1.5 py-0.5 rounded ml-2 ${ 
+                  <span className={`text-[8px] font-black px-1 py-0.5 rounded ${ 
                     enemy.status === 'SLP' ? 'bg-purple-500/40 text-purple-300' : 
                     enemy.status === 'PSN' ? 'bg-purple-700/40 text-purple-200' : 
                     enemy.status === 'BRN' ? 'bg-orange-500/40 text-orange-300' : 
@@ -742,21 +823,19 @@ export default function BattleScreen() {
                   ))}
                 </div>
               </div>
-              <div className="flex items-center gap-1.5">
-                <span className="text-[10px] text-white/50 font-bold">Lv. {enemy?.level}</span>
-              </div>
+              <span className="text-[10px] text-white/50 font-bold shrink-0">Lv. {enemy?.level}</span>
             </div>
             <div className="flex items-center gap-2">
-              <div className="flex-1 bg-white/10 rounded-full h-2.5">
+              <div className="flex-1 bg-white/10 rounded-full h-2">
                 <div
-                  className="h-2.5 rounded-full transition-all duration-500"
+                  className="h-2 rounded-full transition-all duration-500"
                   style={{
                     width: `${((enemy?.currentHp ?? 0) / (enemy?.maxHp ?? 1)) * 100}%`,
                     backgroundColor: (enemy?.currentHp / enemy?.maxHp) > 0.5 ? '#4ade80' : (enemy?.currentHp / enemy?.maxHp) > 0.2 ? '#facc15' : '#ef4444'
                   }}
                 />
               </div>
-              <span className="text-[10px] font-bold text-white/70 w-16 text-right">{enemy?.currentHp}/{enemy?.maxHp}</span>
+              <span className="text-[9px] font-bold text-white/70 w-12 text-right">{enemy?.currentHp}/{enemy?.maxHp}</span>
             </div>
           </div>
 
@@ -764,24 +843,24 @@ export default function BattleScreen() {
             animate={{ y: [0, -6, 0] }}
             transition={{ duration: 2, repeat: Infinity }}
             src={enemy?.sprites?.front_default}
-            className="w-44 h-44 object-contain mx-auto drop-shadow-2xl"
+            className="w-32 h-32 object-contain drop-shadow-2xl"
           />
         </div>
 
-        {/* Player Pokemon */}
-        <div className="absolute bottom-4 left-4 right-4 flex items-end gap-4">
+        {/* Player Pokemon Area */}
+        <div className="relative mt-auto pb-6 px-6 flex items-end gap-3 h-[45%]">
           <motion.img
             animate={attackAnim ? { x: [0, 15, 0] } : { x: 0 }}
             transition={{ duration: 0.3 }}
             src={`https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/back/${playerPkmn?.isShiny ? 'shiny/' : ''}${playerPkmn?.pokemonId}.png`}
-            className="w-36 h-36 object-contain drop-shadow-2xl"
+            className="w-36 h-36 object-contain drop-shadow-2xl shrink-0"
           />
-          <div className="flex-1 bg-black/40 backdrop-blur rounded-2xl p-3">
+          <div className="flex-1 bg-black/40 backdrop-blur rounded-2xl p-3 mb-2 max-w-sm">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-1.5 flex-wrap">
-                <span className="font-black text-sm uppercase">{playerPkmn?.name}</span>
+                <span className="font-black text-xs uppercase truncate max-w-[80px]">{playerPkmn?.name}</span>
                 {playerPkmn?.status && ( 
-                  <span className={`text-[9px] font-black px-1.5 py-0.5 rounded ml-2 ${ 
+                  <span className={`text-[8px] font-black px-1 py-0.5 rounded ${ 
                     playerPkmn.status === 'SLP' ? 'bg-purple-500/40 text-purple-300' : 
                     playerPkmn.status === 'PSN' ? 'bg-purple-700/40 text-purple-200' : 
                     playerPkmn.status === 'BRN' ? 'bg-orange-500/40 text-orange-300' : 
@@ -789,40 +868,40 @@ export default function BattleScreen() {
                     playerPkmn.status === 'FRZ' ? 'bg-blue-400/40 text-blue-200' : '' 
                   }`}>{playerPkmn.status}</span> 
                 )} 
-                {playerPkmn?.types?.map((t: string) => (
+                {playerPkmn?.types?.slice(0, 1).map((t: string) => (
                   <TypeBadge key={t} type={t as any} small />
                 ))}
               </div>
-              <span className="text-[10px] bg-[#e63946] px-2 py-0.5 rounded-full font-bold">Lv.{playerPkmn?.level}</span>
+              <span className="text-[9px] bg-[#e63946] px-1.5 py-0.5 rounded-full font-bold shrink-0">Lv.{playerPkmn?.level}</span>
             </div>
             {statChanges && (
               <motion.div
-                initial={{ opacity: 0, y: -8 }}
+                initial={{ opacity: 0, y: -4 }}
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0 }}
-                className={`text-[10px] font-black px-2 py-0.5 rounded-full w-fit mb-1 ${statChanges.positive ? 'bg-blue-500/30 text-blue-300' : 'bg-red-500/30 text-red-300'}`}
+                className={`text-[8px] font-black px-1.5 py-0.5 rounded-full w-fit mt-1 ${statChanges.positive ? 'bg-blue-500/30 text-blue-300' : 'bg-red-500/30 text-red-300'}`}
               >
                 {statChanges.label}
               </motion.div>
             )}
-            <div className="flex items-center gap-2 mt-1.5">
-              <div className="flex-1 bg-white/10 rounded-full h-2">
+            <div className="flex items-center gap-2 mt-2">
+              <div className="flex-1 bg-white/10 rounded-full h-1.5">
                 <div
-                  className="h-2 rounded-full transition-all duration-500"
+                  className="h-1.5 rounded-full transition-all duration-500"
                   style={{
                     width: `${((playerPkmn?.currentHp ?? 0) / (playerPkmn?.stats?.hp ?? 1)) * 100}%`,
                     backgroundColor: (playerPkmn?.currentHp / playerPkmn?.stats?.hp) > 0.5 ? '#4ade80' : (playerPkmn?.currentHp / playerPkmn?.stats?.hp) > 0.2 ? '#facc15' : '#ef4444'
                   }}
                 />
               </div>
-              <span className="text-[10px] font-bold text-white/70">{playerPkmn?.currentHp}/{playerPkmn?.stats?.hp} HP</span>
+              <span className="text-[9px] font-bold text-white/70 shrink-0">{playerPkmn?.currentHp}/{playerPkmn?.stats?.hp}</span>
             </div>
           </div>
         </div>
       </div>
 
       {/* LOG + CONTROLLI */}
-      <div className="bg-[#0f0f1a] border-t border-white/5 p-4 space-y-3 relative">
+      <div className="bg-[#0f0f1a]/95 backdrop-blur-md border-t border-white/5 p-4 space-y-3 relative z-20 shrink-0">
         
         {/* Tooltip mossa */}
         <AnimatePresence>

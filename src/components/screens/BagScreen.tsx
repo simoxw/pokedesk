@@ -7,6 +7,7 @@ export default function BagScreen() {
   const { inventory, setScreen, useItem, team, box, updatePokemon } = useStore();
   const [tab, setTab] = useState<'balls' | 'heal' | 'candy'>('balls');
   const [pendingItem, setPendingItem] = useState<{ id: string; name: string; icon: string } | null>(null);
+  const [isProcessing, setIsProcessing] = useState(false);
 
   const items = {
     balls: [
@@ -23,6 +24,11 @@ export default function BagScreen() {
     ],
     candy: [
         { id: 'rare_candy', name: 'Caramella Rara', icon: '🍬' },
+        { id: 'fire_stone', name: 'Pietra Focaia', icon: '🔥' },
+        { id: 'water_stone', name: 'Pietra Idrica', icon: '💧' },
+        { id: 'thunder_stone', name: 'Pietra Tuono', icon: '⚡' },
+        { id: 'leaf_stone', name: 'Pietra Foglia', icon: '🍃' },
+        { id: 'moon_stone', name: 'Pietra Lunare', icon: '🌙' },
         // Caramelle specie dinamiche dai pokemon in squadra/box 
         ...[...team, ...box].reduce((acc: any[], p) => { 
           const key = `candy_${p.baseSpeciesId ?? p.pokemonId}`; 
@@ -115,8 +121,39 @@ export default function BagScreen() {
                 const isFullHeal = pendingItem.id === 'full_heal'; 
                 const disabled = isHeal ? p.currentHp >= p.stats.hp : isFullHeal ? !p.status : false; 
  
-                const handleUse = () => { 
-                  if (disabled) return; 
+                const handleUse = async () => { 
+                  if (disabled || isProcessing) return; 
+                  
+                  // Gestione Pietre Evolutive
+                  if (pendingItem.id.endsWith('_stone')) {
+                    setIsProcessing(true);
+                    try {
+                      const species = await api.getSpecies(p.pokemonId);
+                      const itemNameForApi = pendingItem.id.replace('_', '-');
+                      const evolution = await api.getEvolutionByItem(species, itemNameForApi);
+                      
+                      if (evolution) {
+                        useStore.getState().updatePlayer({}); // trigger refresh? no, meglio evolution modal
+                        useStore.setState({ 
+                          pendingEvolution: { 
+                            pokemonId: p.id, 
+                            newPokemonId: evolution.newId, 
+                            newName: evolution.newName 
+                          } 
+                        });
+                        useItem(pendingItem.id);
+                        setPendingItem(null);
+                      } else {
+                        alert(`${p.name} non può evolversi con questa pietra!`);
+                      }
+                    } catch (e) {
+                      console.error(e);
+                    } finally {
+                      setIsProcessing(false);
+                    }
+                    return;
+                  }
+
                   if (isFullHeal) { 
                     updatePokemon(p.id, { status: null, sleepTurns: undefined }); 
                   } else { 

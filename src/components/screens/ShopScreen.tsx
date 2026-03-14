@@ -8,11 +8,16 @@ const SHOP_ITEMS = [
   { id: 'potion',      name: 'Pozione',         cost: 300,  icon: '🧪', description: 'Cura 20 HP' }, 
   { id: 'full_heal',   name: 'Cura Totale',     cost: 300,  icon: '💊', description: 'Cura qualsiasi stato' }, 
   { id: 'megaball',    name: 'Megaball',        cost: 600,  icon: '🔵', unlock: 5,  description: '1.8x cattura' }, 
-  { id: 'superpotion', name: 'Superpozione',    cost: 700,  icon: '🧪', unlock: 8,  description: 'Cura 50 HP' }, 
+  { id: 'superpotion', name: 'Superpozione',    cost: 700,  icon: '🧪', unlock: 4,  description: 'Cura 50 HP' }, 
   { id: 'rare_candy',  name: 'Caramella Rara',  cost: 2500, icon: '🍬', unlock: 8,  description: '+1 livello' }, 
-  { id: 'ultraball',   name: 'Ultraball',       cost: 1200, icon: '🟡', unlock: 15, description: '3x cattura' }, 
-  { id: 'hyperpotion', name: 'Iperpozione',     cost: 1500, icon: '💊', unlock: 15, description: 'Cura 200 HP' }, 
+  { id: 'ultraball',   name: 'Ultraball',       cost: 1200, icon: '🟡', unlock: 6,  description: '3x cattura' }, 
+  { id: 'hyperpotion', name: 'Iperpozione',     cost: 1500, icon: '💊', unlock: 6,  description: 'Cura 200 HP' }, 
   { id: 'masterball',  name: 'Masterball',      cost: 9999, icon: '🟣', unlock: 3,  description: 'Cattura garantita' }, 
+  { id: 'fire_stone',   name: 'Pietra Focaia',   cost: 2100, icon: '🔥', unlock: 3,  description: 'Evolve certi Pokémon' },
+  { id: 'water_stone',  name: 'Pietra Idrica',   cost: 2100, icon: '💧', unlock: 3,  description: 'Evolve certi Pokémon' },
+  { id: 'thunder_stone',name: 'Pietra Tuono',    cost: 2100, icon: '⚡', unlock: 3,  description: 'Evolve certi Pokémon' },
+  { id: 'leaf_stone',   name: 'Pietra Foglia',   cost: 2100, icon: '🍃', unlock: 3,  description: 'Evolve certi Pokémon' },
+  { id: 'moon_stone',   name: 'Pietra Lunare',   cost: 2100, icon: '🌙', unlock: 3,  description: 'Evolve certi Pokémon' },
 ]; 
 
 

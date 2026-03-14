@@ -118,6 +118,7 @@ export const api = {
           priority: moveData.priority || 0, 
           category: moveData.damage_class.name as any, 
           description: this.getItalianDescription(moveData.flavor_text_entries), 
+          meta: moveData.meta,
           statusEffect: (() => { 
             const a = moveData.meta?.ailment?.name; 
             if (!a || a === 'none' || a === 'unknown') return undefined; 
@@ -199,9 +200,24 @@ export const api = {
       const evolution = node.evolves_to[0];
       const details = evolution.evolution_details[0];
 
-      // Controlla se evolution_details[0].min_level esiste e currentLevel >= min_level
-      // Controlla che trigger sia 'level-up'
-      if (details && details.trigger.name === 'level-up' && details.min_level !== null && currentLevel >= details.min_level) {
+      // Requisiti per l'evoluzione
+      const meetsRequirements = () => {
+        if (!details) return false;
+        
+        // Evoluzione per Livello
+        if (details.trigger.name === 'level-up') {
+          if (details.min_level !== null && currentLevel >= details.min_level) return true;
+        }
+        
+        // Evoluzione per Scambio (la trasformiamo in evoluzione per livello alto, es. 36)
+        if (details.trigger.name === 'trade') {
+          if (currentLevel >= 36) return true;
+        }
+
+        return false;
+      };
+
+      if (meetsRequirements()) {
         const nextPokemon = await this.getPokemon(evolution.species.name);
         const nextSpecies = await this.getSpecies(evolution.species.name);
         return {
@@ -213,6 +229,46 @@ export const api = {
       return null;
     } catch (e) {
       console.error("Error in getEvolutionTarget:", e);
+      return null;
+    }
+  },
+
+  async getEvolutionByItem(speciesData: any, itemName: string): Promise<{ newId: number; newName: string } | null> {
+    try {
+      const chain = await this.getEvolutionChain(speciesData.evolution_chain.url);
+      
+      let currentNode = chain.chain;
+      const findNode = (node: any, targetName: string): any => {
+        if (node.species.name === targetName) return node;
+        for (const nextNode of node.evolves_to) {
+          const found = findNode(nextNode, targetName);
+          if (found) return found;
+        }
+        return null;
+      };
+
+      const node = findNode(currentNode, speciesData.name);
+      if (!node || !node.evolves_to || node.evolves_to.length === 0) return null;
+
+      // Cerca tra le evoluzioni possibili quella che richiede l'item
+      for (const evolution of node.evolves_to) {
+        const details = evolution.evolution_details.find((d: any) => 
+          d.trigger.name === 'use-item' && d.item?.name === itemName
+        );
+
+        if (details) {
+          const nextPokemon = await this.getPokemon(evolution.species.name);
+          const nextSpecies = await this.getSpecies(evolution.species.name);
+          return {
+            newId: nextPokemon.id,
+            newName: this.getItalianName(nextSpecies.names)
+          };
+        }
+      }
+
+      return null;
+    } catch (e) {
+      console.error("Error in getEvolutionByItem:", e);
       return null;
     }
   },
@@ -239,6 +295,7 @@ export const api = {
         priority: moveData.priority || 0,
         category: moveData.damage_class.name as any,
         description: this.getItalianDescription(moveData.flavor_text_entries),
+        meta: moveData.meta,
         statusEffect: (() => { 
           const ailment = moveData.meta?.ailment?.name; 
           if (!ailment || ailment === 'none' || ailment === 'unknown') return undefined; 

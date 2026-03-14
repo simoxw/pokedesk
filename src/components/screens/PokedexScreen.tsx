@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { useStore } from '../../store'; 
 import { api } from '../../api'; 
 import { motion, AnimatePresence } from 'motion/react'; 
-import { ArrowLeft, X, Heart, Sword, Shield, Zap, Activity } from 'lucide-react'; 
+import { ArrowLeft, X, Heart, Sword, Shield, Zap, Activity, Filter, Search } from 'lucide-react'; 
 import TypeBadge from '../ui/TypeBadge'; 
 
 const STAT_META: Record<string, { label: string; icon: React.ReactNode; color: string }> = { 
@@ -32,6 +32,25 @@ export default function PokedexScreen() {
   const [loadingModal, setLoadingModal] = useState(false); 
   const [tab, setTab] = useState<'info' | 'stats' | 'moves' | 'evo'>('info'); 
   const [evolutions, setEvolutions] = useState<{ name: string; id: number; sprite: string }[]>([]); 
+  const [filterType, setFilterType] = useState<string | null>(null);
+  const [filterGen, setFilterGen] = useState<number | null>(null);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [showFilters, setShowFilters] = useState(false);
+
+  const GEN_RANGES = [
+    { id: 1, label: 'Gen 1', range: [1, 151] },
+    { id: 2, label: 'Gen 2', range: [152, 251] },
+    { id: 3, label: 'Gen 3', range: [252, 386] },
+    { id: 4, label: 'Gen 4', range: [387, 493] },
+    { id: 5, label: 'Gen 5', range: [494, 649] },
+    { id: 6, label: 'Gen 6', range: [650, 721] },
+  ];
+
+  const TYPES = [
+    'normal', 'fire', 'water', 'grass', 'electric', 'ice', 
+    'fighting', 'poison', 'ground', 'flying', 'psychic', 'bug', 
+    'rock', 'ghost', 'dragon', 'steel', 'dark', 'fairy'
+  ];
  
   const entries = Array.from({ length: 721 }, (_, i) => i + 1); 
  
@@ -69,16 +88,72 @@ export default function PokedexScreen() {
   const seen  = Object.values(pokedex).filter(s => s === 'seen').length; 
   const caught = Object.values(pokedex).filter(s => s === 'caught').length; 
  
+  const filteredEntries = Object.entries(pokedex)
+    .filter(([, status]) => status === 'caught')
+    .map(([id]) => Number(id))
+    .filter(id => {
+      // Filtro Generazione
+      if (filterGen) {
+        const range = GEN_RANGES.find(g => g.id === filterGen)?.range;
+        if (range && (id < range[0] || id > range[1])) return false;
+      }
+      return true;
+    })
+    .sort((a, b) => a - b);
+
   return ( 
     <div className="h-full flex flex-col bg-[#0f0f1a]"> 
       {/* Header */} 
       <div className="p-6 pb-3"> 
-        <div className="flex items-center gap-4 mb-4"> 
-          <button onClick={() => setScreen('HUB_SCREEN')} className="p-2 bg-[#1a1a2e] rounded-xl"> 
-            <ArrowLeft size={20} /> 
-          </button> 
-          <h2 className="text-2xl font-black uppercase tracking-tighter">Pokédex</h2> 
+        <div className="flex items-center justify-between mb-4"> 
+          <div className="flex items-center gap-4">
+            <button onClick={() => setScreen('HUB_SCREEN')} className="p-2 bg-[#1a1a2e] rounded-xl"> 
+              <ArrowLeft size={20} /> 
+            </button> 
+            <h2 className="text-2xl font-black uppercase tracking-tighter">Pokédex</h2> 
+          </div>
+          <button 
+            onClick={() => setShowFilters(!showFilters)}
+            className={`p-2 rounded-xl transition-colors ${showFilters ? 'bg-[#e63946] text-white' : 'bg-[#1a1a2e] text-white/60'}`}
+          >
+            <Filter size={20} />
+          </button>
         </div> 
+
+        <AnimatePresence>
+          {showFilters && (
+            <motion.div 
+              initial={{ height: 0, opacity: 0 }}
+              animate={{ height: 'auto', opacity: 1 }}
+              exit={{ height: 0, opacity: 0 }}
+              className="overflow-hidden mb-4"
+            >
+              <div className="bg-[#1a1a2e] rounded-2xl p-4 border border-white/5 space-y-4">
+                <div>
+                  <p className="text-[10px] font-black text-white/30 uppercase mb-2">Generazione</p>
+                  <div className="flex flex-wrap gap-2">
+                    <button 
+                      onClick={() => setFilterGen(null)}
+                      className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all ${!filterGen ? 'bg-[#e63946] text-white' : 'bg-white/5 text-white/40'}`}
+                    >
+                      TUTTE
+                    </button>
+                    {GEN_RANGES.map(gen => (
+                      <button 
+                        key={gen.id}
+                        onClick={() => setFilterGen(gen.id)}
+                        className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all ${filterGen === gen.id ? 'bg-[#e63946] text-white' : 'bg-white/5 text-white/40'}`}
+                      >
+                        {gen.label}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+
         <div className="flex gap-3"> 
           <div className="flex-1 bg-[#1a1a2e] rounded-2xl p-3 text-center border border-white/5"> 
             <div className="text-xl font-black text-yellow-400">{caught}</div> 
@@ -97,18 +172,14 @@ export default function PokedexScreen() {
  
       {/* Griglia — solo catturati */} 
       <div className="overflow-y-auto flex-1 px-4 pb-24 no-scrollbar"> 
-        {Object.entries(pokedex).filter(([, status]) => status === 'caught').length === 0 ? ( 
+        {filteredEntries.length === 0 ? ( 
           <div className="flex flex-col items-center justify-center h-full text-white/20 gap-3"> 
             <span className="text-5xl">📖</span> 
-            <p className="font-bold text-sm">Nessun Pokémon catturato ancora!</p> 
+            <p className="font-bold text-sm">Nessun Pokémon trovato!</p> 
           </div> 
         ) : ( 
           <div className="grid grid-cols-4 gap-3"> 
-            {Object.entries(pokedex) 
-              .filter(([, status]) => status === 'caught') 
-              .sort(([a], [b]) => Number(a) - Number(b)) 
-              .map(([idStr]) => { 
-                const id = Number(idStr); 
+            {filteredEntries.map((id) => { 
                 return ( 
                   <button 
                     key={id} 
