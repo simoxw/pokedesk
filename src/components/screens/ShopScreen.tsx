@@ -9,7 +9,7 @@ const SHOP_ITEMS = [
   { id: 'ultraball', name: 'Ultraball', cost: 1200, icon: '🟡', unlock: 15 },
   { id: 'potion', name: 'Pozione', cost: 300, icon: '🧪' },
   { id: 'superpotion', name: 'Superpozione', cost: 700, icon: '🧪', unlock: 10 },
-  { id: 'antidote', name: 'Antidoto', cost: 150, icon: '💊' },
+  { id: 'full_heal', name: 'Cura Totale', cost: 300, icon: '💊', description: 'Cura qualsiasi stato alterato' },
   { id: 'rare_candy', name: 'Caramella Rara', cost: 2500, icon: '🍬', unlock: 10 },
 ];
 

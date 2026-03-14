@@ -1,4 +1,27 @@
 import React from 'react';
+
+function getExpForLevel(growthRate: string, level: number): number { 
+  if (level >= 100) return 0; 
+  switch (growthRate) { 
+    case 'slow': return Math.floor(5 * level ** 3 / 4); 
+    case 'medium-slow': return Math.max(0, Math.floor(6/5 * level**3 - 15*level**2 + 100*level - 140)); 
+    case 'fast': return Math.floor(4 * level ** 3 / 5); 
+    default: return Math.floor(level ** 3); // medium 
+  } 
+} 
+ 
+function getExpProgress(pokemon: any) { 
+  if (pokemon.level >= 100) return { current: 0, needed: 0, percent: 100 }; 
+  const expThisLevel = getExpForLevel(pokemon.growthRate ?? 'medium', pokemon.level); 
+  const expNextLevel = getExpForLevel(pokemon.growthRate ?? 'medium', pokemon.level + 1); 
+  const needed = expNextLevel - expThisLevel; 
+  const totalExp = pokemon.exp || 0; 
+  // Se exp < soglia del livello attuale, lo trattiamo come 0 progresso (Pokémon vecchi) 
+  const current = totalExp < expThisLevel ? 0 : totalExp - expThisLevel; 
+  const percent = needed > 0 ? Math.min(100, Math.floor((current / needed) * 100)) : 100; 
+  return { current, needed, percent }; 
+} 
+
 import { motion, AnimatePresence } from 'motion/react';
 import { X, Shield, Zap, Sword, Heart, Activity, Target } from 'lucide-react';
 import { Pokemon } from '../../types';
@@ -73,11 +96,21 @@ export default function PokemonDetailsModal({ pokemon, onClose }: PokemonDetails
                 <p className="text-[10px] uppercase font-black text-white/30">Natura</p>
                 <p className="font-bold text-lg">{pokemon.nature}</p>
               </div>
-              <div className="space-y-1">
-                <p className="text-[10px] uppercase font-black text-white/30">Esperienza</p>
-                <div className="w-full h-2 bg-white/10 rounded-full overflow-hidden">
-                  <div className="h-full bg-blue-500" style={{ width: '40%' }} />
-                </div>
+              <div className="mb-4"> 
+                <div className="flex justify-between items-center mb-1"> 
+                  <span className="text-[10px] font-bold text-white/40 uppercase tracking-widest">Esperienza</span> 
+                  {pokemon.level < 100 && ( 
+                    <span className="text-[10px] text-white/40"> 
+                      {getExpProgress(pokemon).current} / {getExpProgress(pokemon).needed} al prossimo lv. 
+                    </span> 
+                  )} 
+                </div> 
+                <div className="w-full bg-white/10 rounded-full h-2"> 
+                  <div 
+                    className="h-2 rounded-full bg-blue-400 transition-all" 
+                    style={{ width: `${getExpProgress(pokemon).percent}%` }} 
+                  /> 
+                </div> 
               </div>
             </div>
           </div>

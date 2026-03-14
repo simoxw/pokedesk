@@ -8,7 +8,7 @@ import { Zap, Sparkles, X } from 'lucide-react';
 import confetti from 'canvas-confetti';
 
 export default function CatchScreen() {
-  const { consumeCharge, addPokemon, setScreen, medals, team, incrementStat, addItem } = useStore();
+  const { consumeCharge, addPokemon, setScreen, medals, team, incrementStat, addItem, inventory } = useStore();
   const [pokemon, setPokemon] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [isShiny, setIsShiny] = useState(false);
@@ -17,9 +17,19 @@ export default function CatchScreen() {
   const [result, setResult] = useState<'success' | 'fail' | null>(null);
   const [circleSize, setCircleSize] = useState(100);
   const [attempts, setAttempts] = useState(0);
-  const [ballPos, setBallPos] = useState<{ x: number; y: number } | null>(null);
-  const [ballVisible, setBallVisible] = useState(false);
-  const maxAttempts = 3;
+  const [ballPos, setBallPos] = useState<{ x: number; y: number } | null>(null); 
+  const [ballVisible, setBallVisible] = useState(false); 
+  const maxAttempts = 3; 
+  const [dropMessage, setDropMessage] = useState<string | null>(null); 
+
+  useEffect(() => { 
+    if (!inventory[ballType] || inventory[ballType] === 0) { 
+      const firstAvailable = ['pokeball','megaball','ultraball','masterball'] 
+        .find(b => (inventory[b] || 0) > 0); 
+      if (firstAvailable) setBallType(firstAvailable); 
+    } 
+  }, [inventory, ballType]); 
+
 
   useEffect(() => {
     const initEncounter = async () => {
@@ -61,9 +71,11 @@ export default function CatchScreen() {
     if (circleSize < 40) bonus = 2.0;
     else if (circleSize < 70) bonus = 1.5;
 
-    const success = CatchEngine.calculateCatchRate(pokemon.species, ballType, bonus, isShiny);
-    const newAttempts = attempts + 1;
-    setAttempts(newAttempts);
+    useStore.getState().useItem(ballType); 
+    const success = CatchEngine.calculateCatchRate(pokemon.species, ballType, bonus, isShiny); 
+    const newAttempts = attempts + 1; 
+    setAttempts(newAttempts); 
+
     
     await new Promise(r => setTimeout(r, 1200)); // animazione volo palla 
     setBallVisible(false);
@@ -88,12 +100,21 @@ export default function CatchScreen() {
       const moves = await api.getPokemonMoves(pokemon, pokemon.level);
 
       const baseSpeciesId = await api.getBaseSpeciesId(pokemon.species);
+      const startExp = (() => { 
+        const l = pokemon.level; 
+        switch (pokemon.species.growth_rate.name) { 
+          case 'slow': return Math.floor(5 * l ** 3 / 4); 
+          case 'medium-slow': return Math.max(0, Math.floor(6/5 * l**3 - 15*l**2 + 100*l - 140)); 
+          case 'fast': return Math.floor(4 * l ** 3 / 5); 
+          default: return Math.floor(l ** 3); 
+        } 
+      })(); 
       addPokemon({
         id: Math.random().toString(36).substr(2, 9),
         pokemonId: pokemon.id,
         name: api.getItalianName(pokemon.species.names),
         level: pokemon.level,
-        exp: 0,
+        exp: startExp,
         types: pokemon.types.map((t: any) => t.type.name),
         baseStats,
         ivs,
@@ -112,6 +133,23 @@ export default function CatchScreen() {
       if (isShiny) incrementStat('shiniesFound');
       // +3 caramelle specie alla cattura 
       addItem(`candy_${baseSpeciesId}`, 3);
+
+      // Drop fissi sempre garantiti 
+      addItem('pokeball', 2); 
+      addItem('potion', 2); 
+      const drops: string[] = ['🔴 2 Pokéball', '🧪 2 Pozioni']; 
+
+      // Drop bonus casuali indipendenti 
+      if (Math.random() < 0.1) { 
+        addItem('superpotion', 1); 
+        drops.push('🧪 1 Superpozione'); 
+      } 
+      if (Math.random() < 0.1) { 
+        addItem('full_heal', 1); 
+        drops.push('💊 1 Cura Totale'); 
+      } 
+
+      setDropMessage(drops.join(' · ')); 
     } else {
       // Fallito: controlla se ha ancora tentativi 
       if (newAttempts >= maxAttempts) {
@@ -203,6 +241,9 @@ export default function CatchScreen() {
                 <>
                   <div className="text-5xl mb-3">🎉</div>
                   <h3 className="text-2xl font-black mb-1">CATTURATO!</h3>
+                  {dropMessage && ( 
+                    <p className="text-yellow-400 text-xs font-bold mb-2">🎁 {dropMessage}</p> 
+                  )} 
                   <p className="text-white/60 text-sm mb-4">{pokemon && (pokemon.species?.names ? api.getItalianName(pokemon.species.names) : pokemon.name)} aggiunto alla squadra!</p>
                 </>
               ) : (
@@ -221,17 +262,41 @@ export default function CatchScreen() {
             </motion.div>
           ) : (
             <div className="flex flex-col gap-6">
-              <div className="flex gap-4 overflow-x-auto pb-2 no-scrollbar">
-                {['pokeball', 'megaball', 'ultraball'].map(ball => (
-                  <button
-                    key={ball}
-                    onClick={() => setBallType(ball)}
-                    className={`flex-shrink-0 p-2 rounded-xl border-2 transition-all ${ballType === ball ? 'border-[#e63946] bg-[#e63946]/20' : 'border-white/10'}`}
-                  >
-                    <img src={`/balls/${ball}.png`} alt={ball} className="w-12 h-12" onError={(e) => (e.currentTarget.src = `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/items/${ball === 'megaball' ? 'great-ball' : ball === 'ultraball' ? 'ultra-ball' : ball === 'masterball' ? 'master-ball' : 'poke-ball'}.png`)} />
-                  </button>
-                ))}
-              </div>
+              <div className="flex gap-3 overflow-x-auto pb-2 no-scrollbar"> 
+                {[ 
+                  { id: 'pokeball',   sprite: 'poke-ball',   label: 'Pokéball'   }, 
+                  { id: 'megaball',   sprite: 'great-ball',  label: 'Megaball'   }, 
+                  { id: 'ultraball',  sprite: 'ultra-ball',  label: 'Ultraball'  }, 
+                  { id: 'masterball', sprite: 'master-ball', label: 'Masterball' }, 
+                ].map(ball => { 
+                  const qty = inventory[ball.id] || 0; 
+                  const isEmpty = qty === 0; 
+                  return ( 
+                    <button 
+                      key={ball.id} 
+                      onClick={() => !isEmpty && setBallType(ball.id)} 
+                      disabled={isEmpty} 
+                      className={`flex-shrink-0 flex flex-col items-center gap-1 p-2 rounded-xl border-2 transition-all ${ 
+                        ballType === ball.id 
+                          ? 'border-[#e63946] bg-[#e63946]/20' 
+                          : isEmpty 
+                          ? 'border-white/5 opacity-30 cursor-not-allowed' 
+                          : 'border-white/10' 
+                      }`} 
+                    > 
+                      <img 
+                        src={`https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/items/${ball.sprite}.png`} 
+                        alt={ball.label} 
+                        className="w-10 h-10 object-contain" 
+                      /> 
+                      <span className={`text-[10px] font-black ${isEmpty ? 'text-white/30' : 'text-white/80'}`}> 
+                        x{qty} 
+                      </span> 
+                    </button> 
+                  ); 
+                })} 
+              </div> 
+
 
               {/* Indicatore tentativi */}
               <div className="flex justify-center gap-2 mb-2">

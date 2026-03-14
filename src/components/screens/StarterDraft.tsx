@@ -47,12 +47,20 @@ export default function StarterDraft() {
         const moves = await api.getPokemonMoves(data, 5);
         const baseSpeciesId = await api.getBaseSpeciesId(species);
 
+        const startExp = (() => { 
+          switch (species.growth_rate.name) { 
+            case 'slow': return Math.floor(5 * 5 ** 3 / 4); 
+            case 'medium-slow': return Math.max(0, Math.floor(6/5 * 125 - 15*25 + 100*5 - 140)); 
+            case 'fast': return Math.floor(4 * 5 ** 3 / 5); 
+            default: return Math.floor(5 ** 3); // 125 
+          } 
+        })(); 
         const pokemon: Pokemon = {
           id: Math.random().toString(36).substr(2, 9),
           pokemonId: id,
           name: api.getItalianName(species.names),
           level: 5,
-          exp: 0,
+          exp: startExp,
           types: data.types.map((t: any) => t.type.name),
           baseStats,
           ivs,

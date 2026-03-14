@@ -169,12 +169,17 @@ export default function BattleScreen() {
   const handleUseItem = (itemId: string, itemName: string) => {
     const pkm = team[activeIdx];
     if (!pkm) return;
-    let healed = 0;
-    if (itemId === 'potion') healed = 20;
-    if (itemId === 'superpotion') healed = 50;
-    if (itemId === 'hyperpotion') healed = 200;
-    const newHp = Math.min(pkm.stats.hp, pkm.currentHp + healed);
-    updatePokemon(pkm.id, { currentHp: newHp });
+    if (itemId === 'full_heal') { 
+      updatePokemon(pkm.id, { status: null, sleepTurns: undefined }); 
+      addLog(`${pkm.name} è guarito dagli effetti di stato!`); 
+    } else { 
+      let healed = 0; 
+      if (itemId === 'potion') healed = 20; 
+      if (itemId === 'superpotion') healed = 50; 
+      if (itemId === 'hyperpotion') healed = 200; 
+      const newHp = Math.min(pkm.stats.hp, pkm.currentHp + healed); 
+      updatePokemon(pkm.id, { currentHp: newHp }); 
+    } 
     useItem(itemId);
     addLog(`Hai usato ${itemName} su ${pkm.name}!`);
     setShowBagOverlay(false);
@@ -208,19 +213,29 @@ export default function BattleScreen() {
       const newEnemyHp = Math.max(0, enemy.currentHp - damage);
 
       addLog(`${playerPkmn.name} usa ${move.name}!`);
-      if (move.category === 'status') {
-        // Mosse di boost/debuff 
-        if (['swordsdance', 'growl', 'tailwhip', 'leer', 'screech', 'agility', 'amnesia'].includes(move.id)) {
-          const isBoost = ['swordsdance', 'agility', 'amnesia'].includes(move.id);
-          setStatChanges({ label: isBoost ? '↑ STAT +' : '↓ STAT −', positive: isBoost });
-          setTimeout(() => setStatChanges(null), 2500);
-        }
-        // Applica effetti di stato al nemico 
-        if (move.statusEffect && enemy) {
-          setEnemy((prev: any) => ({ ...prev, status: move.statusEffect }));
-          addLog(`${enemy.name} è ora ${move.statusEffect}!`);
-        }
-      }
+      if (move.category === 'status') { 
+        // ID numerici PokeAPI delle mosse stat 
+        // Boost: Danzaspada=14, Agilità=97, Amnesia=133, Calma Mente=347, Nascondiglio=104 
+        const BOOST_IDS = new Set(['14','97','133','347','104','116','219','317']); 
+        // Debuff: Ruggito=45, Occhiaccio=43, Coda Scodinzolante=39, Strido=246 
+        const DEBUFF_IDS = new Set(['45','43','39','246','50','186','204']); 
+
+        if (BOOST_IDS.has(move.id)) { 
+          setStatChanges({ label: '↑ STAT +', positive: true }); 
+          setTimeout(() => setStatChanges(null), 2500); 
+          addLog(`Le statistiche di ${playerPkmn.name} sono aumentate!`); 
+        } else if (DEBUFF_IDS.has(move.id)) { 
+          setStatChanges({ label: '↓ STAT −', positive: false }); 
+          setTimeout(() => setStatChanges(null), 2500); 
+          addLog(`Le statistiche di ${enemy?.name} sono diminuite!`); 
+        } 
+
+        // Effetti di stato al nemico 
+        if (move.statusEffect && enemy && !enemy.status) { 
+          setEnemy((prev: any) => ({ ...prev, status: move.statusEffect })); 
+          addLog(`${enemy.name} è ora ${move.statusEffect}!`); 
+        } 
+      } 
       if (isCrit) addLog('Brutto colpo!');
       if (effLabel) addLog(effLabel);
 
@@ -235,13 +250,15 @@ export default function BattleScreen() {
 
       if (newEnemyHp <= 0) {
         addLog(`${enemy.name} è esausto!`);
-        const exp = BattleEngine.calculateExp(100, enemy.level);
+        const baseExp = enemy.base_experience || 100; 
+        const exp = BattleEngine.calculateExp(baseExp, enemy.level);
         addLog(`${playerPkmn.name} guadagna ${exp} ESP!`);
+        const levelBefore = playerPkmn.level;
         gainExp(playerPkmn.id, exp);
-        // Controlla level up 
-        const updatedPkmn = team.find(p => p.id === playerPkmn.id);
-        if (updatedPkmn && updatedPkmn.level > playerPkmn.level) {
-          addLog(`${playerPkmn.name} è salito al livello ${updatedPkmn.level}!`);
+        // Leggi lo stato aggiornato direttamente dallo store 
+        const newLevel = (useStore.getState() as any).team.find((p: any) => p.id === playerPkmn.id)?.level;
+        if (newLevel && newLevel > levelBefore) {
+          addLog(`⬆️ ${playerPkmn.name} è salito al livello ${newLevel}!`);
         }
         addCoins(50);
         incrementStat('totalBattles');
@@ -281,13 +298,15 @@ export default function BattleScreen() {
 
       if (newEnemyHp <= 0) {
         addLog(`${enemy.name} è esausto!`);
-        const exp = BattleEngine.calculateExp(100, enemy.level);
+        const baseExp = enemy.base_experience || 100;
+        const exp = BattleEngine.calculateExp(baseExp, enemy.level);
         addLog(`${playerPkmn.name} guadagna ${exp} ESP!`);
+        const levelBefore = playerPkmn.level;
         gainExp(playerPkmn.id, exp);
-        // Controlla level up 
-        const updatedPkmn = team.find(p => p.id === playerPkmn.id);
-        if (updatedPkmn && updatedPkmn.level > playerPkmn.level) {
-          addLog(`${playerPkmn.name} è salito al livello ${updatedPkmn.level}!`);
+        // Leggi lo stato aggiornato direttamente dallo store 
+        const newLevel = (useStore.getState() as any).team.find((p: any) => p.id === playerPkmn.id)?.level;
+        if (newLevel && newLevel > levelBefore) {
+          addLog(`⬆️ ${playerPkmn.name} è salito al livello ${newLevel}!`);
         }
         addCoins(50);
         incrementStat('totalBattles');
@@ -584,10 +603,11 @@ export default function BattleScreen() {
                   <X size={18} />
                 </button>
               </div>
-              {[
-                { id: 'potion', name: 'Pozione', heal: 20, icon: '🧪' },
-                { id: 'superpotion', name: 'Superpozione', heal: 50, icon: '🧪' },
-                { id: 'hyperpotion', name: 'Iperpozione', heal: 200, icon: '💊' },
+              {[ 
+                { id: 'potion', name: 'Pozione', heal: 20, icon: '🧪' }, 
+                { id: 'superpotion', name: 'Superpozione', heal: 50, icon: '🧪' }, 
+                { id: 'hyperpotion', name: 'Iperpozione', heal: 200, icon: '💊' }, 
+                { id: 'full_heal', name: 'Cura Totale', heal: 0, icon: '💊' }, 
               ].map(item => (
                 <button
                   key={item.id}

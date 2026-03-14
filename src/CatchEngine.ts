@@ -9,15 +9,14 @@ export const CatchEngine = {
   ): boolean {
     const baseRate = pokemon.capture_rate || 45;
     
-    let ballMultiplier = 1.0;
-    if (ballType === 'megaball') ballMultiplier = 1.5;
-    if (ballType === 'ultraball') ballMultiplier = 2.0;
-    if (ballType === 'masterball') return true;
+    let ballMultiplier = 1.0; 
+    if (ballType === 'megaball') ballMultiplier = 1.8; 
+    if (ballType === 'ultraball') ballMultiplier = 3.0; 
+    if (ballType === 'masterball') return true; 
+ 
+    const rawProb = (baseRate * ballMultiplier * circleSizeBonus) / 255; 
+    const catchProb = Math.min(0.95, rawProb + 0.10); 
 
-    // Simplified GO-style catch formula
-    // Probability = 1 - (1 - CatchRate / (2 * MaxHP))^Multiplier
-    // Since HP is always 100% in catch screen:
-    const catchProb = (baseRate * ballMultiplier * circleSizeBonus) / 255;
     
     return Math.random() < catchProb;
   },

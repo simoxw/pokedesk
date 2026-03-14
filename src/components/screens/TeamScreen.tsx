@@ -22,6 +22,27 @@ import HPBar from '../ui/HPBar';
 import TypeBadge from '../ui/TypeBadge';
 import PokemonDetailsModal from '../ui/PokemonDetailsModal';
 
+function getExpForLevel(growthRate: string, level: number): number { 
+  if (level >= 100) return 0; 
+  switch (growthRate) { 
+    case 'slow': return Math.floor(5 * level ** 3 / 4); 
+    case 'medium-slow': return Math.max(0, Math.floor(6/5 * level**3 - 15*level**2 + 100*level - 140)); 
+    case 'fast': return Math.floor(4 * level ** 3 / 5); 
+    default: return Math.floor(level ** 3); 
+  } 
+} 
+function getExpProgress(pokemon: any) { 
+  if (pokemon.level >= 100) return { current: 0, needed: 0, percent: 100 }; 
+  const expThisLevel = getExpForLevel(pokemon.growthRate ?? 'medium', pokemon.level); 
+  const expNextLevel = getExpForLevel(pokemon.growthRate ?? 'medium', pokemon.level + 1); 
+  const needed = expNextLevel - expThisLevel; 
+  const totalExp = pokemon.exp || 0; 
+  // Se exp < soglia del livello attuale, lo trattiamo come 0 progresso (Pokémon vecchi) 
+  const current = totalExp < expThisLevel ? 0 : totalExp - expThisLevel; 
+  const percent = needed > 0 ? Math.min(100, Math.floor((current / needed) * 100)) : 100; 
+  return { current, needed, percent }; 
+} 
+
 function SortableItem({ pokemon, index, onRemove, onSelect, onUseCandy, onCandyCount }: any) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: pokemon.id });
   const style = {
@@ -46,17 +67,25 @@ function SortableItem({ pokemon, index, onRemove, onSelect, onUseCandy, onCandyC
           <span className="text-[10px] bg-[#e63946] px-2 py-0.5 rounded-full font-bold">Lv.{pokemon.level}</span>
         </div>
         <div className="text-xs text-white/40 mt-1">HP {pokemon.currentHp}/{pokemon.stats.hp}</div>
-        <div className="w-full bg-white/10 rounded-full h-1.5 mt-1">
-          <div
-            className="bg-green-400 h-1.5 rounded-full"
-            style={{ width: `${(pokemon.currentHp / pokemon.stats.hp) * 100}%` }}
-          />
-        </div>
+        <div className="w-full bg-white/10 rounded-full h-1.5 mt-1"> 
+          <div 
+            className="bg-green-400 h-1.5 rounded-full" 
+            style={{ width: `${(pokemon.currentHp / pokemon.stats.hp) * 100}%` }} 
+          /> 
+        </div> 
+        {pokemon.level < 100 && ( 
+          <div className="w-full bg-white/10 rounded-full h-1 mt-1"> 
+            <div 
+              className="bg-blue-400 h-1 rounded-full" 
+              style={{ width: `${getExpProgress(pokemon).percent}%` }} 
+            /> 
+          </div> 
+        )} 
       </div>
-      <div className="flex flex-col gap-2">
-        <button onClick={() => onSelect(pokemon)} className="p-2 bg-white/5 rounded-xl">
-          <Info size={16} />
-        </button>
+      <div className="flex flex-col gap-2" onPointerDown={e => e.stopPropagation()}> 
+        <button onClick={() => onSelect(pokemon)} className="p-2 bg-white/5 rounded-xl"> 
+          <Info size={16} /> 
+        </button> 
         <button 
           onClick={() => onUseCandy(pokemon)} 
           className="p-2 bg-yellow-500/10 rounded-xl text-yellow-400" 
@@ -64,9 +93,9 @@ function SortableItem({ pokemon, index, onRemove, onSelect, onUseCandy, onCandyC
         > 
           🍭 
         </button> 
-        <button onClick={() => onRemove(index)} className="p-2 bg-red-500/10 rounded-xl text-red-400">
-          <Trash2 size={16} />
-        </button>
+        <button onClick={() => onRemove(index)} className="p-2 bg-red-500/10 rounded-xl text-red-400"> 
+          <Trash2 size={16} /> 
+        </button> 
       </div>
     </div>
   );
