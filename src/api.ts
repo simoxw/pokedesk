@@ -83,7 +83,7 @@ export const api = {
       'bestow','embargo','heal-block','perish-song','yawn','imprison',
       'frustration','return','beat-up',
       'leech-seed','ingrain','aqua-ring','curse','nightmare','telekinesis','magnet-rise',
-      'autotomize','charge','recycle','belch','false-swipe','wish','struggle',
+      'autotomize','charge','recycle','belch','false-swipe','wish','struggle', 'teleport',
     ]);
 
     const levelUpMoves = pokemonData.moves
