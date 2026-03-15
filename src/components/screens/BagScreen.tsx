@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { useStore } from '../../store';
+import { api } from '../../api';
 import { motion, AnimatePresence } from 'motion/react';
 import { ArrowLeft, Package, Heart, Zap, Star } from 'lucide-react';
 
@@ -17,8 +18,8 @@ export default function BagScreen() {
       { id: 'masterball', name: 'Masterball', icon: '🟣' },
     ],
     heal: [
-      { id: 'potion', name: 'Pozione', icon: '🧪', description: 'Ripristina 20 HP' },
-      { id: 'superpotion', name: 'Superpozione', icon: '🧪', description: 'Ripristina 50 HP' },
+      { id: 'potion', name: 'Pozione', icon: '🧪', description: 'Ripristina 30 HP' },
+      { id: 'superpotion', name: 'Superpozione', icon: '🧪', description: 'Ripristina 80 HP' },
       { id: 'hyperpotion', name: 'Iperpozione', icon: '🧪', description: 'Ripristina 200 HP' },
       { id: 'full_heal', name: 'Cura Totale', icon: '💊', description: 'Cura qualsiasi stato alterato (PSN, BRN, PAR, SLP, FRZ)' },
     ],
@@ -158,8 +159,8 @@ export default function BagScreen() {
                     updatePokemon(p.id, { status: null, sleepTurns: undefined }); 
                   } else { 
                     let healed = 0; 
-                    if (pendingItem.id === 'potion') healed = 20; 
-                    if (pendingItem.id === 'superpotion') healed = 50; 
+                    if (pendingItem.id === 'potion') healed = 30; 
+                    if (pendingItem.id === 'superpotion') healed = 80; 
                     if (pendingItem.id === 'hyperpotion') healed = 200; 
                     const newHp = Math.min(p.stats.hp, p.currentHp + healed); 
                     updatePokemon(p.id, { currentHp: newHp }); 

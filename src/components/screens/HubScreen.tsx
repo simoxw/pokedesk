@@ -92,18 +92,18 @@ export default function HubScreen() {
               <div className="flex justify-between items-center mb-2"> 
                 <span className="text-[10px] font-bold text-white/40 uppercase tracking-widest">Progresso Palestra</span> 
                 <span className="text-[10px] font-bold text-white/60"> 
-                  {currentBattlePath.battlesWon % 10}/10 
+                  {currentBattlePath.battlesWon % 15}/15 
                 </span> 
               </div> 
               <div className="w-full bg-white/10 rounded-full h-2 overflow-hidden"> 
                 <motion.div 
                   className="h-full rounded-full bg-gradient-to-r from-indigo-500 to-purple-500" 
-                  animate={{ width: `${(currentBattlePath.battlesWon % 10) * 10}%` }} 
+                  animate={{ width: `${((currentBattlePath.battlesWon % 15) / 15) * 100}%` }} 
                   transition={{ duration: 0.5 }} 
                 /> 
               </div> 
               <p className="text-[10px] text-white/30 mt-1.5 text-center"> 
-                {10 - (currentBattlePath.battlesWon % 10)} battaglie al prossimo Capopalestra 
+                {15 - (currentBattlePath.battlesWon % 15)} battaglie al prossimo Capopalestra 
               </p> 
             </div> 
           )} 

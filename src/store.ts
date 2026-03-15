@@ -336,7 +336,7 @@ export const useStore = create<GameStore>()(
         let { battlesWon, nextIsBoss } = state.currentBattlePath;
         if (!nextIsBoss) {
           battlesWon += 1;
-          if (battlesWon % 10 === 0) {
+          if (battlesWon % 15 === 0) {
             nextIsBoss = true;
           }
           return { currentBattlePath: { battlesWon, nextIsBoss } };

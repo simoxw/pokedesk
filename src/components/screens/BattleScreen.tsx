@@ -10,7 +10,7 @@ import TypeBadge from '../ui/TypeBadge';
 import confetti from 'canvas-confetti';
 
 export default function BattleScreen() {
-  const { team, setScreen, incrementStat, addCoins, updatePokemon, inventory, useItem, gainExp, currentBattlePath, recordBattleWin, medals } = useStore();
+  const { team, setScreen, incrementStat, addCoins, addItem, updatePokemon, inventory, useItem, gainExp, currentBattlePath, recordBattleWin, medals } = useStore();
   const medalsCount = medals.filter((m: any) => m.isUnlocked).length;
   const [activeIdx, setActiveIdx] = useState(0);
   const [enemy, setEnemy] = useState<any>(null);
@@ -29,6 +29,8 @@ export default function BattleScreen() {
   const [playerFlinch, setPlayerFlinch] = useState(false);
   const [activeMoveTooltip, setActiveMoveTooltip] = useState<any>(null);
   const tooltipTimeout = React.useRef<any>(null);
+  const enemyRef = React.useRef<any>(null);
+  enemyRef.current = enemy;
 
   const playerPkmn = team[activeIdx];
   const isBoss = currentBattlePath.nextIsBoss;
@@ -117,10 +119,11 @@ export default function BattleScreen() {
   }, []);
 
   const executeEnemyTurn = async (currentPlayerPkmn: any) => {
-    if (!enemy || enemy.currentHp <= 0) return;
     await new Promise(r => setTimeout(r, 800));
+    const liveEnemy = enemyRef.current ?? enemy;
+    if (!liveEnemy || liveEnemy.currentHp <= 0) return;
 
-    const validMoves = enemy.moves.filter((m: any) => m.pp > 0 && m.category !== 'status');
+    const validMoves = liveEnemy.moves.filter((m: any) => m.pp > 0 && m.category !== 'status');
     
     // Costruisci pool pesato: mosse super efficaci 3x, normali 1x, non efficaci 0.5x 
     const movePool: any[] = []; 
@@ -136,13 +139,17 @@ export default function BattleScreen() {
 
     // --- CHECK STATUS NEMICO: blocca il turno se necessario ---
     // SLP: 20% chance di svegliarsi ogni turno
-    if (enemy.status === 'SLP') {
+    if (liveEnemy.status === 'SLP') {
       if (Math.random() < 0.2) {
-        setEnemy((prev: any) => ({ ...prev, status: null }));
-        addLog(`${enemy.name} si è svegliato!`);
+        setEnemy((prev: any) => {
+          const next = { ...prev, status: null };
+          enemyRef.current = next;
+          return next;
+        });
+        addLog(`${liveEnemy.name} si è svegliato!`);
         // Prosegue con l'attacco dopo essersi svegliato
       } else {
-        addLog(`${enemy.name} sta dormendo profondamente...`);
+        addLog(`${liveEnemy.name} sta dormendo profondamente...`);
         setTurn('player');
         setIsAnimating(false);
         return;
@@ -150,12 +157,16 @@ export default function BattleScreen() {
     }
 
     // FRZ: 20% unfreeze else skip 
-    if (enemy.status === 'FRZ') {
+    if (liveEnemy.status === 'FRZ') {
       if (Math.random() < 0.2) {
-        setEnemy((prev: any) => ({ ...prev, status: null }));
-        addLog(`${enemy.name} si è scongelato!`);
+        setEnemy((prev: any) => {
+          const next = { ...prev, status: null };
+          enemyRef.current = next;
+          return next;
+        });
+        addLog(`${liveEnemy.name} si è scongelato!`);
       } else {
-        addLog(`${enemy.name} è congelato!`);
+        addLog(`${liveEnemy.name} è congelato!`);
         setTurn('player');
         setIsAnimating(false);
         return;
@@ -163,45 +174,13 @@ export default function BattleScreen() {
     }
 
     // PAR: 25% skip
-    if (enemy.status === 'PAR' && Math.random() < 0.25) {
-      addLog(`${enemy.name} è paralizzato e non riesce a muoversi!`);
+    if (liveEnemy.status === 'PAR' && Math.random() < 0.25) {
+      addLog(`${liveEnemy.name} è paralizzato e non riesce a muoversi!`);
       setTurn('player');
       setIsAnimating(false);
       return;
     }
     // --- FINE CHECK STATUS NEMICO ---
-
-    // PAR: 25% skip 
-    if (currentPlayerPkmn.status === 'PAR' && Math.random() < 0.25) {
-      addLog(`${currentPlayerPkmn.name} è paralizzato e non riesce a muoversi!`);
-      setTurn('player');
-      setIsAnimating(false);
-      return;
-    }
-    // SLP: 20% chance di svegliarsi ogni turno (come FRZ) 
-    if (currentPlayerPkmn.status === 'SLP') { 
-      if (Math.random() < 0.2) { 
-        updatePokemon(currentPlayerPkmn.id, { status: null, sleepTurns: undefined }); 
-        addLog(`${currentPlayerPkmn.name} si è svegliato!`); 
-      } else { 
-        addLog(`${currentPlayerPkmn.name} sta dormendo profondamente...`); 
-        setTurn('player'); 
-        setIsAnimating(false); 
-        return; 
-      } 
-    }
-    // FRZ: 20% unfreeze else skip 
-    if (currentPlayerPkmn.status === 'FRZ') {
-      if (Math.random() < 0.2) {
-        updatePokemon(currentPlayerPkmn.id, { status: null });
-        addLog(`${currentPlayerPkmn.name} si è scongelato!`);
-      } else {
-        addLog(`${currentPlayerPkmn.name} è congelato!`);
-        setTurn('player');
-        setIsAnimating(false);
-        return;
-      }
-    }
 
     // Check Flinch
     if (playerFlinch) {
@@ -212,8 +191,26 @@ export default function BattleScreen() {
       return;
     }
 
-    const enemyDamage = BattleEngine.calculateDamage(enemy, currentPlayerPkmn, enemyMove, false);
-    addLog(`${enemy.name} usa ${enemyMove.name}! (${enemyDamage} danni)`);
+    const effEnemyAtk = {
+      ...liveEnemy,
+      stats: {
+        ...liveEnemy.stats,
+        attack: applyStage(liveEnemy.stats.attack, enemyStages.attack),
+        spAtk: applyStage(liveEnemy.stats.spAtk, enemyStages.spAtk),
+        defense: applyStage(liveEnemy.stats.defense, enemyStages.defense),
+        spDef: applyStage(liveEnemy.stats.spDef, enemyStages.spDef),
+      }
+    };
+    const effPlayerDef = {
+      ...currentPlayerPkmn,
+      stats: {
+        ...currentPlayerPkmn.stats,
+        defense: applyStage(currentPlayerPkmn.stats.defense, playerStages.defense),
+        spDef: applyStage(currentPlayerPkmn.stats.spDef, playerStages.spDef),
+      }
+    };
+    const enemyDamage = BattleEngine.calculateDamage(effEnemyAtk as any, effPlayerDef as any, enemyMove, false);
+    addLog(`${liveEnemy.name} usa ${enemyMove.name}! (${enemyDamage} danni)`);
     const typeMultiplier = BattleEngine.getTypeEffectiveness(enemyMove.type, currentPlayerPkmn.types);
     const effLabel = BattleEngine.getTypeEffectivenessLabel(typeMultiplier);
     if (effLabel) addLog(effLabel);
@@ -261,25 +258,26 @@ export default function BattleScreen() {
     }
 
     // Danno da stato al nemico a fine turno 
-    if (enemy.status === 'PSN') { 
-      const psnDmg = Math.floor(enemy.maxHp / 8); 
-      setEnemy((prev: any) => { 
-        const newHp = Math.max(0, prev.currentHp - psnDmg); 
-        addLog(`${prev.name} soffre del veleno!`); 
-        if (newHp <= 0) { 
-          // vittoria per veleno - gestisci come sconfitta nemico normale 
-          addLog(`${prev.name} è esausto per il veleno!`); 
-        } 
-        return { ...prev, currentHp: newHp }; 
-      }); 
-    } 
-    if (enemy.status === 'BRN') { 
-      const brnDmg = Math.floor(enemy.maxHp / 8); 
-      setEnemy((prev: any) => { 
-        const newHp = Math.max(0, prev.currentHp - brnDmg); 
-        addLog(`${prev.name} soffre della scottatura!`); 
-        return { ...prev, currentHp: newHp }; 
-      }); 
+    if (liveEnemy.status === 'PSN') {
+      const psnDmg = Math.floor(liveEnemy.maxHp / 8);
+      setEnemy((prev: any) => {
+        const next = { ...prev, currentHp: Math.max(0, prev.currentHp - psnDmg) };
+        addLog(`${prev.name} soffre del veleno!`);
+        if (next.currentHp <= 0) {
+          addLog(`${prev.name} è esausto per il veleno!`);
+        }
+        enemyRef.current = next;
+        return next;
+      });
+    }
+    if (liveEnemy.status === 'BRN') {
+      const brnDmg = Math.floor(liveEnemy.maxHp / 8);
+      setEnemy((prev: any) => {
+        const next = { ...prev, currentHp: Math.max(0, prev.currentHp - brnDmg) };
+        addLog(`${prev.name} soffre della scottatura!`);
+        enemyRef.current = next;
+        return next;
+      });
     }
 
     setTurn('player');
@@ -308,8 +306,8 @@ export default function BattleScreen() {
       addLog(`${pkm.name} è guarito dagli effetti di stato!`); 
     } else { 
       let healed = 0; 
-      if (itemId === 'potion') healed = 20; 
-      if (itemId === 'superpotion') healed = 50; 
+      if (itemId === 'potion') healed = 30; 
+      if (itemId === 'superpotion') healed = 80; 
       if (itemId === 'hyperpotion') healed = 200; 
       const newHp = Math.min(pkm.stats.hp, pkm.currentHp + healed); 
       updatePokemon(pkm.id, { currentHp: newHp }); 
@@ -597,11 +595,15 @@ export default function BattleScreen() {
         }
       }
 
-      setEnemy((prev: any) => ({ 
-        ...prev, 
-        currentHp: newEnemyHp,
-        status: finalStatus !== undefined ? finalStatus : prev.status
-      }));
+      setEnemy((prev: any) => {
+        const next = { 
+          ...prev, 
+          currentHp: newEnemyHp,
+          status: finalStatus !== undefined ? finalStatus : prev.status
+        };
+        enemyRef.current = next;
+        return next;
+      });
       await new Promise(r => setTimeout(r, 800));
 
       if (newEnemyHp <= 0) {
@@ -624,7 +626,23 @@ export default function BattleScreen() {
             addLog(`🎊 LIVELLO SUPERATO! ${freshPkmn.name} è ora al Lv. ${freshPkmn.level}!`);
           }
         }, 100);
-        addCoins(Math.floor(50 + (enemy?.level ?? 5) * 2)); 
+        // Ricompense fisse per battaglia 
+        if (isBoss) { 
+          addCoins(Math.floor(500 + (enemy?.level ?? 5) * 2)); 
+          addItem('megaball', 1); 
+          addItem('full_heal', 2); 
+          addItem('superpotion', 2); 
+          if (Math.random() < 0.10) addItem('rare_candy', 1); 
+          if (Math.random() < 0.10) addItem('ultraball', 1); 
+          addLog('🎁 Ricompense Capopalestra ricevute!'); 
+        } else { 
+          addCoins(Math.floor(200 + (enemy?.level ?? 5) * 2)); 
+          addItem('pokeball', 1); 
+          addItem('potion', 2); 
+          addItem('full_heal', 1); 
+          if (Math.random() < 0.10) addItem('superpotion', 1); 
+          if (Math.random() < 0.10) addItem('megaball', 1); 
+        } 
         incrementStat('totalBattles');
         team.forEach(p => { 
           // Solo PP recuperati per tutti; HP solo al Pokémon attivo (10%) 
@@ -686,11 +704,15 @@ export default function BattleScreen() {
         }
       }
 
-      setEnemy((prev: any) => ({ 
-        ...prev, 
-        currentHp: newEnemyHp,
-        status: finalStatus !== undefined ? finalStatus : prev.status
-      }));
+      setEnemy((prev: any) => {
+        const next = { 
+          ...prev, 
+          currentHp: newEnemyHp,
+          status: finalStatus !== undefined ? finalStatus : prev.status
+        };
+        enemyRef.current = next;
+        return next;
+      });
       await new Promise(r => setTimeout(r, 800));
 
       if (newEnemyHp <= 0) {
@@ -713,7 +735,23 @@ export default function BattleScreen() {
             addLog(`🎊 LIVELLO SUPERATO! ${freshPkmn.name} è ora al Lv. ${freshPkmn.level}!`);
           }
         }, 100);
-        addCoins(Math.floor(50 + (enemy?.level ?? 5) * 2)); 
+        // Ricompense fisse per battaglia 
+        if (isBoss) { 
+          addCoins(Math.floor(500 + (enemy?.level ?? 5) * 2)); 
+          addItem('megaball', 1); 
+          addItem('full_heal', 2); 
+          addItem('superpotion', 2); 
+          if (Math.random() < 0.10) addItem('rare_candy', 1); 
+          if (Math.random() < 0.10) addItem('ultraball', 1); 
+          addLog('🎁 Ricompense Capopalestra ricevute!'); 
+        } else { 
+          addCoins(Math.floor(200 + (enemy?.level ?? 5) * 2)); 
+          addItem('pokeball', 1); 
+          addItem('potion', 2); 
+          addItem('full_heal', 1); 
+          if (Math.random() < 0.10) addItem('superpotion', 1); 
+          if (Math.random() < 0.10) addItem('megaball', 1); 
+        } 
         incrementStat('totalBattles');
         team.forEach(p => { 
           // Solo PP recuperati per tutti; HP solo al Pokémon attivo (10%) 
@@ -1107,8 +1145,8 @@ export default function BattleScreen() {
                 </button>
               </div>
               {[ 
-                { id: 'potion', name: 'Pozione', heal: 20, icon: '🧪' }, 
-                { id: 'superpotion', name: 'Superpozione', heal: 50, icon: '🧪' }, 
+                { id: 'potion', name: 'Pozione', heal: 30, icon: '🧪' }, 
+                { id: 'superpotion', name: 'Superpozione', heal: 80, icon: '🧪' }, 
                 { id: 'hyperpotion', name: 'Iperpozione', heal: 200, icon: '💊' }, 
                 { id: 'full_heal', name: 'Cura Totale', heal: 0, icon: '💊' }, 
               ].map(item => (

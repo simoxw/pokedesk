@@ -15,7 +15,8 @@ export const CatchEngine = {
     if (ballType === 'masterball') return true; 
  
     const rawProb = (baseRate * ballMultiplier * circleSizeBonus) / 255; 
-    const catchProb = Math.min(0.95, rawProb + 0.10); 
+    const flatBonus = baseRate <= 3 ? 0.05 : 0.10; 
+    const catchProb = Math.min(0.95, rawProb + flatBonus); 
 
     
     return Math.random() < catchProb;

@@ -4,7 +4,7 @@ import { api } from '../../api';
 import { CatchEngine } from '../../CatchEngine';
 import { BattleEngine } from '../../BattleEngine';
 import { motion, AnimatePresence } from 'motion/react';
-import { Zap, Sparkles, X } from 'lucide-react';
+import { Zap, Sparkles, X, ArrowLeft } from 'lucide-react';
 import confetti from 'canvas-confetti';
 
 export default function CatchScreen() {
@@ -191,6 +191,16 @@ export default function CatchScreen() {
 
   return (
     <div className="h-full relative overflow-hidden flex flex-col">
+      {/* Pulsante Esci */} 
+      {!result && ( 
+        <button 
+          onClick={() => setScreen('HUB_SCREEN')} 
+          className="absolute top-4 left-4 z-30 p-2 bg-black/40 backdrop-blur-sm rounded-xl border border-white/10 text-white/70" 
+        > 
+          <ArrowLeft size={20} /> 
+        </button> 
+      )} 
+
       {/* Background */} 
       <div className="absolute inset-0 overflow-hidden"> 
         {/* Cielo sfumato */} 

@@ -3,7 +3,7 @@ import { useStore } from '../../store';
 import { motion, AnimatePresence } from 'motion/react'; 
 import PokemonDetailsModal from '../ui/PokemonDetailsModal'; 
 import TypeBadge from '../ui/TypeBadge'; 
-import { ArrowLeft, Search, ChevronLeft, ChevronRight, Sparkles, Users, Trash2, Info, SlidersHorizontal, X } from 'lucide-react'; 
+import { ArrowLeft, Search, ChevronLeft, ChevronRight, Sparkles, Users, Trash2, Info, SlidersHorizontal, X, CheckSquare, Square } from 'lucide-react'; 
 
 const BOX_SIZE = 30; 
 const TYPE_LIST = ['fire','water','grass','electric','ice','fighting','poison','ground','flying','psychic','bug','rock','ghost','dragon','steel','dark','fairy','normal']; 
@@ -19,6 +19,25 @@ export default function BoxScreen() {
   const [showFilters, setShowFilters] = useState(false); 
   const [selectedPkmn, setSelectedPkmn] = useState<any>(null); 
   const [showDetails, setShowDetails] = useState(false); 
+  const [multiSelectMode, setMultiSelectMode] = useState(false); 
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set()); 
+
+  const toggleSelect = (id: string) => { 
+    setSelectedIds(prev => { 
+      const next = new Set(prev); 
+      next.has(id) ? next.delete(id) : next.add(id); 
+      return next; 
+    }); 
+  }; 
+
+  const handleMultiRelease = () => { 
+    if (selectedIds.size === 0) return; 
+    const names = [...selectedIds].map(id => box.find(p => p.id === id)?.name).filter(Boolean).join(', '); 
+    if (!confirm(`Liberare ${selectedIds.size} Pokémon? (${names})\nRiceverai 1 Caramella per ognuno.`)) return; 
+    selectedIds.forEach(id => releasePokemon(id)); 
+    setSelectedIds(new Set()); 
+    setMultiSelectMode(false); 
+  }; 
 
   // Filtra e ordina 
   const filtered = useMemo(() => { 
@@ -55,6 +74,15 @@ export default function BoxScreen() {
           </button> 
           <h2 className="text-xl font-black uppercase flex-1">PC di Bill</h2> 
           <span className="text-xs text-white/30 font-bold">{box.length} PKM</span> 
+          <button 
+            onClick={() => { 
+              setMultiSelectMode(m => !m); 
+              setSelectedIds(new Set()); 
+            }} 
+            className={`p-2 rounded-xl border transition-all ${multiSelectMode ? 'bg-[#e63946] border-[#e63946]' : 'bg-[#1a1a2e] border-white/10'}`} 
+          > 
+            <CheckSquare size={18} /> 
+          </button> 
           <button 
             onClick={() => setShowFilters(!showFilters)} 
             className={`p-2 rounded-xl border transition-all ${showFilters ? 'bg-[#e63946] border-[#e63946]' : 'bg-[#1a1a2e] border-white/10'}`} 
@@ -169,9 +197,20 @@ export default function BoxScreen() {
             {currentBoxPkmn.map(pkmn => ( 
                <button 
                  key={pkmn.id} 
-                 onClick={() => setSelectedPkmn(pkmn)} 
-                 className="aspect-square bg-[#1a1a2e] rounded-xl border border-white/5 flex flex-col items-center justify-center relative overflow-hidden active:border-[#e63946] transition-all p-1" 
+                 onClick={() => multiSelectMode ? toggleSelect(pkmn.id) : setSelectedPkmn(pkmn)} 
+                 className={`aspect-square bg-[#1a1a2e] rounded-xl border flex flex-col items-center justify-center relative overflow-hidden transition-all p-1 ${ 
+                   multiSelectMode && selectedIds.has(pkmn.id) 
+                     ? 'border-[#e63946] bg-[#e63946]/20' 
+                     : 'border-white/5 active:border-[#e63946]' 
+                 }`} 
                > 
+                 {multiSelectMode && ( 
+                   <div className="absolute top-0.5 left-0.5 z-10"> 
+                     {selectedIds.has(pkmn.id) 
+                       ? <CheckSquare size={10} className="text-[#e63946]" /> 
+                       : <Square size={10} className="text-white/20" />} 
+                   </div> 
+                 )} 
                  {pkmn.isShiny && ( 
                    <span className="absolute top-0.5 right-0.5 text-yellow-400"> 
                      <Sparkles size={8} /> 
@@ -299,7 +338,29 @@ export default function BoxScreen() {
       <PokemonDetailsModal 
         pokemon={showDetails ? selectedPkmn : null} 
         onClose={() => setShowDetails(false)} 
-      />
-    </div>
-  );
+      /> 
+
+      {/* Barra multi-release */} 
+      {multiSelectMode && ( 
+        <div className="fixed bottom-0 left-0 right-0 z-40 bg-[#1a1a2e] border-t border-white/10 px-4 py-3 flex items-center gap-3"> 
+          <span className="flex-1 text-sm font-bold text-white/60"> 
+            {selectedIds.size > 0 ? `${selectedIds.size} selezionati` : 'Tocca i Pokémon per selezionarli'} 
+          </span> 
+          <button 
+            onClick={() => { setMultiSelectMode(false); setSelectedIds(new Set()); }} 
+            className="px-4 py-2 rounded-xl bg-white/10 text-sm font-bold" 
+          > 
+            Annulla 
+          </button> 
+          <button 
+            onClick={handleMultiRelease} 
+            disabled={selectedIds.size === 0} 
+            className="px-4 py-2 rounded-xl bg-[#e63946] text-sm font-black disabled:opacity-30" 
+          > 
+            Libera ({selectedIds.size}) 
+          </button> 
+        </div> 
+      )} 
+    </div> 
+  ); 
 } 
