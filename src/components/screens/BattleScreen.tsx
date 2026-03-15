@@ -256,7 +256,9 @@ export default function BattleScreen() {
     const liveEnemy = enemyRef.current ?? enemy;
     if (!liveEnemy || liveEnemy.currentHp <= 0) return;
 
-    const validMoves = liveEnemy.moves.filter((m: any) => m.pp > 0 && m.category !== 'status');
+    const validMoves = liveEnemy.moves.filter((m: any) => 
+      m.pp > 0 && (m.category !== 'status' || !!m.statusEffect) 
+    );
     
     // Costruisci pool pesato: mosse super efficaci 3x, normali 1x, non efficaci 0.5x 
     const movePool: any[] = []; 
