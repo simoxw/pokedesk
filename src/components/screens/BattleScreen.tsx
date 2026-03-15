@@ -361,20 +361,27 @@ export default function BattleScreen() {
     const newPlayerHp = Math.max(0, currentPlayerPkmn.currentHp - enemyDamage);
     updatePokemon(currentPlayerPkmn.id, { currentHp: newPlayerHp });
 
-    // BRN danno fine turno 
-    if (currentPlayerPkmn.status === 'BRN') {
-      const brnDmg = Math.floor(currentPlayerPkmn.stats.hp / 8);
-      const brnHp = Math.max(0, newPlayerHp - brnDmg);
-      updatePokemon(currentPlayerPkmn.id, { currentHp: brnHp });
-      addLog(`${currentPlayerPkmn.name} è danneggiato dalla scottatura!`);
-    }
-    // PSN danno fine turno 
-    if (currentPlayerPkmn.status === 'PSN') {
-      const psnDmg = Math.floor(currentPlayerPkmn.stats.hp / 8);
-      const psnHp = Math.max(0, newPlayerHp - psnDmg);
-      updatePokemon(currentPlayerPkmn.id, { currentHp: psnHp });
-      addLog(`${currentPlayerPkmn.name} è danneggiato dal veleno!`);
-    }
+    // --- DRAIN: il nemico si cura di metà del danno inflitto --- 
+    const ENEMY_DRAIN_MOVES = new Set([ 
+      'mega-drain', 'giga-drain', 'absorb', 'leech-life', 
+      'drain-punch', 'dream-eater', 'horn-leech', 'oblivion-wing', 
+    ]); 
+    if ( 
+      ENEMY_DRAIN_MOVES.has(enemyMove.name.toLowerCase().replace(/ /g, '-')) || 
+      ENEMY_DRAIN_MOVES.has(enemyMove.id) 
+    ) { 
+      const drainHeal = Math.floor(enemyDamage / 2); 
+      if (drainHeal > 0) { 
+        const maxHp = liveEnemy.stats?.hp ?? liveEnemy.maxHp ?? 1; 
+        const healedHp = Math.min(maxHp, liveEnemy.currentHp + drainHeal); 
+        setEnemy((prev: any) => { 
+          const next = { ...prev, currentHp: healedHp }; 
+          enemyRef.current = next; 
+          return next; 
+        }); 
+        addLog(`${liveEnemy.name} ha assorbito ${drainHeal} HP!`); 
+      } 
+    } 
 
     await new Promise(r => setTimeout(r, 800));
 
@@ -392,7 +399,7 @@ export default function BattleScreen() {
 
     // Danno da stato al nemico a fine turno 
     if (liveEnemy.status === 'PSN') {
-      const psnDmg = Math.floor(liveEnemy.maxHp / 8);
+      const psnDmg = Math.floor((liveEnemy.stats?.hp ?? liveEnemy.maxHp ?? 100) / 8); 
       const nextHp = Math.max(0, liveEnemy.currentHp - psnDmg);
       setEnemy((prev: any) => {
         const next = { ...prev, currentHp: nextHp };
@@ -407,7 +414,7 @@ export default function BattleScreen() {
       }
     }
     if (liveEnemy.status === 'BRN') {
-      const brnDmg = Math.floor(liveEnemy.maxHp / 8);
+      const brnDmg = Math.floor((liveEnemy.stats?.hp ?? liveEnemy.maxHp ?? 100) / 8); 
       const nextHp = Math.max(0, liveEnemy.currentHp - brnDmg);
       setEnemy((prev: any) => {
         const next = { ...prev, currentHp: nextHp };
@@ -469,7 +476,7 @@ export default function BattleScreen() {
     setLogs(prev => [msg, ...prev].slice(0, 5));
   };
 
-  const applyPlayerMoveEffects = (move: any, currentEnemy: any): { newStatus?: any, message?: string } => { 
+  const applyPlayerMoveEffects = (move: any, currentEnemy: any, realDamage = 0): { newStatus?: any, message?: string } => { 
     // --- FLINCH ---
     if (move.meta?.flinch_chance > 0) {
       if (Math.random() * 100 < move.meta.flinch_chance) {
@@ -564,13 +571,7 @@ export default function BattleScreen() {
     ]); 
     if (DRAIN_MOVES.has(move.name.toLowerCase().replace(/ /g, '-')) || 
         DRAIN_MOVES.has(move.id)) { 
-      // Il danno viene calcolato normalmente in handleMove, 
-      // qui calcoliamo solo la cura (metà del danno che verrà inflitto) 
-      // Usiamo una stima basata sul power della mossa 
-      const estimatedDamage = BattleEngine.calculateDamage( 
-        playerPkmn, currentEnemy, move, false 
-      ); 
-      const healing = Math.floor(estimatedDamage / 2); 
+      const healing = Math.floor(realDamage / 2); 
       if (healing > 0) { 
         const newHp = Math.min(playerPkmn.stats.hp, playerPkmn.currentHp + healing); 
         const actualHeal = newHp - playerPkmn.currentHp; 
@@ -721,7 +722,7 @@ export default function BattleScreen() {
       addLog(`${playerPkmn.name} usa ${move.name}! (${damage} danni)`);
       
       // Status e Healing logica
-      const { newStatus, message } = applyPlayerMoveEffects(move, liveEnemyAtStartOfMove);
+      const { newStatus, message } = applyPlayerMoveEffects(move, liveEnemyAtStartOfMove, damage);
       if (message) addLog(message);
 
       if (isCrit) addLog('Brutto colpo!');
@@ -780,7 +781,7 @@ export default function BattleScreen() {
       addLog(`${playerPkmn.name} usa ${move.name}! (${damage} danni)`);
       
       // Status e Healing logica
-      const { newStatus, message } = applyPlayerMoveEffects(move, currentEnemyAfterEnemyTurn);
+      const { newStatus, message } = applyPlayerMoveEffects(move, currentEnemyAfterEnemyTurn, damage);
       if (message) addLog(message);
 
       if (isCrit) addLog('Brutto colpo!');
