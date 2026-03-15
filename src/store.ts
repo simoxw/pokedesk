@@ -127,7 +127,21 @@ export const useStore = create<GameStore>()(
               // Evolution check
               const evolution = await api.getEvolutionTarget(speciesData, newLevel);
               if (evolution) {
-                set({ pendingEvolution: { pokemonId: p.id, newPokemonId: evolution.newId, newName: evolution.newName } });
+                try {
+                  const newPokemonData = await api.getPokemon(evolution.newId);
+                  const newTypes = newPokemonData.types.map((t: any) => t.type.name);
+                  const newBaseStats = {
+                    hp: newPokemonData.stats[0].base_stat,
+                    attack: newPokemonData.stats[1].base_stat,
+                    defense: newPokemonData.stats[2].base_stat,
+                    spAtk: newPokemonData.stats[3].base_stat,
+                    spDef: newPokemonData.stats[4].base_stat,
+                    speed: newPokemonData.stats[5].base_stat,
+                  };
+                  set({ pendingEvolution: { pokemonId: p.id, newPokemonId: evolution.newId, newName: evolution.newName, newTypes, newBaseStats } });
+                } catch {
+                  set({ pendingEvolution: { pokemonId: p.id, newPokemonId: evolution.newId, newName: evolution.newName } });
+                }
               }
             } catch (e) {
               console.error("Error checking for evolution/moves:", e);
@@ -181,7 +195,21 @@ export const useStore = create<GameStore>()(
               // Evolution check
               const evolution = await api.getEvolutionTarget(speciesData, newLevel);
               if (evolution) {
-                set({ pendingEvolution: { pokemonId: p.id, newPokemonId: evolution.newId, newName: evolution.newName } });
+                try {
+                  const newPokemonData = await api.getPokemon(evolution.newId);
+                  const newTypes = newPokemonData.types.map((t: any) => t.type.name);
+                  const newBaseStats = {
+                    hp: newPokemonData.stats[0].base_stat,
+                    attack: newPokemonData.stats[1].base_stat,
+                    defense: newPokemonData.stats[2].base_stat,
+                    spAtk: newPokemonData.stats[3].base_stat,
+                    spDef: newPokemonData.stats[4].base_stat,
+                    speed: newPokemonData.stats[5].base_stat,
+                  };
+                  set({ pendingEvolution: { pokemonId: p.id, newPokemonId: evolution.newId, newName: evolution.newName, newTypes, newBaseStats } });
+                } catch {
+                  set({ pendingEvolution: { pokemonId: p.id, newPokemonId: evolution.newId, newName: evolution.newName } });
+                }
               }
             } catch (e) {
               console.error("Error checking for evolution/moves:", e);
@@ -285,7 +313,21 @@ export const useStore = create<GameStore>()(
                 // Evolution check
                 const evolution = await api.getEvolutionTarget(speciesData, newLevel);
                 if (evolution) {
-                  set({ pendingEvolution: { pokemonId: p.id, newPokemonId: evolution.newId, newName: evolution.newName } });
+                  try {
+                    const newPokemonData = await api.getPokemon(evolution.newId);
+                    const newTypes = newPokemonData.types.map((t: any) => t.type.name);
+                    const newBaseStats = {
+                      hp: newPokemonData.stats[0].base_stat,
+                      attack: newPokemonData.stats[1].base_stat,
+                      defense: newPokemonData.stats[2].base_stat,
+                      spAtk: newPokemonData.stats[3].base_stat,
+                      spDef: newPokemonData.stats[4].base_stat,
+                      speed: newPokemonData.stats[5].base_stat,
+                    };
+                    set({ pendingEvolution: { pokemonId: p.id, newPokemonId: evolution.newId, newName: evolution.newName, newTypes, newBaseStats } });
+                  } catch {
+                    set({ pendingEvolution: { pokemonId: p.id, newPokemonId: evolution.newId, newName: evolution.newName } });
+                  }
                 }
               } catch (e) {
                 console.error("Error checking for evolution/moves:", e);
@@ -302,17 +344,26 @@ export const useStore = create<GameStore>()(
         };
       }),
       updatePlayTime: (seconds) => set((state) => ({ player: { ...state.player, playTime: state.player.playTime + seconds } })),
-      confirmEvolution: () => set((state) => {
-        const { pendingEvolution } = state;
-        if (!pendingEvolution) return {};
-        const { pokemonId, newPokemonId, newName } = pendingEvolution;
-        const updatePkmn = (p: Pokemon) => p.id === pokemonId ? { ...p, pokemonId: newPokemonId, name: newName } : p;
-        return {
-          team: state.team.map(updatePkmn),
-          box: state.box.map(updatePkmn),
-          pendingEvolution: null
-        };
-      }),
+      confirmEvolution: () => set((state) => { 
+        const { pendingEvolution } = state; 
+        if (!pendingEvolution) return {}; 
+        const { pokemonId, newPokemonId, newName, newTypes, newBaseStats } = pendingEvolution; 
+        const updatePkmn = (p: Pokemon) => { 
+          if (p.id !== pokemonId) return p; 
+          const types = newTypes ?? p.types; 
+          const baseStats = newBaseStats ?? p.baseStats; 
+          const newStats =  newBaseStats 
+            ? BattleEngine.calculateStats(p.level, baseStats, p.ivs, p.evs ?? { hp: 0, attack: 0, defense: 0, spAtk: 0, spDef: 0, speed: 0 }, p.nature) 
+            : p.stats; 
+          const hpGain = newBaseStats ? Math.max(0, newStats.hp - p.stats.hp) : 0; 
+          return { ...p, pokemonId: newPokemonId, name: newName, types, baseStats, stats: newStats, currentHp: Math.min(newStats.hp, p.currentHp + hpGain) }; 
+        }; 
+        return { 
+          team: state.team.map(updatePkmn), 
+          box: state.box.map(updatePkmn), 
+          pendingEvolution: null 
+        }; 
+      }), 
       dismissEvolution: () => set({ pendingEvolution: null }),
       dismissNewMove: () => set({ pendingNewMove: null }),
       replaceMove: (pokemonId, oldMoveId, newMove) => set((state) => {

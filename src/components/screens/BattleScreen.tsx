@@ -345,10 +345,10 @@ export default function BattleScreen() {
       }
     };
     const enemyDamage = BattleEngine.calculateDamage(effEnemyAtk as any, effPlayerDef as any, enemyMove, false);
-    addLog(`${liveEnemy.name} usa ${enemyMove.name}! (${enemyDamage} danni)`);
+    addLog(`${liveEnemy.name} usa ${enemyMove.name}!${enemyDamage > 0 ? ` (${enemyDamage} danni)` : ''}`);
     const typeMultiplier = BattleEngine.getTypeEffectiveness(enemyMove.type, currentPlayerPkmn.types);
     const effLabel = BattleEngine.getTypeEffectivenessLabel(typeMultiplier);
-    if (effLabel) addLog(effLabel);
+    if (effLabel && enemyDamage > 0) addLog(effLabel);
 
     // Applica effetto di stato nemico 
     if (enemyMove.statusEffect && !currentPlayerPkmn.status && Math.random() * 100 < (enemyMove.effectChance || 0)) {
@@ -721,14 +721,14 @@ export default function BattleScreen() {
       const effLabel = BattleEngine.getTypeEffectivenessLabel(typeMultiplier);
       const newEnemyHp = Math.max(0, (liveEnemyAtStartOfMove?.currentHp ?? 0) - damage);
 
-      addLog(`${playerPkmn.name} usa ${move.name}! (${damage} danni)`);
+      addLog(`${playerPkmn.name} usa ${move.name}!${damage > 0 ? ` (${damage} danni)` : ''}`);
       
       // Status e Healing logica
       const { newStatus, message } = applyPlayerMoveEffects(move, liveEnemyAtStartOfMove, damage);
       if (message) addLog(message);
 
       if (isCrit) addLog('Brutto colpo!');
-      if (effLabel) addLog(effLabel);
+      if (effLabel && damage > 0) addLog(effLabel);
 
       // Applica stato con immunità
       let finalStatus = enemy.status;
@@ -758,11 +758,13 @@ export default function BattleScreen() {
 
       setTurn('enemy');
       setEnemyFlinch(false); // Reset flinch at end of turn
-      await executeEnemyTurn(playerPkmn);
+      const freshForEnemyTurn = useStore.getState().team.find((p: any) => p.id === playerPkmn.id) ?? playerPkmn; 
+      await executeEnemyTurn(freshForEnemyTurn);
     } else {
       // Nemico più veloce: attacca prima 
       setTurn('enemy');
-      await executeEnemyTurn(playerPkmn);
+      const freshForEnemyTurnPre = useStore.getState().team.find((p: any) => p.id === playerPkmn.id) ?? playerPkmn;
+      await executeEnemyTurn(freshForEnemyTurnPre);
       const freshPlayerPkmn = useStore.getState().team.find((p: any) => p.id === playerPkmn.id) ?? playerPkmn;
       if (freshPlayerPkmn.currentHp <= 0) {
         setPlayerStages({ attack: 0, defense: 0, spAtk: 0, spDef: 0, speed: 0, accuracy: 0, evasion: 0 });
@@ -780,14 +782,14 @@ export default function BattleScreen() {
       const currentEnemyAfterEnemyTurn = enemyRef.current ?? liveEnemyAtStartOfMove;
       const newEnemyHp = Math.max(0, (currentEnemyAfterEnemyTurn?.currentHp ?? 0) - damage);
 
-      addLog(`${playerPkmn.name} usa ${move.name}! (${damage} danni)`);
+      addLog(`${playerPkmn.name} usa ${move.name}!${damage > 0 ? ` (${damage} danni)` : ''}`);
       
       // Status e Healing logica
       const { newStatus, message } = applyPlayerMoveEffects(move, currentEnemyAfterEnemyTurn, damage);
       if (message) addLog(message);
 
       if (isCrit) addLog('Brutto colpo!');
-      if (effLabel) addLog(effLabel);
+      if (effLabel && damage > 0) addLog(effLabel);
 
       // Applica stato con immunità
       let finalStatus = enemy.status;

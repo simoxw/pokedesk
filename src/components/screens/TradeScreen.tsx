@@ -15,7 +15,7 @@ const TYPE_LIST = [
 type SortKey = 'name' | 'level' | 'number' | 'type';
 
 export default function TradeScreen() {
-  const { box, team, setScreen, addPokemon } = useStore();
+  const { box, team, setScreen, addPokemon, updatePokedex, addItem } = useStore();
 
   // --- Tab ---
   const [mode, setMode] = useState<'export' | 'import'>('export');
@@ -90,6 +90,8 @@ export default function TradeScreen() {
         currentHp: pkmn.stats.hp,
       };
       addPokemon(newPkmn);
+      useStore.getState().updatePokedex(pkmn.pokemonId, 'caught'); 
+      useStore.getState().addItem(`candy_${pkmn.baseSpeciesId ?? pkmn.pokemonId}`, 3); 
       alert(`${pkmn.name} importato con successo!`);
       setImportCode('');
     } catch {

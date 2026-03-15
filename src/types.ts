@@ -118,6 +118,8 @@ export interface GameState {
     pokemonId: string;
     newPokemonId: number;
     newName: string;
+    newTypes?: PokemonType[];
+    newBaseStats?: Stats;
   } | null;
   pendingNewMove: {
     pokemonId: string;
