@@ -530,12 +530,10 @@ export default function BattleScreen() {
       if (BOOST_IDS.has(move.id)) {
         setPlayerStages(prev => ({ ...prev, attack: Math.min(6, prev.attack + 2) }));
         setStatChanges({ label: '↑ STAT +', positive: true });
-        setTimeout(() => setStatChanges(null), 2500);
         addLog(`Le statistiche di ${playerPkmn.name} sono aumentate!`);
       } else if (DEBUFF_IDS.has(move.id)) {
         setEnemyStages(prev => ({ ...prev, attack: Math.max(-6, prev.attack - 1) }));
         setStatChanges({ label: '↓ STAT −', positive: false });
-        setTimeout(() => setStatChanges(null), 2500);
         addLog(`Le statistiche di ${currentEnemy?.name} sono diminuite!`);
       }
 
@@ -948,10 +946,10 @@ export default function BattleScreen() {
 
         {/* Enemy Pokemon Area */}
         <div className="relative pt-6 px-6 h-[40%] flex flex-col items-center">
-          <div className="w-full bg-black/40 backdrop-blur rounded-2xl p-3 mb-2 max-w-sm">
+          <div className="w-full bg-black/40 backdrop-blur rounded-2xl p-3 mb-2 max-w-[260px] self-start"> 
             <div className="flex items-center justify-between mb-1">
               <div className="flex items-center gap-2">
-                <span className="font-black text-xs uppercase truncate max-w-[100px]">{enemy?.name}</span>
+                <span className="font-black text-sm uppercase truncate max-w-[120px]">{enemy?.name}</span>
                 {enemy?.status && ( 
                   <span className={`text-[8px] font-black px-1 py-0.5 rounded ${ 
                     enemy.status === 'SLP' ? 'bg-purple-500/40 text-purple-300' : 
@@ -961,11 +959,16 @@ export default function BattleScreen() {
                     enemy.status === 'FRZ' ? 'bg-blue-400/40 text-blue-200' : '' 
                   }`}>{enemy.status}</span> 
                 )} 
-                <div className="flex gap-1">
-                  {enemy?.types?.map((t: string) => (
-                    <TypeBadge key={t} type={t as any} small />
-                  ))}
-                </div>
+                <div className="flex gap-1 flex-wrap"> 
+                  {enemy?.types?.map((t: string) => ( 
+                    <TypeBadge key={t} type={t as any} small /> 
+                  ))} 
+                  {Object.entries(enemyStages).filter(([, v]) => v !== 0).map(([stat, val]) => ( 
+                    <span key={stat} className={`text-[8px] font-black px-1 py-0.5 rounded ${val > 0 ? 'bg-blue-500/30 text-blue-300' : 'bg-red-500/30 text-red-300'}`}> 
+                      {stat.toUpperCase()} {val > 0 ? `+${val}` : val} 
+                    </span> 
+                  ))} 
+                </div> 
               </div>
               <span className="text-[10px] text-white/50 font-bold shrink-0">Lv. {enemy?.level}</span>
             </div>
@@ -992,19 +995,19 @@ export default function BattleScreen() {
         </div>
 
         {/* Player Pokemon Area */}
-        <div className="relative mt-auto pb-6 px-6 flex items-end gap-3 h-[45%]">
+        <div className="relative mt-auto pb-6 pl-6 pr-3 flex items-end gap-3 h-[45%]">
           <motion.img
             animate={attackAnim ? { x: [0, 15, 0] } : { x: 0 }}
             transition={{ duration: 0.3 }}
             src={`https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/back/${playerPkmn?.isShiny ? 'shiny/' : ''}${playerPkmn?.pokemonId}.png`}
-            className="w-44 h-44 object-contain drop-shadow-2xl shrink-0"
+            className="w-36 h-36 object-contain drop-shadow-2xl shrink-0"
           />
-          <div className="flex-1 bg-black/40 backdrop-blur rounded-2xl p-3 mb-2 max-w-sm">
+          <div className="flex-1 bg-black/40 backdrop-blur rounded-2xl p-4 mb-2">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-1.5 flex-wrap">
-                <span className="font-black text-xs uppercase truncate max-w-[80px]">{playerPkmn?.name}</span>
+                <span className="font-black text-sm uppercase truncate max-w-[140px]">{playerPkmn?.name}</span>
                 {playerPkmn?.status && ( 
-                  <span className={`text-[8px] font-black px-1 py-0.5 rounded ${ 
+                  <span className={`text-[9px] font-black px-1 py-0.5 rounded ${ 
                     playerPkmn.status === 'SLP' ? 'bg-purple-500/40 text-purple-300' : 
                     playerPkmn.status === 'PSN' ? 'bg-purple-700/40 text-purple-200' : 
                     playerPkmn.status === 'BRN' ? 'bg-orange-500/40 text-orange-300' : 
@@ -1016,29 +1019,26 @@ export default function BattleScreen() {
                   <TypeBadge key={t} type={t as any} small />
                 ))}
               </div>
-              <span className="text-[9px] bg-[#e63946] px-1.5 py-0.5 rounded-full font-bold shrink-0">Lv.{playerPkmn?.level}</span>
+              <span className="text-[10px] bg-[#e63946] px-2 py-0.5 rounded-full font-bold shrink-0">Lv.{playerPkmn?.level}</span>
             </div>
-            {statChanges && (
-              <motion.div
-                initial={{ opacity: 0, y: -4 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0 }}
-                className={`text-[8px] font-black px-1.5 py-0.5 rounded-full w-fit mt-1 ${statChanges.positive ? 'bg-blue-500/30 text-blue-300' : 'bg-red-500/30 text-red-300'}`}
-              >
-                {statChanges.label}
-              </motion.div>
-            )}
+              <div className="flex flex-wrap gap-1 mt-1"> 
+                {Object.entries(playerStages).filter(([, v]) => v !== 0).map(([stat, val]) => ( 
+                  <span key={stat} className={`text-[8px] font-black px-1 py-0.5 rounded ${val > 0 ? 'bg-blue-500/30 text-blue-300' : 'bg-red-500/30 text-red-300'}`}> 
+                    {stat.toUpperCase()} {val > 0 ? `+${val}` : val} 
+                  </span> 
+                ))} 
+              </div> 
             <div className="flex items-center gap-2 mt-2">
-              <div className="flex-1 bg-white/10 rounded-full h-1.5">
+              <div className="flex-1 bg-white/10 rounded-full h-2">
                 <div
-                  className="h-1.5 rounded-full transition-all duration-500"
+                  className="h-2 rounded-full transition-all duration-500"
                   style={{
                     width: `${((playerPkmn?.currentHp ?? 0) / (playerPkmn?.stats?.hp ?? 1)) * 100}%`,
                     backgroundColor: (playerPkmn?.currentHp / playerPkmn?.stats?.hp) > 0.5 ? '#4ade80' : (playerPkmn?.currentHp / playerPkmn?.stats?.hp) > 0.2 ? '#facc15' : '#ef4444'
                   }}
                 />
               </div>
-              <span className="text-[9px] font-bold text-white/70 shrink-0">{playerPkmn?.currentHp}/{playerPkmn?.stats?.hp}</span>
+              <span className="text-[10px] font-bold text-white/70 shrink-0">{playerPkmn?.currentHp}/{playerPkmn?.stats?.hp}</span>
             </div>
           </div>
         </div>

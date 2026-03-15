@@ -2,13 +2,16 @@ import React, { useState } from 'react';
 import { useStore } from '../../store';
 import { api } from '../../api';
 import { motion, AnimatePresence } from 'motion/react';
-import { ArrowLeft, Package, Heart, Zap, Star } from 'lucide-react';
+import { ArrowLeft, Package, Heart, Zap, Star, Loader, X } from 'lucide-react'; 
 
 export default function BagScreen() {
   const { inventory, setScreen, useItem, team, box, updatePokemon, expShareActive, toggleExpShare } = useStore();
   const [tab, setTab] = useState<'balls' | 'heal' | 'candy'>('balls');
   const [pendingItem, setPendingItem] = useState<{ id: string; name: string; icon: string } | null>(null);
-  const [isProcessing, setIsProcessing] = useState(false);
+  const [isProcessing, setIsProcessing] = useState(false); 
+  const [tmMoves, setTmMoves] = useState<any[]>([]); 
+  const [tmPokemon, setTmPokemon] = useState<any>(null); 
+  const [loadingTm, setLoadingTm] = useState(false);
 
   const items = {
     balls: [
@@ -25,6 +28,7 @@ export default function BagScreen() {
     ],
     candy: [
         { id: 'exp_share', name: 'Condividi ESP', icon: '📡', description: expShareActive ? '✅ Attivo — tutta la squadra riceve ESP' : '❌ Disattivo — solo il Pokémon attivo', isToggle: true }, 
+        { id: 'tm', name: 'MT Casuale', icon: '💿', description: 'Insegna una mossa MT' }, 
         { id: 'rare_candy', name: 'Caramella Rara', icon: '🍬' },
         { id: 'fire_stone', name: 'Pietra Focaia', icon: '🔥' },
         { id: 'water_stone', name: 'Pietra Idrica', icon: '💧' },
@@ -126,6 +130,46 @@ export default function BagScreen() {
                 const handleUse = async () => { 
                   if (disabled || isProcessing) return; 
                   
+                  // Gestione MT 
+                  if (pendingItem.id === 'tm') { 
+                    setIsProcessing(true); 
+                    setLoadingTm(true); 
+                    try { 
+                      const data = await api.getPokemon(p.pokemonId); 
+                      const BANNED_TM = new Set(['protect','detect','substitute','attract','swagger','taunt','encore','torment','disable','snatch','thief','trick','switcheroo','embargo','sleep-talk','rest','baton-pass','u-turn','volt-switch']); 
+                      const machineMoves = data.moves 
+                        .filter((m: any) => 
+                          m.version_group_details.some((v: any) => v.move_learn_method.name === 'machine') && 
+                          !BANNED_TM.has(m.move.name) 
+                        ) 
+                        .slice(0, 20); 
+                      const moveDetails = await Promise.all( 
+                        machineMoves.slice(0, 12).map((m: any) => api.getMove(m.move.name)) 
+                      ); 
+                      const validMoves = moveDetails 
+                        .filter((m: any) => m && m.power && m.power > 0 && m.damage_class?.name !== 'status') 
+                        .map((m: any) => ({ 
+                          id: m.id.toString(), 
+                          name: api.getItalianName(m.names), 
+                          type: m.type.name, 
+                          power: m.power, 
+                          accuracy: m.accuracy || 100, 
+                          pp: m.pp, 
+                          maxPp: m.pp, 
+                          priority: m.priority || 0, 
+                          category: m.damage_class.name, 
+                          description: api.getItalianDescription(m.flavor_text_entries), 
+                        })); 
+                      setTmMoves(validMoves); 
+                      setTmPokemon(p); 
+                    } catch(e) { 
+                      alert('Errore nel caricare le mosse MT!'); 
+                    } finally { 
+                      setLoadingTm(false); 
+                      setIsProcessing(false); 
+                    } 
+                    return; 
+                  } 
                   // Gestione Condividi ESP (toggle, non si usa su pokemon) 
                   if (pendingItem.id === 'exp_share') { 
                     toggleExpShare(); 
@@ -233,6 +277,75 @@ export default function BagScreen() {
           </motion.div> 
         )} 
       </AnimatePresence> 
+
+      {/* Overlay selezione Mosse MT */}
+      <AnimatePresence> 
+        {tmPokemon && (
+          <motion.div 
+            initial={{ opacity: 0 }} 
+            animate={{ opacity: 1 }} 
+            exit={{ opacity: 0 }} 
+            className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex flex-col justify-end"
+            onClick={() => setTmPokemon(null)}
+          > 
+            <motion.div 
+              initial={{ y: '100%' }} 
+              animate={{ y: 0 }} 
+              exit={{ y: '100%' }} 
+              className="bg-[#1a1a2e] rounded-t-3xl p-6 space-y-4 max-h-[80vh] flex flex-col"
+              onClick={e => e.stopPropagation()}
+            > 
+              <div className="flex items-center justify-between">
+                <div>
+                  <h3 className="font-black text-lg uppercase">Impara una MT</h3>
+                  <p className="text-xs text-white/40">Scegli la mossa per {tmPokemon.name}</p>
+                </div>
+                <button onClick={() => setTmPokemon(null)} className="p-2 bg-white/10 rounded-xl">
+                  <X size={20} />
+                </button>
+              </div>
+
+               {loadingTm && ( 
+                 <div className="flex-1 flex items-center justify-center"> 
+                   <Loader size={32} className="animate-spin text-white/40" /> 
+                 </div> 
+               )} 
+
+               <div className="flex-1 overflow-y-auto space-y-2 no-scrollbar">
+                {tmMoves.map(move => (
+                  <button 
+                    key={move.id} 
+                    onClick={() => { 
+                      const alreadyHas = tmPokemon.moves.some((m: any) => m.id === move.id); 
+                      if (alreadyHas) { alert('Questo Pokémon conosce già questa mossa!'); return; } 
+                      if (tmPokemon.moves.length < 4) { 
+                        updatePokemon(tmPokemon.id, { moves: [...tmPokemon.moves, move] }); 
+                      } else { 
+                        useStore.setState({ pendingNewMove: { pokemonId: tmPokemon.id, move } }); 
+                      } 
+                      useItem('tm'); 
+                      setTmMoves([]); 
+                      setTmPokemon(null); 
+                      setPendingItem(null); 
+                    }} 
+                    className="w-full flex flex-col p-4 bg-white/5 rounded-2xl border border-white/5 hover:bg-white/10 transition-all text-left"
+                  >
+                    <div className="flex justify-between items-center mb-1">
+                      <span className="font-bold text-sm uppercase">{move.name}</span>
+                      <span className="text-[10px] font-black px-2 py-0.5 rounded-full bg-white/10 uppercase">{move.type}</span>
+                    </div>
+                    <p className="text-[10px] text-white/40 leading-relaxed">{move.description}</p>
+                    <div className="flex gap-4 mt-2 text-[10px] font-bold">
+                      <span className="text-orange-400">POT: {move.power}</span>
+                      <span className="text-blue-400">ACC: {move.accuracy}%</span>
+                    </div>
+                  </button>
+                ))}
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div> 
   ); 
 }
