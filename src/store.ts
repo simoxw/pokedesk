@@ -126,7 +126,7 @@ export const useStore = create<GameStore>()(
 
               // Evolution check
               const evolution = await api.getEvolutionTarget(speciesData, newLevel);
-              if (evolution) {
+              if (evolution && !useStore.getState().pendingEvolution && !useStore.getState().pendingNewMove) {
                 try {
                   const newPokemonData = await api.getPokemon(evolution.newId);
                   const newTypes = newPokemonData.types.map((t: any) => t.type.name);
@@ -194,7 +194,7 @@ export const useStore = create<GameStore>()(
 
               // Evolution check
               const evolution = await api.getEvolutionTarget(speciesData, newLevel);
-              if (evolution) {
+              if (evolution && !useStore.getState().pendingEvolution && !useStore.getState().pendingNewMove) {
                 try {
                   const newPokemonData = await api.getPokemon(evolution.newId);
                   const newTypes = newPokemonData.types.map((t: any) => t.type.name);
@@ -312,7 +312,7 @@ export const useStore = create<GameStore>()(
 
                 // Evolution check
                 const evolution = await api.getEvolutionTarget(speciesData, newLevel);
-                if (evolution) {
+                if (evolution && !useStore.getState().pendingEvolution && !useStore.getState().pendingNewMove) {
                   try {
                     const newPokemonData = await api.getPokemon(evolution.newId);
                     const newTypes = newPokemonData.types.map((t: any) => t.type.name);

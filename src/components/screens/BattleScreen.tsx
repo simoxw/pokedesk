@@ -167,6 +167,7 @@ export default function BattleScreen() {
       setEnemy(enemyData);
       enemyRef.current = enemyData;
       setLoading(false);
+      useStore.getState().updatePokedex(id, 'seen');
     };
     initBattle();
   }, []);
@@ -389,7 +390,7 @@ export default function BattleScreen() {
 
     if (newPlayerHp <= 0) {
       addLog(`${currentPlayerPkmn.name} è esausto!`);
-      const nextAvailable = team.findIndex((p, i) => p.currentHp > 0 && i !== activeIdx);
+      const nextAvailable = useStore.getState().team.findIndex((p, i) => p.currentHp > 0 && i !== activeIdx);
       if (nextAvailable === -1) {
         addLog('Hai perso la sfida...');
         setIsFinished(true);
@@ -731,10 +732,10 @@ export default function BattleScreen() {
       if (effLabel && damage > 0) addLog(effLabel);
 
       // Applica stato con immunità
-      let finalStatus = enemy.status;
-      if (newStatus && !enemy.status) {
-        if (isImmuneToStatus(enemy.types, newStatus)) {
-          addLog(`${enemy.name} è immune a ${newStatus}!`);
+      let finalStatus = liveEnemyAtStartOfMove.status;
+      if (newStatus && !liveEnemyAtStartOfMove.status) {
+        if (isImmuneToStatus(liveEnemyAtStartOfMove.types, newStatus)) {
+          addLog(`${liveEnemyAtStartOfMove.name} è immune a ${newStatus}!`);
         } else {
           finalStatus = newStatus;
         }
@@ -792,10 +793,10 @@ export default function BattleScreen() {
       if (effLabel && damage > 0) addLog(effLabel);
 
       // Applica stato con immunità
-      let finalStatus = enemy.status;
-      if (newStatus && !enemy.status) {
-        if (isImmuneToStatus(enemy.types, newStatus)) {
-          addLog(`${enemy.name} è immune a ${newStatus}!`);
+      let finalStatus = currentEnemyAfterEnemyTurn.status;
+      if (newStatus && !currentEnemyAfterEnemyTurn.status) {
+        if (isImmuneToStatus(currentEnemyAfterEnemyTurn.types, newStatus)) {
+          addLog(`${currentEnemyAfterEnemyTurn.name} è immune a ${newStatus}!`);
         } else {
           finalStatus = newStatus;
         }
@@ -838,7 +839,7 @@ export default function BattleScreen() {
 
     if (finalPlayerHp <= 0) {
       addLog(`${freshForEndTurn.name} è esausto!`);
-      const nextAvailable = team.findIndex((p, i) => p.currentHp > 0 && i !== activeIdx);
+      const nextAvailable = useStore.getState().team.findIndex((p, i) => p.currentHp > 0 && i !== activeIdx);
       if (nextAvailable === -1) {
         addLog('Hai perso la sfida...');
         setIsFinished(true);

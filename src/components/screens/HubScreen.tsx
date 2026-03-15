@@ -70,7 +70,9 @@ export default function HubScreen() {
             <Zap className="text-yellow-400 fill-yellow-400" size={48} />
           </motion.div>
           <p className="text-white/50 font-mono mt-4">
-            PROSSIMA CARICA IN {minutes}:{seconds.toString().padStart(2, '0')}
+            {charges >= 6
+              ? '⚡ CARICHE AL MASSIMO!'
+              : `PROSSIMA CARICA IN ${minutes}:${seconds.toString().padStart(2, '0')}`}
           </p>
         </div>
 

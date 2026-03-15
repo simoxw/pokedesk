@@ -8,7 +8,7 @@ import { Zap, Sparkles, X, ArrowLeft } from 'lucide-react';
 import confetti from 'canvas-confetti';
 
 export default function CatchScreen() {
-  const { consumeCharge, addPokemon, setScreen, medals, team, incrementStat, addItem, inventory } = useStore();
+  const { consumeCharge, addPokemon, setScreen, medals, team, incrementStat, addItem, inventory, updatePokedex } = useStore();
   const medalsCount = medals.filter(m => m.isUnlocked).length;
   const [pokemon, setPokemon] = useState<any>(null);
   const [loading, setLoading] = useState(true);
@@ -71,6 +71,7 @@ export default function CatchScreen() {
       setPokemon({ ...data, species, level });
       setIsShiny(CatchEngine.checkShiny());
       setLoading(false);
+      updatePokedex(id, 'seen');
     };
     initEncounter();
   }, []);
