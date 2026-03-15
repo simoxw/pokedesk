@@ -493,41 +493,39 @@ export default function BattleScreen() {
     }
 
     // --- HEALING MOVES (cura il giocatore) --- 
+    // IDs ufficiali PokéAPI delle mosse di cura 
     const HEAL_MOVES: Record<string, number> = { 
-      'recover': 0.5,       // Recupero: 50% HP max 
-      'soft-boiled': 0.5, 
-      'milk-drink': 0.5, 
-      'slack-off': 0.5, 
-      'roost': 0.5, 
-      'moonlight': 0.5, 
-      'synthesis': 0.5, 
-      'morning-sun': 0.5, 
-      'shore-up': 0.5, 
-      'life-dew': 0.25, 
-      'heal-pulse': 0.5, 
+      '105': 0.5,  // recover / Recupero 
+      '135': 0.5,  // soft-boiled / Uovo Morbido 
+      '208': 0.5,  // milk-drink / Latte Fresco 
+      '303': 0.5,  // slack-off / Posa Riposo 
+      '355': 0.5,  // roost / Posariposo 
+      '236': 0.5,  // moonlight / Chiaro di Luna 
+      '235': 0.5,  // synthesis / Sintesi 
+      '234': 0.5,  // morning-sun / Alba 
+      '505': 0.5,  // heal-pulse / Pulsaguarigione 
     }; 
     
+    // Recupera i dati freschi del Pokémon per evitare bug di HP stale se il nemico ha attaccato prima 
+    const freshPkmn = useStore.getState().team.find(p => p.id === playerPkmn.id) ?? playerPkmn;
+
     // Riposo: cura tutto ma addormenta 
-    if (move.name.toLowerCase() === 'riposo' || move.id === '156') { 
-      const healedHp = playerPkmn.stats.hp; 
-      updatePokemon(playerPkmn.id, { 
-        currentHp: healedHp, 
-        status: 'SLP', 
-        sleepTurns: 2, 
-      }); 
-      addLog(`${playerPkmn.name} si è riposato e si è curato completamente!`); 
-      addLog(`${playerPkmn.name} si è addormentato!`); 
+    if (move.id === '156') { 
+      const healed = Math.floor(freshPkmn.stats.hp * 0.5); 
+      const newHp = Math.min(freshPkmn.stats.hp, freshPkmn.currentHp + healed); 
+      updatePokemon(freshPkmn.id, { currentHp: newHp }); 
+      addLog(`${freshPkmn.name} si è riposato e recupera ${newHp - freshPkmn.currentHp} HP!`); 
       return {}; 
     } 
   
-    const healRatio = HEAL_MOVES[move.name.toLowerCase().replace(/ /g, '-')]; 
+    const healRatio = HEAL_MOVES[move.id]; 
     if (healRatio || (move.category === 'status' && move.power === 0 && move.name.toLowerCase().includes('recup'))) { 
       const ratio = healRatio ?? 0.5; 
-      const healed = Math.floor(playerPkmn.stats.hp * ratio); 
-      const newHp = Math.min(playerPkmn.stats.hp, playerPkmn.currentHp + healed); 
-      const actualHeal = newHp - playerPkmn.currentHp; 
-      updatePokemon(playerPkmn.id, { currentHp: newHp }); 
-      addLog(`${playerPkmn.name} recupera ${actualHeal} HP!`); 
+      const healed = Math.floor(freshPkmn.stats.hp * ratio); 
+      const newHp = Math.min(freshPkmn.stats.hp, freshPkmn.currentHp + healed); 
+      const actualHeal = newHp - freshPkmn.currentHp; 
+      updatePokemon(freshPkmn.id, { currentHp: newHp }); 
+      addLog(`${freshPkmn.name} recupera ${actualHeal} HP!`); 
       return {}; 
     } 
   
