@@ -123,17 +123,18 @@ export default function PokemonDetailsModal({ pokemon, onClose }: PokemonDetails
                 <div key={stat} className="flex items-center gap-4">
                   <div className="w-8 flex justify-center">{statIcons[stat]}</div>
                   <div className="w-20 text-xs font-bold uppercase opacity-50">{statLabels[stat]}</div>
-                  <div className="flex-1 h-2 bg-white/10 rounded-full overflow-hidden relative">
+                  <div className="w-16 h-2 bg-white/10 rounded-full overflow-hidden relative"> 
                     <motion.div 
                       initial={{ width: 0 }}
                       animate={{ width: `${(pokemon.stats[stat] / 255) * 100}%` }}
                       className="h-full bg-white/40"
                     />
                   </div>
-                  <div className="w-12 text-right font-black text-sm">{pokemon.stats[stat]}</div>
-                  <div className="w-16 text-right text-[10px] font-bold text-[#e63946]">
-                    IV: {pokemon.ivs[stat]}
-                  </div>
+                  <div className="w-8 text-right font-black text-sm">{pokemon.stats[stat]}</div>
+                  <div className="flex gap-2 text-[10px] font-bold whitespace-nowrap"> 
+                    <span className="text-[#e63946]">IV:{pokemon.ivs[stat]}</span> 
+                    <span className="text-emerald-400">EV:{pokemon.evs[stat]}</span> 
+                  </div> 
                 </div>
               ))}
             </div>

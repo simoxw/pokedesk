@@ -264,7 +264,7 @@ export default function CatchScreen() {
             animate={catching ? { scale: [1, 0.8, 1] } : { y: [0, -10, 0] }}
             transition={catching ? { duration: 0.4 } : { duration: 3, repeat: Infinity }}
             src={isShiny ? pokemon.sprites.front_shiny : pokemon.sprites.front_default}
-            className="w-64 h-64 object-contain drop-shadow-2xl"
+            className="w-80 h-80 object-contain drop-shadow-2xl"
           />
           {isShiny && !catching && (
             <motion.div

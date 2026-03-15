@@ -33,6 +33,7 @@ interface GameStore extends GameState {
   replaceMove: (pokemonId: string, oldMoveId: string, newMove: Move) => void;
   updateSettings: (settings: Partial<GameState['settings']>) => void;
   recordBattleWin: () => void;
+  toggleExpShare: () => void;
 }
 
 const INITIAL_MEDALS: Medal[] = Array.from({ length: 40 }, (_, i) => ({
@@ -57,6 +58,7 @@ export const useStore = create<GameStore>()(
       pokedex: {},
       stats: { totalCaught: 0, totalBattles: 0, shiniesFound: 0, pokemonReleased: 0 },
       settings: { audio: true, notifications: true },
+      expShareActive: false,
       pendingEvolution: null,
       pendingNewMove: null,
       isFirstRun: true,
@@ -332,6 +334,7 @@ export const useStore = create<GameStore>()(
         };
       }),
       updateSettings: (updates) => set((state) => ({ settings: { ...state.settings, ...updates } })),
+      toggleExpShare: () => set((state) => ({ expShareActive: !state.expShareActive })),
       recordBattleWin: () => set((state) => {
         let { battlesWon, nextIsBoss } = state.currentBattlePath;
         if (!nextIsBoss) {
@@ -366,7 +369,8 @@ export const useStore = create<GameStore>()(
         stats: { totalCaught: 0, totalBattles: 0, shiniesFound: 0, pokemonReleased: 0 },
         isFirstRun: true,
         currentScreen: 'START_SCREEN',
-        settings: { audio: true, notifications: true }
+        settings: { audio: true, notifications: true },
+        expShareActive: false
       }),
     }),
     {

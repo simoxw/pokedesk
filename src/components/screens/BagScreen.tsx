@@ -5,7 +5,7 @@ import { motion, AnimatePresence } from 'motion/react';
 import { ArrowLeft, Package, Heart, Zap, Star } from 'lucide-react';
 
 export default function BagScreen() {
-  const { inventory, setScreen, useItem, team, box, updatePokemon } = useStore();
+  const { inventory, setScreen, useItem, team, box, updatePokemon, expShareActive, toggleExpShare } = useStore();
   const [tab, setTab] = useState<'balls' | 'heal' | 'candy'>('balls');
   const [pendingItem, setPendingItem] = useState<{ id: string; name: string; icon: string } | null>(null);
   const [isProcessing, setIsProcessing] = useState(false);
@@ -24,6 +24,7 @@ export default function BagScreen() {
       { id: 'full_heal', name: 'Cura Totale', icon: '💊', description: 'Cura qualsiasi stato alterato (PSN, BRN, PAR, SLP, FRZ)' },
     ],
     candy: [
+        { id: 'exp_share', name: 'Condividi ESP', icon: '📡', description: expShareActive ? '✅ Attivo — tutta la squadra riceve ESP' : '❌ Disattivo — solo il Pokémon attivo', isToggle: true }, 
         { id: 'rare_candy', name: 'Caramella Rara', icon: '🍬' },
         { id: 'fire_stone', name: 'Pietra Focaia', icon: '🔥' },
         { id: 'water_stone', name: 'Pietra Idrica', icon: '💧' },
@@ -76,10 +77,10 @@ export default function BagScreen() {
             </div>
             {(inventory[item.id] || 0) > 0 && tab !== 'balls' && ( 
               <button 
-                className="bg-[#e63946] px-4 py-2 rounded-xl text-xs font-bold" 
-                onClick={() => setPendingItem(item)} 
+                className={`px-4 py-2 rounded-xl text-xs font-bold ${ (item as any).isToggle ? (expShareActive ? 'bg-green-500' : 'bg-slate-600') : 'bg-[#e63946]' }`} 
+                onClick={() => (item as any).isToggle ? toggleExpShare() : setPendingItem(item)} 
               > 
-                USA 
+                {(item as any).isToggle ? (expShareActive ? 'ON' : 'OFF') : 'USA'} 
               </button> 
             )} 
           </div> 
@@ -125,8 +126,15 @@ export default function BagScreen() {
                 const handleUse = async () => { 
                   if (disabled || isProcessing) return; 
                   
-                  // Gestione Pietre Evolutive
-                  if (pendingItem.id.endsWith('_stone')) {
+                  // Gestione Condividi ESP (toggle, non si usa su pokemon) 
+                  if (pendingItem.id === 'exp_share') { 
+                    toggleExpShare(); 
+                    setPendingItem(null); 
+                    return; 
+                  } 
+                  // Gestione Pietre Evolutive 
+                  if (pendingItem.id.endsWith('_stone')) { 
+
                     setIsProcessing(true);
                     try {
                       const species = await api.getSpecies(p.pokemonId);

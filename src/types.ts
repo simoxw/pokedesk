@@ -113,6 +113,7 @@ export interface GameState {
     audio: boolean;
     notifications: boolean;
   };
+  expShareActive: boolean;
   pendingEvolution: {
     pokemonId: string;
     newPokemonId: number;

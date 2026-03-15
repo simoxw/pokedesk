@@ -10,7 +10,7 @@ import TypeBadge from '../ui/TypeBadge';
 import confetti from 'canvas-confetti';
 
 export default function BattleScreen() {
-  const { team, setScreen, incrementStat, addCoins, addItem, updatePokemon, inventory, useItem, gainExp, currentBattlePath, recordBattleWin, medals } = useStore();
+  const { team, setScreen, incrementStat, addCoins, addItem, updatePokemon, inventory, useItem, gainExp, currentBattlePath, recordBattleWin, medals, expShareActive } = useStore();
   const medalsCount = medals.filter((m: any) => m.isUnlocked).length;
   const [activeIdx, setActiveIdx] = useState(0);
   const [enemy, setEnemy] = useState<any>(null);
@@ -27,6 +27,8 @@ export default function BattleScreen() {
   const [enemyStages, setEnemyStages] = useState<Record<string, number>>({ attack: 0, defense: 0, spAtk: 0, spDef: 0, speed: 0, accuracy: 0, evasion: 0 }); 
   const [enemyFlinch, setEnemyFlinch] = useState(false);
   const [playerFlinch, setPlayerFlinch] = useState(false);
+  const [enemyPhase, setEnemyPhase] = useState(1); 
+  const [enemy2, setEnemy2] = useState<any>(null); 
   const [activeMoveTooltip, setActiveMoveTooltip] = useState<any>(null);
   const tooltipTimeout = React.useRef<any>(null);
   const enemyRef = React.useRef<any>(null);
@@ -34,6 +36,30 @@ export default function BattleScreen() {
 
   const playerPkmn = team[activeIdx];
   const isBoss = currentBattlePath.nextIsBoss;
+
+  const applyEvGain = (pokemon: any, enemyData: any) => { 
+    if (!enemyData?.rawStats) return; 
+    const statMap: Record<string, string> = { 
+      'hp': 'hp', 'attack': 'attack', 'defense': 'defense', 
+      'special-attack': 'spAtk', 'special-defense': 'spDef', 'speed': 'speed' 
+    }; 
+    const newEvs = { ...pokemon.evs }; 
+    let totalEvs = Object.values(newEvs).reduce((a: number, b: any) => a + b, 0) as number; 
+
+    for (const s of enemyData.rawStats) { 
+      const effort: number = s.effort || 0; 
+      if (effort === 0) continue; 
+      const key = statMap[s.stat.name]; 
+      if (!key) continue; 
+      const canAdd = Math.min(effort, 252 - newEvs[key], 510 - totalEvs); 
+      if (canAdd <= 0) continue; 
+      newEvs[key] += canAdd; 
+      totalEvs += canAdd; 
+    } 
+
+    const newStats = BattleEngine.calculateStats(pokemon.level, pokemon.baseStats, pokemon.ivs, newEvs, pokemon.nature); 
+    updatePokemon(pokemon.id, { evs: newEvs, stats: newStats }); 
+  }; 
 
   const applyStage = (base: number, stage: number) => { 
     const s = Math.max(-6, Math.min(6, stage)); 
@@ -84,11 +110,35 @@ export default function BattleScreen() {
       let level = Math.max(5, Math.floor(teamAvgLevel + variance)); 
       let enemyName = api.getItalianName(species.names);
 
-      if (isBoss) {
-        level = playerPkmn.level + 5;
-        enemyName = "Capopalestra";
-        addLog("⚔️ SFIDA CAPOPALESTRA!");
-      }
+      if (isBoss) { 
+        level = playerPkmn.level + 3; 
+        enemyName = "Capopalestra"; 
+        addLog("⚔️ SFIDA CAPOPALESTRA! (2 Pokémon)"); 
+ 
+        // Carica il secondo Pokémon del boss 
+        const id2 = getRandomPokemonId(medalsCount); 
+        const data2 = await api.getPokemon(id2); 
+        const ivs2 = CatchEngine.generateIVs(); 
+        const baseStats2 = { 
+          hp: data2.stats[0].base_stat, attack: data2.stats[1].base_stat, 
+          defense: data2.stats[2].base_stat, spAtk: data2.stats[3].base_stat, 
+          spDef: data2.stats[4].base_stat, speed: data2.stats[5].base_stat, 
+        }; 
+        const stats2 = BattleEngine.calculateStats(level, baseStats2, ivs2, { hp: 0, attack: 0, defense: 0, spAtk: 0, spDef: 0, speed: 0 }, 'Quirky'); 
+        const moves2 = await api.getPokemonMoves(data2, level); 
+        setEnemy2({ 
+          ...data2, 
+          rawStats: data2.stats,
+          name: "Capopalestra 2°", 
+          level, 
+          currentHp: stats2.hp, 
+          maxHp: stats2.hp, 
+          stats: stats2, 
+          moves: moves2, 
+          types: data2.types.map((t: any) => t.type.name), 
+        }); 
+      } 
+
 
       const baseStats = {
         hp: data.stats[0].base_stat,
@@ -103,8 +153,9 @@ export default function BattleScreen() {
       const stats = BattleEngine.calculateStats(level, baseStats, ivs, { hp: 0, attack: 0, defense: 0, spAtk: 0, spDef: 0, speed: 0 }, 'Quirky');
       const moves = await api.getPokemonMoves(data, level);
 
-      setEnemy({
+      const enemyData = {
         ...data,
+        rawStats: data.stats,
         name: enemyName,
         level,
         currentHp: stats.hp,
@@ -112,11 +163,93 @@ export default function BattleScreen() {
         stats,
         moves,
         types: data.types.map((t: any) => t.type.name),
-      });
+      };
+      setEnemy(enemyData);
+      enemyRef.current = enemyData;
       setLoading(false);
     };
     initBattle();
   }, []);
+
+  const processEnemyDefeat = async (defeatedEnemy: any) => {
+    const currentPkm = team[activeIdx];
+    const baseExp = defeatedEnemy.base_experience || 100; 
+    const exp = BattleEngine.calculateExp(baseExp, defeatedEnemy.level); 
+    addLog(`${defeatedEnemy.name} è esausto! ${currentPkm.name} guadagna ${exp} ESP!`); 
+    const levelBefore = currentPkm.level; 
+    gainExp(currentPkm.id, exp); 
+    // EV gain per il Pokémon attivo 
+    const freshActive = useStore.getState().team.find((p: any) => p.id === currentPkm.id) ?? currentPkm; 
+    applyEvGain(freshActive, defeatedEnemy); 
+    
+    if (expShareActive) { 
+      const halfExp = Math.max(1, Math.floor(exp / 2)); 
+      useStore.getState().team.forEach((p: any) => { 
+        if (p.id !== currentPkm.id && p.currentHp > 0) gainExp(p.id, halfExp); 
+      }); 
+    } 
+    
+    setTimeout(() => { 
+      const freshPkmn = useStore.getState().team.find((p: any) => p.id === currentPkm.id); 
+      if (freshPkmn && freshPkmn.level > levelBefore) { 
+        addLog(`🎊 LIVELLO SUPERATO! ${freshPkmn.name} è ora al Lv. ${freshPkmn.level}!`); 
+      } 
+    }, 100); 
+
+    if (isBoss && enemyPhase === 1 && enemy2) { 
+      addLog(`⚔️ Il Capopalestra lancia il secondo Pokémon!`); 
+      setEnemyPhase(2); 
+      setEnemy(enemy2); 
+      enemyRef.current = enemy2; 
+      setPlayerStages({ attack: 0, defense: 0, spAtk: 0, spDef: 0, speed: 0, accuracy: 0, evasion: 0 }); 
+      setEnemyStages({ attack: 0, defense: 0, spAtk: 0, spDef: 0, speed: 0, accuracy: 0, evasion: 0 }); 
+      setTurn('player'); 
+      setIsAnimating(false); 
+      return true; // continue battle
+    } 
+
+    recordBattleWin(); 
+    if (isBoss) { 
+      addLog("🏅 Medaglia conquistata!"); 
+      confetti({ particleCount: 150, spread: 70, origin: { y: 0.6 } }); 
+      addCoins(Math.floor(500 + (defeatedEnemy?.level ?? 5) * 2)); 
+      addItem('megaball', 1); 
+      addItem('full_heal', 2); 
+      addItem('superpotion', 2); 
+      if (Math.random() < 0.10) addItem('rare_candy', 1); 
+      if (Math.random() < 0.10) addItem('ultraball', 1); 
+      // Condividi ESP: premio unico per aver completato tutte le 40 medaglie 
+      const bossesWon = useStore.getState().medals.filter((m: any) => m.isUnlocked).length; 
+      if (bossesWon === 40 && (useStore.getState().inventory['exp_share'] || 0) === 0) { 
+        addItem('exp_share', 1); 
+        addLog('🏆 Hai completato tutte le palestre! Ottieni il Condividi ESP!'); 
+      } 
+      addLog('🎁 Ricompense Capopalestra ricevute!'); 
+    } else { 
+      addCoins(Math.floor(200 + (defeatedEnemy?.level ?? 5) * 2)); 
+      addItem('pokeball', 1); 
+      addItem('potion', 2); 
+      addItem('full_heal', 1); 
+      if (Math.random() < 0.10) addItem('superpotion', 1); 
+      if (Math.random() < 0.10) addItem('megaball', 1); 
+    } 
+    incrementStat('totalBattles');
+    team.forEach(p => { 
+      const isActive = p.id === currentPkm.id; 
+      const recoveredHp = isActive 
+        ? Math.min(p.stats.hp, p.currentHp + Math.floor(p.stats.hp * 0.1)) 
+        : p.currentHp; 
+      const recoveredMoves = p.moves.map((m: any) => ({ ...m, pp: m.maxPp })); 
+      updatePokemon(p.id, { currentHp: recoveredHp, moves: recoveredMoves }); 
+    });
+    setPlayerStages({ attack: 0, defense: 0, spAtk: 0, spDef: 0, speed: 0, accuracy: 0, evasion: 0 });
+    setEnemyStages({ attack: 0, defense: 0, spAtk: 0, spDef: 0, speed: 0, accuracy: 0, evasion: 0 });
+    setEnemyFlinch(false);
+    setPlayerFlinch(false);
+    setIsFinished(true);
+    setIsAnimating(false);
+    return false; // end battle
+  };
 
   const executeEnemyTurn = async (currentPlayerPkmn: any) => {
     await new Promise(r => setTimeout(r, 800));
@@ -260,24 +393,33 @@ export default function BattleScreen() {
     // Danno da stato al nemico a fine turno 
     if (liveEnemy.status === 'PSN') {
       const psnDmg = Math.floor(liveEnemy.maxHp / 8);
+      const nextHp = Math.max(0, liveEnemy.currentHp - psnDmg);
       setEnemy((prev: any) => {
-        const next = { ...prev, currentHp: Math.max(0, prev.currentHp - psnDmg) };
+        const next = { ...prev, currentHp: nextHp };
         addLog(`${prev.name} soffre del veleno!`);
-        if (next.currentHp <= 0) {
-          addLog(`${prev.name} è esausto per il veleno!`);
-        }
         enemyRef.current = next;
         return next;
       });
+      if (nextHp <= 0) {
+        await new Promise(r => setTimeout(r, 800));
+        await processEnemyDefeat(enemyRef.current);
+        return;
+      }
     }
     if (liveEnemy.status === 'BRN') {
       const brnDmg = Math.floor(liveEnemy.maxHp / 8);
+      const nextHp = Math.max(0, liveEnemy.currentHp - brnDmg);
       setEnemy((prev: any) => {
-        const next = { ...prev, currentHp: Math.max(0, prev.currentHp - brnDmg) };
+        const next = { ...prev, currentHp: nextHp };
         addLog(`${prev.name} soffre della scottatura!`);
         enemyRef.current = next;
         return next;
       });
+      if (nextHp <= 0) {
+        await new Promise(r => setTimeout(r, 800));
+        await processEnemyDefeat(enemyRef.current);
+        return;
+      }
     }
 
     setTurn('player');
@@ -292,7 +434,8 @@ export default function BattleScreen() {
     setActiveIdx(idx);
     // Dopo il cambio il nemico attacca 
     await new Promise(r => setTimeout(r, 600));
-    await executeEnemyTurn(team[idx]);
+    const freshPlayerPkmn = useStore.getState().team.find((p: any) => p.id === team[idx].id) ?? team[idx];
+    await executeEnemyTurn(freshPlayerPkmn);
   };
 
   const handleUseItem = async (itemId: string, itemName: string) => { 
@@ -546,6 +689,7 @@ export default function BattleScreen() {
     updatePokemon(playerPkmn.id, { moves: updatedMoves });
 
     // Player Turn — order by speed 
+    const liveEnemyAtStartOfMove = enemyRef.current ?? enemy;
     const effPlayer = { 
       ...playerPkmn, 
       stats: { 
@@ -557,13 +701,13 @@ export default function BattleScreen() {
       } 
     }; 
     const effEnemy = { 
-      ...enemy, 
+      ...liveEnemyAtStartOfMove, 
       stats: { 
-        ...enemy.stats, 
-        attack: applyStage(enemy.stats.attack, enemyStages.attack), 
-        spAtk: applyStage(enemy.stats.spAtk, enemyStages.spAtk), 
-        defense: applyStage(enemy.stats.defense, enemyStages.defense), 
-        spDef: applyStage(enemy.stats.spDef, enemyStages.spDef), 
+        ...liveEnemyAtStartOfMove.stats, 
+        attack: applyStage(liveEnemyAtStartOfMove.stats.attack, enemyStages.attack), 
+        spAtk: applyStage(liveEnemyAtStartOfMove.stats.spAtk, enemyStages.spAtk), 
+        defense: applyStage(liveEnemyAtStartOfMove.stats.defense, enemyStages.defense), 
+        spDef: applyStage(liveEnemyAtStartOfMove.stats.spDef, enemyStages.spDef), 
       } 
     }; 
 
@@ -574,12 +718,12 @@ export default function BattleScreen() {
       const damage = BattleEngine.calculateDamage(effPlayer as any, effEnemy as any, move, isCrit);
       const typeMultiplier = BattleEngine.getTypeEffectiveness(move.type, effEnemy.types);
       const effLabel = BattleEngine.getTypeEffectivenessLabel(typeMultiplier);
-      const newEnemyHp = Math.max(0, (enemy?.currentHp ?? 0) - damage);
+      const newEnemyHp = Math.max(0, (liveEnemyAtStartOfMove?.currentHp ?? 0) - damage);
 
       addLog(`${playerPkmn.name} usa ${move.name}! (${damage} danni)`);
       
       // Status e Healing logica
-      const { newStatus, message } = applyPlayerMoveEffects(move, enemy);
+      const { newStatus, message } = applyPlayerMoveEffects(move, liveEnemyAtStartOfMove);
       if (message) addLog(message);
 
       if (isCrit) addLog('Brutto colpo!');
@@ -606,59 +750,8 @@ export default function BattleScreen() {
       });
       await new Promise(r => setTimeout(r, 800));
 
-      if (newEnemyHp <= 0) {
-        addLog(`${enemy.name} è esausto!`);
-        recordBattleWin();
-        if (isBoss) {
-          addLog("🏅 Medaglia conquistata!");
-          confetti({ particleCount: 150, spread: 70, origin: { y: 0.6 } });
-        }
-        const baseExp = enemy.base_experience || 100; 
-        const exp = BattleEngine.calculateExp(baseExp, enemy.level);
-        addLog(`${playerPkmn.name} guadagna ${exp} ESP!`);
-        const levelBefore = playerPkmn.level;
-        gainExp(playerPkmn.id, exp);
-        
-        // Controllo immediato del nuovo livello dallo store aggiornato
-        setTimeout(() => {
-          const freshPkmn = useStore.getState().team.find((p: any) => p.id === playerPkmn.id);
-          if (freshPkmn && freshPkmn.level > levelBefore) {
-            addLog(`🎊 LIVELLO SUPERATO! ${freshPkmn.name} è ora al Lv. ${freshPkmn.level}!`);
-          }
-        }, 100);
-        // Ricompense fisse per battaglia 
-        if (isBoss) { 
-          addCoins(Math.floor(500 + (enemy?.level ?? 5) * 2)); 
-          addItem('megaball', 1); 
-          addItem('full_heal', 2); 
-          addItem('superpotion', 2); 
-          if (Math.random() < 0.10) addItem('rare_candy', 1); 
-          if (Math.random() < 0.10) addItem('ultraball', 1); 
-          addLog('🎁 Ricompense Capopalestra ricevute!'); 
-        } else { 
-          addCoins(Math.floor(200 + (enemy?.level ?? 5) * 2)); 
-          addItem('pokeball', 1); 
-          addItem('potion', 2); 
-          addItem('full_heal', 1); 
-          if (Math.random() < 0.10) addItem('superpotion', 1); 
-          if (Math.random() < 0.10) addItem('megaball', 1); 
-        } 
-        incrementStat('totalBattles');
-        team.forEach(p => { 
-          // Solo PP recuperati per tutti; HP solo al Pokémon attivo (10%) 
-          const isActive = p.id === playerPkmn.id; 
-          const recoveredHp = isActive 
-            ? Math.min(p.stats.hp, p.currentHp + Math.floor(p.stats.hp * 0.1)) 
-            : p.currentHp; 
-          const recoveredMoves = p.moves.map((m: any) => ({ ...m, pp: m.maxPp })); 
-          updatePokemon(p.id, { currentHp: recoveredHp, moves: recoveredMoves }); 
-        });
-        setPlayerStages({ attack: 0, defense: 0, spAtk: 0, spDef: 0, speed: 0 });
-        setEnemyStages({ attack: 0, defense: 0, spAtk: 0, spDef: 0, speed: 0, accuracy: 0, evasion: 0 });
-        setEnemyFlinch(false);
-        setPlayerFlinch(false);
-        setIsFinished(true);
-        setIsAnimating(false);
+      if (newEnemyHp <= 0) { 
+        await processEnemyDefeat(enemyRef.current);
         return;
       }
 
@@ -683,12 +776,13 @@ export default function BattleScreen() {
       const damage = BattleEngine.calculateDamage(effPlayer as any, effEnemy as any, move, isCrit);
       const typeMultiplier = BattleEngine.getTypeEffectiveness(move.type, effEnemy.types);
       const effLabel = BattleEngine.getTypeEffectivenessLabel(typeMultiplier);
-      const newEnemyHp = Math.max(0, (enemy?.currentHp ?? 0) - damage);
+      const currentEnemyAfterEnemyTurn = enemyRef.current ?? liveEnemyAtStartOfMove;
+      const newEnemyHp = Math.max(0, (currentEnemyAfterEnemyTurn?.currentHp ?? 0) - damage);
 
       addLog(`${playerPkmn.name} usa ${move.name}! (${damage} danni)`);
       
       // Status e Healing logica
-      const { newStatus, message } = applyPlayerMoveEffects(move, enemy);
+      const { newStatus, message } = applyPlayerMoveEffects(move, currentEnemyAfterEnemyTurn);
       if (message) addLog(message);
 
       if (isCrit) addLog('Brutto colpo!');
@@ -715,59 +809,8 @@ export default function BattleScreen() {
       });
       await new Promise(r => setTimeout(r, 800));
 
-      if (newEnemyHp <= 0) {
-        addLog(`${enemy.name} è esausto!`);
-        recordBattleWin();
-        if (isBoss) {
-          addLog("🏅 Medaglia conquistata!");
-          confetti({ particleCount: 150, spread: 70, origin: { y: 0.6 } });
-        }
-        const baseExp = enemy.base_experience || 100;
-        const exp = BattleEngine.calculateExp(baseExp, enemy.level);
-        addLog(`${playerPkmn.name} guadagna ${exp} ESP!`);
-        const levelBefore = playerPkmn.level;
-        gainExp(playerPkmn.id, exp);
-        
-        // Controllo immediato del nuovo livello dallo store aggiornato
-        setTimeout(() => {
-          const freshPkmn = useStore.getState().team.find((p: any) => p.id === playerPkmn.id);
-          if (freshPkmn && freshPkmn.level > levelBefore) {
-            addLog(`🎊 LIVELLO SUPERATO! ${freshPkmn.name} è ora al Lv. ${freshPkmn.level}!`);
-          }
-        }, 100);
-        // Ricompense fisse per battaglia 
-        if (isBoss) { 
-          addCoins(Math.floor(500 + (enemy?.level ?? 5) * 2)); 
-          addItem('megaball', 1); 
-          addItem('full_heal', 2); 
-          addItem('superpotion', 2); 
-          if (Math.random() < 0.10) addItem('rare_candy', 1); 
-          if (Math.random() < 0.10) addItem('ultraball', 1); 
-          addLog('🎁 Ricompense Capopalestra ricevute!'); 
-        } else { 
-          addCoins(Math.floor(200 + (enemy?.level ?? 5) * 2)); 
-          addItem('pokeball', 1); 
-          addItem('potion', 2); 
-          addItem('full_heal', 1); 
-          if (Math.random() < 0.10) addItem('superpotion', 1); 
-          if (Math.random() < 0.10) addItem('megaball', 1); 
-        } 
-        incrementStat('totalBattles');
-        team.forEach(p => { 
-          // Solo PP recuperati per tutti; HP solo al Pokémon attivo (10%) 
-          const isActive = p.id === playerPkmn.id; 
-          const recoveredHp = isActive 
-            ? Math.min(p.stats.hp, p.currentHp + Math.floor(p.stats.hp * 0.1)) 
-            : p.currentHp; 
-          const recoveredMoves = p.moves.map((m: any) => ({ ...m, pp: m.maxPp })); 
-          updatePokemon(p.id, { currentHp: recoveredHp, moves: recoveredMoves }); 
-        });
-        setPlayerStages({ attack: 0, defense: 0, spAtk: 0, spDef: 0, speed: 0 });
-        setEnemyStages({ attack: 0, defense: 0, spAtk: 0, spDef: 0, speed: 0, accuracy: 0, evasion: 0 });
-        setEnemyFlinch(false);
-        setPlayerFlinch(false);
-        setIsFinished(true);
-        setIsAnimating(false);
+      if (newEnemyHp <= 0) { 
+        await processEnemyDefeat(enemyRef.current);
         return;
       }
     }
@@ -775,16 +818,32 @@ export default function BattleScreen() {
     setEnemyFlinch(false);
     setPlayerFlinch(false);
     const freshForEndTurn = useStore.getState().team.find((p: any) => p.id === playerPkmn.id) ?? playerPkmn; 
+    let finalPlayerHp = freshForEndTurn.currentHp;
+
     if (freshForEndTurn.status === 'BRN') { 
       const brnDmg = Math.floor(freshForEndTurn.stats.hp / 8); 
-      updatePokemon(freshForEndTurn.id, { currentHp: Math.max(0, freshForEndTurn.currentHp - brnDmg) }); 
+      finalPlayerHp = Math.max(0, finalPlayerHp - brnDmg);
+      updatePokemon(freshForEndTurn.id, { currentHp: finalPlayerHp }); 
       addLog(`${freshForEndTurn.name} è danneggiato dalla scottatura!`); 
     } 
     if (freshForEndTurn.status === 'PSN') { 
       const psnDmg = Math.floor(freshForEndTurn.stats.hp / 8); 
-      updatePokemon(freshForEndTurn.id, { currentHp: Math.max(0, freshForEndTurn.currentHp - psnDmg) }); 
+      finalPlayerHp = Math.max(0, finalPlayerHp - psnDmg);
+      updatePokemon(freshForEndTurn.id, { currentHp: finalPlayerHp }); 
       addLog(`${freshForEndTurn.name} è avvelenato!`); 
     } 
+
+    if (finalPlayerHp <= 0) {
+      addLog(`${freshForEndTurn.name} è esausto!`);
+      const nextAvailable = team.findIndex((p, i) => p.currentHp > 0 && i !== activeIdx);
+      if (nextAvailable === -1) {
+        addLog('Hai perso la sfida...');
+        setIsFinished(true);
+      } else {
+        setActiveIdx(nextAvailable);
+        addLog(`Vai ${team[nextAvailable].name}!`);
+      }
+    }
 
     setTurn('player');
     setIsAnimating(false);
@@ -797,7 +856,10 @@ export default function BattleScreen() {
   );
 
   return (
-    <div className="h-full flex flex-col relative overflow-hidden bg-[#87ceeb]">
+    <div 
+      className="h-full flex flex-col relative overflow-hidden bg-[#87ceeb]"
+      onClick={() => setActiveMoveTooltip(null)}
+    >
       {/* SFONDO GLOBALE (Cielo Azzurro) */}
       <div className="absolute inset-0 z-0" style={{ 
         background: 'linear-gradient(180deg, #4fa8ff 0%, #87ceeb 40%, #b0e2ff 60%)' 
@@ -841,6 +903,44 @@ export default function BattleScreen() {
 
       {/* ARENA (Contiene i Pokémon) */} 
       <div className="relative flex-1 flex flex-col z-10 overflow-hidden"> 
+        {/* Tooltip mossa (nella zona verde) */}
+        <AnimatePresence> 
+          {activeMoveTooltip && ( 
+            <motion.div 
+              initial={{ opacity: 0, y: 10, scale: 0.95 }} 
+              animate={{ opacity: 1, y: 0, scale: 1 }} 
+              exit={{ opacity: 0, y: 10, scale: 0.95 }} 
+              className="absolute left-4 right-4 z-[60] bg-[#1a1a2e]/95 border border-white/10 rounded-2xl p-4 shadow-2xl backdrop-blur-sm" 
+              style={{ top: '40%' }} 
+              onClick={(e) => e.stopPropagation()}
+            > 
+              <div className="flex justify-between items-start mb-2">
+                <div>
+                  <h4 className="font-black text-sm uppercase text-white">{activeMoveTooltip.name}</h4>
+                  <div className="flex gap-2 mt-1">
+                    <TypeBadge type={activeMoveTooltip.type} small />
+                    <span className="text-[10px] bg-white/10 px-2 py-0.5 rounded uppercase font-bold text-white/70">
+                      {activeMoveTooltip.category}
+                    </span>
+                  </div>
+                </div>
+                <div className="text-right">
+                  <div className="text-[10px] font-bold text-white/50">POTENZA: {activeMoveTooltip.power || '--'}</div>
+                  <div className="text-[10px] font-bold text-white/50">PRECISIONE: {activeMoveTooltip.accuracy || '--'}%</div>
+                </div>
+              </div>
+              <p className="text-[11px] text-white/60 leading-relaxed italic">
+                {activeMoveTooltip.description}
+              </p>
+              {activeMoveTooltip.statusEffect && (
+                <div className="mt-2 pt-2 border-t border-white/5 text-[10px] font-bold text-indigo-400">
+                  Effetto: {activeMoveTooltip.statusEffect} ({activeMoveTooltip.effectChance || 100}%)
+                </div>
+              )}
+            </motion.div>
+          )} 
+        </AnimatePresence>
+
         {/* Vignetta leggera */} 
         <div className="absolute inset-0 pointer-events-none" 
           style={{ boxShadow: 'inset 0 0 100px rgba(0,0,0,0.15)' }} 
@@ -887,7 +987,7 @@ export default function BattleScreen() {
             animate={{ y: [0, -6, 0] }}
             transition={{ duration: 2, repeat: Infinity }}
             src={enemy?.sprites?.front_default}
-            className="w-32 h-32 object-contain drop-shadow-2xl"
+            className="w-40 h-40 object-contain drop-shadow-2xl"
           />
         </div>
 
@@ -897,7 +997,7 @@ export default function BattleScreen() {
             animate={attackAnim ? { x: [0, 15, 0] } : { x: 0 }}
             transition={{ duration: 0.3 }}
             src={`https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/back/${playerPkmn?.isShiny ? 'shiny/' : ''}${playerPkmn?.pokemonId}.png`}
-            className="w-36 h-36 object-contain drop-shadow-2xl shrink-0"
+            className="w-44 h-44 object-contain drop-shadow-2xl shrink-0"
           />
           <div className="flex-1 bg-black/40 backdrop-blur rounded-2xl p-3 mb-2 max-w-sm">
             <div className="flex items-center justify-between">
@@ -947,42 +1047,6 @@ export default function BattleScreen() {
       {/* LOG + CONTROLLI */}
       <div className="bg-[#0f0f1a]/95 backdrop-blur-md border-t border-white/5 p-4 space-y-3 relative z-20 shrink-0">
         
-        {/* Tooltip mossa */}
-        <AnimatePresence>
-          {activeMoveTooltip && (
-            <motion.div
-              initial={{ opacity: 0, y: 10, scale: 0.95 }}
-              animate={{ opacity: 1, y: 0, scale: 1 }}
-              exit={{ opacity: 0, y: 10, scale: 0.95 }}
-              className="absolute left-4 right-4 bottom-full mb-4 z-[60] bg-[#1a1a2e] border border-white/10 rounded-2xl p-4 shadow-2xl"
-            >
-              <div className="flex justify-between items-start mb-2">
-                <div>
-                  <h4 className="font-black text-sm uppercase text-white">{activeMoveTooltip.name}</h4>
-                  <div className="flex gap-2 mt-1">
-                    <TypeBadge type={activeMoveTooltip.type} small />
-                    <span className="text-[10px] bg-white/10 px-2 py-0.5 rounded uppercase font-bold text-white/70">
-                      {activeMoveTooltip.category}
-                    </span>
-                  </div>
-                </div>
-                <div className="text-right">
-                  <div className="text-[10px] font-bold text-white/50">POTENZA: {activeMoveTooltip.power || '--'}</div>
-                  <div className="text-[10px] font-bold text-white/50">PRECISIONE: {activeMoveTooltip.accuracy || '--'}%</div>
-                </div>
-              </div>
-              <p className="text-[11px] text-white/60 leading-relaxed italic">
-                {activeMoveTooltip.description}
-              </p>
-              {activeMoveTooltip.statusEffect && (
-                <div className="mt-2 pt-2 border-t border-white/5 text-[10px] font-bold text-indigo-400">
-                  Effetto: {activeMoveTooltip.statusEffect} ({activeMoveTooltip.effectChance || 100}%)
-                </div>
-              )}
-            </motion.div>
-          )}
-        </AnimatePresence>
-
         {/* Log */}
         <div className="bg-[#1a1a2e] rounded-xl px-4 py-2 min-h-[36px] flex items-center">
           <p className="text-sm font-bold text-white/80">{logs[0]}</p>
@@ -1001,7 +1065,8 @@ export default function BattleScreen() {
               {playerPkmn?.moves?.map((move: any) => (
                 <button
                   key={move.id}
-                  onClick={() => {
+                  onClick={(e) => {
+                    e.stopPropagation();
                     if (activeMoveTooltip) {
                       setActiveMoveTooltip(null);
                       return;
