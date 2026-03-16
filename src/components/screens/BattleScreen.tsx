@@ -80,25 +80,25 @@ export default function BattleScreen() {
       setLoading(true);
       try {
         // Gen sbloccate progressivamente con le medaglie 
-        const getRandomPokemonId = (medals: number): number => { 
-          const ranges: Array<{min: number, max: number, weight: number}> = [ 
-            { min: 1, max: 151, weight: 40 }, 
-          ]; 
-          if (medals >= 1)  ranges.push({ min: 152, max: 251, weight: 25 }); 
-          if (medals >= 5)  ranges.push({ min: 252, max: 386, weight: 20 }); 
-          if (medals >= 10) ranges.push({ min: 387, max: 493, weight: 15 }); 
-          if (medals >= 20) ranges.push({ min: 494, max: 649, weight: 10 }); 
-          if (medals >= 30) ranges.push({ min: 650, max: 721, weight: 5  }); 
+        const getRandomPokemonId = (medals: number): number => {
+          const ranges: Array<{min: number, max: number, weight: number}> = [
+            { min: 1,   max: 151, weight: 25 },   // Gen 1: sempre disponibile
+          ];
+          if (medals >= 1)  ranges.push({ min: 152, max: 251, weight: 22 }); // Gen 2
+          if (medals >= 5)  ranges.push({ min: 252, max: 386, weight: 19 }); // Gen 3
+          if (medals >= 10) ranges.push({ min: 387, max: 493, weight: 16 }); // Gen 4
+          if (medals >= 20) ranges.push({ min: 494, max: 649, weight: 13 }); // Gen 5
+          if (medals >= 30) ranges.push({ min: 650, max: 721, weight: 10 }); // Gen 6
 
-          const totalWeight = ranges.reduce((sum, r) => sum + r.weight, 0); 
-          let roll = Math.random() * totalWeight; 
-          for (const range of ranges) { 
-            roll -= range.weight; 
-            if (roll <= 0) { 
-              return Math.floor(Math.random() * (range.max - range.min + 1)) + range.min; 
-            } 
-          } 
-          return Math.floor(Math.random() * 151) + 1; 
+          const totalWeight = ranges.reduce((sum, r) => sum + r.weight, 0);
+          let roll = Math.random() * totalWeight;
+          for (const range of ranges) {
+            roll -= range.weight;
+            if (roll <= 0) {
+              return Math.floor(Math.random() * (range.max - range.min + 1)) + range.min;
+            }
+          }
+          return Math.floor(Math.random() * 151) + 1; // fallback Gen 1
         }; 
         
         const id = getRandomPokemonId(medalsCount);
@@ -361,13 +361,14 @@ export default function BattleScreen() {
     if (effLabel && enemyDamage > 0) addLog(effLabel);
 
     // Applica effetto di stato nemico 
-    if (enemyMove.statusEffect && !currentPlayerPkmn.status && Math.random() * 100 < (enemyMove.effectChance || 0)) {
-      if (isImmuneToStatus(currentPlayerPkmn.types, enemyMove.statusEffect)) { 
-        addLog(`${currentPlayerPkmn.name} è immune a ${enemyMove.statusEffect}!`); 
-      } else { 
-        updatePokemon(currentPlayerPkmn.id, { status: enemyMove.statusEffect }); 
-        addLog(`${currentPlayerPkmn.name} è ora ${enemyMove.statusEffect}!`); 
-      } 
+    const statusChance = (!enemyMove.effectChance || enemyMove.effectChance === 0) ? 100 : enemyMove.effectChance;
+    if (enemyMove.statusEffect && !currentPlayerPkmn.status && Math.random() * 100 < statusChance) {
+      if (isImmuneToStatus(currentPlayerPkmn.types, enemyMove.statusEffect)) {
+        addLog(`${currentPlayerPkmn.name} è immune a ${enemyMove.statusEffect}!`);
+      } else {
+        updatePokemon(currentPlayerPkmn.id, { status: enemyMove.statusEffect });
+        addLog(`${currentPlayerPkmn.name} è ora ${enemyMove.statusEffect}!`);
+      }
     }
 
     const newPlayerHp = Math.max(0, currentPlayerPkmn.currentHp - enemyDamage);
@@ -964,33 +965,42 @@ export default function BattleScreen() {
         /> 
 
         {/* Enemy Pokemon Area */}
-        <div className="relative pt-6 px-6 h-[40%] flex flex-col items-center">
+        <div className="relative pt-6 px-6 h-[38%] flex flex-col items-center">
           <div className="w-full bg-black/40 backdrop-blur rounded-2xl p-3 mb-2 max-w-[260px] self-start"> 
-            <div className="flex items-center justify-between mb-1">
-              <div className="flex items-center gap-2">
-                <span className="font-black text-sm uppercase truncate max-w-[120px]">{enemy?.name}</span>
-                {enemy?.status && ( 
-                  <span className={`text-[8px] font-black px-1 py-0.5 rounded ${ 
-                    enemy.status === 'SLP' ? 'bg-purple-500/40 text-purple-300' : 
-                    enemy.status === 'PSN' ? 'bg-purple-700/40 text-purple-200' : 
-                    enemy.status === 'BRN' ? 'bg-orange-500/40 text-orange-300' : 
-                    enemy.status === 'PAR' ? 'bg-yellow-500/40 text-yellow-300' : 
-                    enemy.status === 'FRZ' ? 'bg-blue-400/40 text-blue-200' : '' 
-                  }`}>{enemy.status}</span> 
-                )} 
-                <div className="flex gap-1 flex-wrap"> 
-                  {enemy?.types?.map((t: string) => ( 
-                    <TypeBadge key={t} type={t as any} small /> 
-                  ))} 
-                  {Object.entries(enemyStages).filter(([, v]) => v !== 0).map(([stat, val]) => ( 
-                    <span key={stat} className={`text-[8px] font-black px-1 py-0.5 rounded ${val > 0 ? 'bg-blue-500/30 text-blue-300' : 'bg-red-500/30 text-red-300'}`}> 
-                      {stat.toUpperCase()} {val > 0 ? `+${val}` : val} 
-                    </span> 
-                  ))} 
-                </div> 
+            <div className="flex flex-col gap-0.5 flex-1 min-w-0">
+            {/* Riga 1: nome + status + livello */}
+            <div className="flex items-center justify-between gap-1">
+              <div className="flex items-center gap-1.5 min-w-0">
+                <span className="font-black text-sm uppercase truncate max-w-[110px]">{enemy?.name}</span>
+                {enemy?.status && (
+                  <span className={`text-[8px] font-black px-1 py-0.5 rounded shrink-0 ${
+                    enemy.status === 'SLP' ? 'bg-purple-500/40 text-purple-300' :
+                    enemy.status === 'PSN' ? 'bg-purple-700/40 text-purple-200' :
+                    enemy.status === 'BRN' ? 'bg-orange-500/40 text-orange-300' :
+                    enemy.status === 'PAR' ? 'bg-yellow-500/40 text-yellow-300' :
+                    enemy.status === 'FRZ' ? 'bg-blue-400/40 text-blue-200' : ''
+                  }`}>{enemy.status}</span>
+                )}
               </div>
               <span className="text-[10px] text-white/50 font-bold shrink-0">Lv. {enemy?.level}</span>
             </div>
+            {/* Riga 2: tipi */}
+            <div className="flex gap-1 flex-wrap">
+              {enemy?.types?.map((t: string) => (
+                <TypeBadge key={t} type={t as any} small />
+              ))}
+            </div>
+            {/* Riga 3: badge stat modificate */}
+            {Object.entries(enemyStages).some(([, v]) => v !== 0) && (
+              <div className="flex gap-1 flex-wrap mt-0.5">
+                {Object.entries(enemyStages).filter(([, v]) => v !== 0).map(([stat, val]) => (
+                  <span key={stat} className={`text-[8px] font-black px-1 py-0.5 rounded ${val > 0 ? 'bg-blue-500/30 text-blue-300' : 'bg-red-500/30 text-red-300'}`}>
+                    {stat.toUpperCase()} {val > 0 ? `+${val}` : val}
+                  </span>
+                ))}
+              </div>
+            )}
+          </div>
             <div className="flex items-center gap-2">
               <div className="flex-1 bg-white/10 rounded-full h-2">
                 <div
@@ -1014,7 +1024,7 @@ export default function BattleScreen() {
         </div>
 
         {/* Player Pokemon Area */}
-        <div className="relative mt-auto pb-6 pl-6 pr-3 flex items-end gap-3 h-[45%]">
+        <div className="relative mt-auto pb-6 pl-6 pr-3 flex items-end gap-3 h-[43%]">
           <motion.img
             animate={attackAnim ? { x: [0, 15, 0] } : { x: 0 }}
             transition={{ duration: 0.3 }}
@@ -1067,8 +1077,11 @@ export default function BattleScreen() {
       <div className="bg-[#0f0f1a]/95 backdrop-blur-md border-t border-white/5 p-4 space-y-3 relative z-20 shrink-0">
         
         {/* Log */}
-        <div className="bg-[#1a1a2e] rounded-xl px-4 py-2 min-h-[36px] flex items-center">
-          <p className="text-sm font-bold text-white/80">{logs[0]}</p>
+        <div className="bg-[#1a1a2e] rounded-xl px-4 py-2 min-h-[52px] flex flex-col justify-center gap-0.5">
+          <p className="text-sm font-bold text-white/80 leading-tight">{logs[0]}</p>
+          {logs[1] && (
+            <p className="text-xs text-white/40 leading-tight">{logs[1]}</p>
+          )}
         </div>
 
         {isFinished ? (
