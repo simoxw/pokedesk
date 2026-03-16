@@ -51,11 +51,16 @@ export default function TradeScreen() {
   }, [allPkmn, search, filterType, sortBy]);
 
   const handleSelect = (pkmn: any) => {
-    const json = JSON.stringify(pkmn);
-    const b64 = btoa(json);
-    setSelectedPkmn(pkmn);
-    setCode(b64);
-    setCopied(false);
+    try {
+      const json = JSON.stringify(pkmn);
+      const b64 = btoa(unescape(encodeURIComponent(json)));
+      setSelectedPkmn(pkmn);
+      setCode(b64);
+      setCopied(false);
+    } catch (e) {
+      console.error('Encode error', e);
+      alert('Errore nella generazione del codice.');
+    }
   };
 
   const handleCopy = () => {
@@ -66,7 +71,7 @@ export default function TradeScreen() {
 
   const handleImport = () => {
     try {
-      const json = atob(importCode.trim());
+      const json = decodeURIComponent(escape(atob(importCode.trim())));
       const pkmn = JSON.parse(json);
       const isValid =
         pkmn.name && typeof pkmn.name === 'string' &&
@@ -281,48 +286,6 @@ export default function TradeScreen() {
             )}
           </div>
 
-          {/* ── Bottom sheet: codice generato ── */}
-          <AnimatePresence>
-            {selectedPkmn && code && (
-              <motion.div
-                initial={{ y: 120, opacity: 0 }}
-                animate={{ y: 0, opacity: 1 }}
-                exit={{ y: 120, opacity: 0 }}
-                transition={{ type: 'spring', stiffness: 300, damping: 30 }}
-                className="flex-shrink-0 mx-4 mb-4 bg-[#1a1a2e] border border-white/10 rounded-2xl p-4"
-              >
-                <div className="flex items-center gap-3 mb-3">
-                  <img
-                    src={`https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/${selectedPkmn.isShiny ? 'shiny/' : ''}${selectedPkmn.pokemonId}.png`}
-                    className="w-12 h-12 object-contain"
-                  />
-                  <div className="flex-1 min-w-0">
-                    <p className="font-black text-sm uppercase truncate">{selectedPkmn.name}</p>
-                    <p className="text-[10px] text-white/40">Lv.{selectedPkmn.level} • {selectedPkmn.nature}</p>
-                  </div>
-                  <button onClick={() => { setSelectedPkmn(null); setCode(''); }} className="p-1.5 bg-white/5 rounded-lg">
-                    <X size={14} />
-                  </button>
-                </div>
-
-                {/* Codice */}
-                <div className="bg-black/40 rounded-xl p-3 mb-3">
-                  <p className="text-[8px] font-mono break-all text-white/40 leading-relaxed line-clamp-3">
-                    {code}
-                  </p>
-                </div>
-
-                <button
-                  onClick={handleCopy}
-                  className={`w-full py-3 rounded-xl font-bold text-sm flex items-center justify-center gap-2 transition-all ${
-                    copied ? 'bg-green-500/20 text-green-400 border border-green-500/30' : 'bg-[#e63946] text-white'
-                  }`}
-                >
-                  {copied ? <><Check size={16} /> COPIATO!</> : <><Copy size={16} /> COPIA CODICE</>}
-                </button>
-              </motion.div>
-            )}
-          </AnimatePresence>
         </div>
       )}
 
@@ -351,6 +314,49 @@ export default function TradeScreen() {
           </button>
         </div>
       )}
+
+      {/* ── Bottom sheet: codice generato ── */}
+      <AnimatePresence>
+        {selectedPkmn && code && mode === 'export' && (
+          <motion.div
+            initial={{ y: 120, opacity: 0 }}
+            animate={{ y: 0, opacity: 1 }}
+            exit={{ y: 120, opacity: 0 }}
+            transition={{ type: 'spring', stiffness: 300, damping: 30 }}
+            className="flex-shrink-0 mx-4 mb-4 bg-[#1a1a2e] border border-white/10 rounded-2xl p-4"
+          >
+            <div className="flex items-center gap-3 mb-3">
+              <img
+                src={`https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/${selectedPkmn.isShiny ? 'shiny/' : ''}${selectedPkmn.pokemonId}.png`}
+                className="w-12 h-12 object-contain"
+              />
+              <div className="flex-1 min-w-0">
+                <p className="font-black text-sm uppercase truncate">{selectedPkmn.name}</p>
+                <p className="text-[10px] text-white/40">Lv.{selectedPkmn.level} • {selectedPkmn.nature}</p>
+              </div>
+              <button onClick={() => { setSelectedPkmn(null); setCode(''); }} className="p-1.5 bg-white/5 rounded-lg">
+                <X size={14} />
+              </button>
+            </div>
+
+            {/* Codice */}
+            <div className="bg-black/40 rounded-xl p-3 mb-3">
+              <p className="text-[8px] font-mono break-all text-white/40 leading-relaxed line-clamp-3">
+                {code}
+              </p>
+            </div>
+
+            <button
+              onClick={handleCopy}
+              className={`w-full py-3 rounded-xl font-bold text-sm flex items-center justify-center gap-2 transition-all ${
+                copied ? 'bg-green-500/20 text-green-400 border border-green-500/30' : 'bg-[#e63946] text-white'
+              }`}
+            >
+              {copied ? <><Check size={16} /> COPIATO!</> : <><Copy size={16} /> COPIA CODICE</>}
+            </button>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }

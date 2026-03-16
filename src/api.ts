@@ -17,16 +17,39 @@ function cacheSet(key: string, value: any) {
 // Helper for rate limiting and delay
 const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
 
-async function fetchWithCache(url: string) {
+const MAX_RETRIES = 3;
+const RETRY_BASE_DELAY = 500;
+
+async function fetchWithCache(url: string): Promise<any> {
   if (cache.has(url)) return cache.get(url);
-  
-  await delay(100); // Simple rate limiting
-  const response = await fetch(url);
-  if (!response.ok) throw new Error(`API error: ${response.status}`);
-  
-  const data = await response.ok ? await response.json() : null;
-  if (data) cacheSet(url, data);
-  return data;
+
+  if (!navigator.onLine) {
+    throw new Error('OFFLINE');
+  }
+
+  await delay(100);
+
+  let lastError: Error | null = null;
+  for (let attempt = 0; attempt < MAX_RETRIES; attempt++) {
+    try {
+      const response = await fetch(url);
+      if (!response.ok) {
+        // 404 non serve ritentare
+        if (response.status === 404) throw new Error(`NOT_FOUND:${url}`);
+        throw new Error(`API_ERROR:${response.status}`);
+      }
+      const data = await response.json();
+      if (data) cacheSet(url, data);
+      return data;
+    } catch (err: any) {
+      lastError = err;
+      // Non ritentare se 404 o offline
+      if (err.message?.startsWith('NOT_FOUND') || err.message === 'OFFLINE') throw err;
+      // Backoff esponenziale: 500ms, 1000ms, 2000ms
+      if (attempt < MAX_RETRIES - 1) await delay(RETRY_BASE_DELAY * Math.pow(2, attempt));
+    }
+  }
+  throw lastError ?? new Error('UNKNOWN_API_ERROR');
 }
 
 export const api = {
