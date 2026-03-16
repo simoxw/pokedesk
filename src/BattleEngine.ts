@@ -21,6 +21,29 @@ const TYPE_CHART: Record<PokemonType, Partial<Record<PokemonType, number>>> = {
   fairy: { fire: 0.5, fighting: 2, poison: 0.5, dragon: 2, dark: 2, steel: 0.5 },
 };
 
+const NATURE_MODS: Record<string, { up: string; down: string }> = {
+  Lonely:   { up: 'attack',  down: 'defense' },
+  Brave:    { up: 'attack',  down: 'speed'   },
+  Adamant:  { up: 'attack',  down: 'spAtk'   },
+  Naughty:  { up: 'attack',  down: 'spDef'   },
+  Bold:     { up: 'defense', down: 'attack'  },
+  Relaxed:  { up: 'defense', down: 'speed'   },
+  Impish:   { up: 'defense', down: 'spAtk'   },
+  Lax:      { up: 'defense', down: 'spDef'   },
+  Timid:    { up: 'speed',   down: 'attack'  },
+  Hasty:    { up: 'speed',   down: 'defense' },
+  Jolly:    { up: 'speed',   down: 'spAtk'   },
+  Naive:    { up: 'speed',   down: 'spDef'   },
+  Modest:   { up: 'spAtk',   down: 'attack'  },
+  Mild:     { up: 'spAtk',   down: 'defense' },
+  Quiet:    { up: 'spAtk',   down: 'speed'   },
+  Rash:     { up: 'spAtk',   down: 'spDef'   },
+  Calm:     { up: 'spDef',   down: 'attack'  },
+  Gentle:   { up: 'spDef',   down: 'defense' },
+  Sassy:    { up: 'spDef',   down: 'speed'   },
+  Careful:  { up: 'spDef',   down: 'spAtk'   },
+};
+
 export const BattleEngine = {
   calculateDamage(attacker: Pokemon, defender: Pokemon, move: Move, isCritical: boolean): number {
     if (move.category === 'status') return 0;
@@ -96,30 +119,6 @@ export const BattleEngine = {
     // HP Formula
     stats.hp = Math.floor(((2 * baseStats.hp + ivs.hp + Math.floor(evs.hp / 4)) * level) / 100) + level + 10;
     
-    // Nature Modifiers Table
-    const NATURE_MODS: Record<string, { up: string; down: string }> = {
-      Lonely:   { up: 'attack',  down: 'defense' },
-      Brave:    { up: 'attack',  down: 'speed'   },
-      Adamant:  { up: 'attack',  down: 'spAtk'   },
-      Naughty:  { up: 'attack',  down: 'spDef'   },
-      Bold:     { up: 'defense', down: 'attack'  },
-      Relaxed:  { up: 'defense', down: 'speed'   },
-      Impish:   { up: 'defense', down: 'spAtk'   },
-      Lax:      { up: 'defense', down: 'spDef'   },
-      Timid:    { up: 'speed',   down: 'attack'  },
-      Hasty:    { up: 'speed',   down: 'defense' },
-      Jolly:    { up: 'speed',   down: 'spAtk'   },
-      Naive:    { up: 'speed',   down: 'spDef'   },
-      Modest:   { up: 'spAtk',   down: 'attack'  },
-      Mild:     { up: 'spAtk',   down: 'defense' },
-      Quiet:    { up: 'spAtk',   down: 'speed'   },
-      Rash:     { up: 'spAtk',   down: 'spDef'   },
-      Calm:     { up: 'spDef',   down: 'attack'  },
-      Gentle:   { up: 'spDef',   down: 'defense' },
-      Sassy:    { up: 'spDef',   down: 'speed'   },
-      Careful:  { up: 'spDef',   down: 'spAtk'   },
-    };
-
     // Other Stats Formula
     const otherStats = ['attack', 'defense', 'spAtk', 'spDef', 'speed'];
     otherStats.forEach(stat => {

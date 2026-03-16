@@ -148,7 +148,8 @@ export const useStore = create<GameStore>()(
             }
           })();
 
-          return { ...p, level: newLevel, stats: newStats, currentHp: p.currentHp + (newStats.hp - p.stats.hp) };
+          const newCurrentHp = Math.min(newStats.hp, Math.max(0, p.currentHp + (newStats.hp - p.stats.hp)));
+          return { ...p, level: newLevel, stats: newStats, currentHp: newCurrentHp };
         });
         return {
           team: applyTo(state.team),
@@ -216,7 +217,8 @@ export const useStore = create<GameStore>()(
             }
           })();
 
-          return { ...p, level: newLevel, stats: newStats, currentHp: p.currentHp + (newStats.hp - p.stats.hp) };
+          const newCurrentHp = Math.min(newStats.hp, Math.max(0, p.currentHp + (newStats.hp - p.stats.hp)));
+          return { ...p, level: newLevel, stats: newStats, currentHp: newCurrentHp };
         });
         return {
           team: applyTo(state.team),
@@ -334,7 +336,8 @@ export const useStore = create<GameStore>()(
               }
             })();
 
-            return { ...p, level: newLevel, exp: remainingExp, stats: newStats, currentHp: p.currentHp + (newStats.hp - p.stats.hp) };
+            const newCurrentHp = Math.min(newStats.hp, Math.max(0, p.currentHp + (newStats.hp - p.stats.hp)));
+            return { ...p, level: newLevel, exp: remainingExp, stats: newStats, currentHp: newCurrentHp };
           }
           return { ...p, exp: remainingExp };
         });
@@ -426,6 +429,15 @@ export const useStore = create<GameStore>()(
     }),
     {
       name: 'pokedesk-save',
+      onRehydrateStorage: () => (state) => {
+        if (!state) return;
+        const clampHp = (p: any) => ({
+          ...p,
+          currentHp: Math.min(p.stats?.hp ?? p.currentHp, Math.max(0, p.currentHp))
+        });
+        state.team = state.team.map(clampHp);
+        state.box = state.box.map(clampHp);
+      }
     }
   )
 );

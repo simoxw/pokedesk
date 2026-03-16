@@ -201,6 +201,12 @@ export default function CatchScreen() {
 
   return (
     <div className="h-full relative overflow-hidden flex flex-col">
+      {apiError && (
+        <div className="fixed top-4 left-4 right-4 z-50 bg-red-900/90 border border-red-500/50 rounded-2xl p-3 text-center text-sm font-bold text-red-200">
+          ⚠️ {apiError}
+          <button onClick={() => setApiError(null)} className="ml-3 underline text-xs">Chiudi</button>
+        </div>
+      )}
       {/* Pulsante Esci */} 
       {!result && ( 
         <button 

@@ -33,6 +33,7 @@ export default function BattleScreen() {
   const tooltipTimeout = React.useRef<any>(null);
   const enemyRef = React.useRef<any>(null);
   enemyRef.current = enemy;
+  const [apiError, setApiError] = useState<string | null>(null);
 
   const playerPkmn = team[activeIdx];
   const isBoss = currentBattlePath.nextIsBoss;
@@ -77,97 +78,105 @@ export default function BattleScreen() {
   useEffect(() => {
     const initBattle = async () => {
       setLoading(true);
-      
-      // Gen sbloccate progressivamente con le medaglie 
-      const getRandomPokemonId = (medals: number): number => { 
-        const ranges: Array<{min: number, max: number, weight: number}> = [ 
-          { min: 1, max: 151, weight: 40 }, 
-        ]; 
-        if (medals >= 1)  ranges.push({ min: 152, max: 251, weight: 25 }); 
-        if (medals >= 5)  ranges.push({ min: 252, max: 386, weight: 20 }); 
-        if (medals >= 10) ranges.push({ min: 387, max: 493, weight: 15 }); 
-        if (medals >= 20) ranges.push({ min: 494, max: 649, weight: 10 }); 
-        if (medals >= 30) ranges.push({ min: 650, max: 721, weight: 5  }); 
+      try {
+        // Gen sbloccate progressivamente con le medaglie 
+        const getRandomPokemonId = (medals: number): number => { 
+          const ranges: Array<{min: number, max: number, weight: number}> = [ 
+            { min: 1, max: 151, weight: 40 }, 
+          ]; 
+          if (medals >= 1)  ranges.push({ min: 152, max: 251, weight: 25 }); 
+          if (medals >= 5)  ranges.push({ min: 252, max: 386, weight: 20 }); 
+          if (medals >= 10) ranges.push({ min: 387, max: 493, weight: 15 }); 
+          if (medals >= 20) ranges.push({ min: 494, max: 649, weight: 10 }); 
+          if (medals >= 30) ranges.push({ min: 650, max: 721, weight: 5  }); 
 
-        const totalWeight = ranges.reduce((sum, r) => sum + r.weight, 0); 
-        let roll = Math.random() * totalWeight; 
-        for (const range of ranges) { 
-          roll -= range.weight; 
-          if (roll <= 0) { 
-            return Math.floor(Math.random() * (range.max - range.min + 1)) + range.min; 
+          const totalWeight = ranges.reduce((sum, r) => sum + r.weight, 0); 
+          let roll = Math.random() * totalWeight; 
+          for (const range of ranges) { 
+            roll -= range.weight; 
+            if (roll <= 0) { 
+              return Math.floor(Math.random() * (range.max - range.min + 1)) + range.min; 
+            } 
           } 
-        } 
-        return Math.floor(Math.random() * 151) + 1; 
-      }; 
-      
-      const id = getRandomPokemonId(medalsCount);
-                
-      const data = await api.getPokemon(id);
-      const species = await api.getSpecies(id);
-      
-      const teamAvgLevel = team.reduce((acc, p) => acc + p.level, 0) / team.length; 
-      const variance = Math.floor(Math.random() * 5) - 2; // da -2 a +2 
-      let level = Math.max(5, Math.floor(teamAvgLevel + variance)); 
-      let enemyName = api.getItalianName(species.names);
-
-      if (isBoss) { 
-        level = playerPkmn.level + 3; 
-        enemyName = "Capopalestra"; 
-        addLog("⚔️ SFIDA CAPOPALESTRA! (2 Pokémon)"); 
- 
-        // Carica il secondo Pokémon del boss 
-        const id2 = getRandomPokemonId(medalsCount); 
-        const data2 = await api.getPokemon(id2); 
-        const ivs2 = CatchEngine.generateIVs(); 
-        const baseStats2 = { 
-          hp: data2.stats[0].base_stat, attack: data2.stats[1].base_stat, 
-          defense: data2.stats[2].base_stat, spAtk: data2.stats[3].base_stat, 
-          spDef: data2.stats[4].base_stat, speed: data2.stats[5].base_stat, 
+          return Math.floor(Math.random() * 151) + 1; 
         }; 
-        const stats2 = BattleEngine.calculateStats(level, baseStats2, ivs2, { hp: 0, attack: 0, defense: 0, spAtk: 0, spDef: 0, speed: 0 }, 'Quirky'); 
-        const moves2 = await api.getPokemonMoves(data2, level); 
-        setEnemy2({ 
-          ...data2, 
-          rawStats: data2.stats,
-          name: "Capopalestra 2°", 
-          level, 
-          currentHp: stats2.hp, 
-          maxHp: stats2.hp, 
-          stats: stats2, 
-          moves: moves2, 
-          types: data2.types.map((t: any) => t.type.name), 
-        }); 
-      } 
+        
+        const id = getRandomPokemonId(medalsCount);
+                  
+        const data = await api.getPokemon(id);
+        const species = await api.getSpecies(id);
+        
+        const teamAvgLevel = team.reduce((acc, p) => acc + p.level, 0) / team.length; 
+        const variance = Math.floor(Math.random() * 5) - 2; // da -2 a +2 
+        let level = Math.max(5, Math.floor(teamAvgLevel + variance)); 
+        let enemyName = api.getItalianName(species.names);
+
+        if (isBoss) { 
+          level = playerPkmn.level + 3; 
+          enemyName = "Capopalestra"; 
+          addLog("⚔️ SFIDA CAPOPALESTRA! (2 Pokémon)"); 
+   
+          // Carica il secondo Pokémon del boss 
+          const id2 = getRandomPokemonId(medalsCount); 
+          const data2 = await api.getPokemon(id2); 
+          const ivs2 = CatchEngine.generateIVs(); 
+          const baseStats2 = { 
+            hp: data2.stats[0].base_stat, attack: data2.stats[1].base_stat, 
+            defense: data2.stats[2].base_stat, spAtk: data2.stats[3].base_stat, 
+            spDef: data2.stats[4].base_stat, speed: data2.stats[5].base_stat, 
+          }; 
+          const stats2 = BattleEngine.calculateStats(level, baseStats2, ivs2, { hp: 0, attack: 0, defense: 0, spAtk: 0, spDef: 0, speed: 0 }, 'Quirky'); 
+          const moves2 = await api.getPokemonMoves(data2, level); 
+          setEnemy2({ 
+            ...data2, 
+            rawStats: data2.stats,
+            name: "Capopalestra 2°", 
+            level, 
+            currentHp: stats2.hp, 
+            maxHp: stats2.hp, 
+            stats: stats2, 
+            moves: moves2, 
+            types: data2.types.map((t: any) => t.type.name), 
+          }); 
+        } 
 
 
-      const baseStats = {
-        hp: data.stats[0].base_stat,
-        attack: data.stats[1].base_stat,
-        defense: data.stats[2].base_stat,
-        spAtk: data.stats[3].base_stat,
-        spDef: data.stats[4].base_stat,
-        speed: data.stats[5].base_stat,
-      };
+        const baseStats = {
+          hp: data.stats[0].base_stat,
+          attack: data.stats[1].base_stat,
+          defense: data.stats[2].base_stat,
+          spAtk: data.stats[3].base_stat,
+          spDef: data.stats[4].base_stat,
+          speed: data.stats[5].base_stat,
+        };
 
-      const ivs = CatchEngine.generateIVs();
-      const stats = BattleEngine.calculateStats(level, baseStats, ivs, { hp: 0, attack: 0, defense: 0, spAtk: 0, spDef: 0, speed: 0 }, 'Quirky');
-      const moves = await api.getPokemonMoves(data, level);
+        const ivs = CatchEngine.generateIVs();
+        const stats = BattleEngine.calculateStats(level, baseStats, ivs, { hp: 0, attack: 0, defense: 0, spAtk: 0, spDef: 0, speed: 0 }, 'Quirky');
+        const moves = await api.getPokemonMoves(data, level);
 
-      const enemyData = {
-        ...data,
-        rawStats: data.stats,
-        name: enemyName,
-        level,
-        currentHp: stats.hp,
-        maxHp: stats.hp,
-        stats,
-        moves,
-        types: data.types.map((t: any) => t.type.name),
-      };
-      setEnemy(enemyData);
-      enemyRef.current = enemyData;
-      setLoading(false);
-      useStore.getState().updatePokedex(id, 'seen');
+        const enemyData = {
+          ...data,
+          rawStats: data.stats,
+          name: enemyName,
+          level,
+          currentHp: stats.hp,
+          maxHp: stats.hp,
+          stats,
+          moves,
+          types: data.types.map((t: any) => t.type.name),
+        };
+        setEnemy(enemyData);
+        enemyRef.current = enemyData;
+        setLoading(false);
+        useStore.getState().updatePokedex(id, 'seen');
+      } catch (err: any) {
+        setLoading(false);
+        if (err.message === 'OFFLINE') {
+          setApiError('Sei offline. Connettiti per continuare.');
+        } else {
+          setApiError('Errore di connessione. Riprova tra qualche secondo.');
+        }
+      }
     };
     initBattle();
   }, []);
@@ -862,6 +871,12 @@ export default function BattleScreen() {
       className="h-full flex flex-col relative overflow-hidden bg-[#87ceeb]"
       onClick={() => setActiveMoveTooltip(null)}
     >
+      {apiError && (
+        <div className="fixed top-4 left-4 right-4 z-50 bg-red-900/90 border border-red-500/50 rounded-2xl p-3 text-center text-sm font-bold text-red-200">
+          ⚠️ {apiError}
+          <button onClick={() => setApiError(null)} className="ml-3 underline text-xs">Chiudi</button>
+        </div>
+      )}
       {/* SFONDO GLOBALE (Cielo Azzurro) */}
       <div className="absolute inset-0 z-0" style={{ 
         background: 'linear-gradient(180deg, #4fa8ff 0%, #87ceeb 40%, #b0e2ff 60%)' 
