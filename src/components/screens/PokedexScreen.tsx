@@ -85,8 +85,8 @@ export default function PokedexScreen() {
     } 
   }; 
  
-  const seen  = Object.values(pokedex).filter(s => s === 'seen').length; 
-  const caught = Object.values(pokedex).filter(s => s === 'caught').length; 
+  const caught = Object.values(pokedex).filter(s => s === 'caught').length;
+  const seen = Object.values(pokedex).length; // tutte le specie registrate (seen + caught)
  
   const filteredEntries = Object.entries(pokedex)
     .filter(([, status]) => status === 'caught')
