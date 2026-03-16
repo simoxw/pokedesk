@@ -31,6 +31,7 @@ export default function BattleScreen() {
   const [enemy2, setEnemy2] = useState<any>(null); 
   const [activeMoveTooltip, setActiveMoveTooltip] = useState<any>(null);
   const tooltipTimeout = React.useRef<any>(null);
+  const longPressActive = React.useRef(false);
   const enemyRef = React.useRef<any>(null);
   enemyRef.current = enemy;
   const [apiError, setApiError] = useState<string | null>(null);
@@ -1048,7 +1049,7 @@ export default function BattleScreen() {
                   <TypeBadge key={t} type={t as any} small />
                 ))}
               </div>
-              <span className="text-[10px] bg-[#e63946] px-2 py-0.5 rounded-full font-bold shrink-0">Lv.{playerPkmn?.level}</span>
+              <span className="text-[10px] text-white/50 font-bold shrink-0">Lv.{playerPkmn?.level}</span>
             </div>
               <div className="flex flex-wrap gap-1 mt-1"> 
                 {Object.entries(playerStages).filter(([, v]) => v !== 0).map(([stat, val]) => ( 
@@ -1097,8 +1098,35 @@ export default function BattleScreen() {
               {playerPkmn?.moves?.map((move: any) => (
                 <button
                   key={move.id}
+                  onPointerDown={(e) => {
+                    longPressActive.current = false;
+                    tooltipTimeout.current = setTimeout(() => {
+                      longPressActive.current = true;
+                      setActiveMoveTooltip(move);
+                    }, 600);
+                  }}
+                  onPointerUp={() => {
+                    clearTimeout(tooltipTimeout.current);
+                  }}
+                  onPointerLeave={() => {
+                    clearTimeout(tooltipTimeout.current);
+                    if (longPressActive.current) {
+                      longPressActive.current = false;
+                      setActiveMoveTooltip(null);
+                    }
+                  }}
+                  onPointerCancel={() => {
+                    clearTimeout(tooltipTimeout.current);
+                    longPressActive.current = false;
+                    setActiveMoveTooltip(null);
+                  }}
+                  onContextMenu={(e) => e.preventDefault()}
                   onClick={(e) => {
                     e.stopPropagation();
+                    if (longPressActive.current) {
+                      longPressActive.current = false;
+                      return;
+                    }
                     if (activeMoveTooltip) {
                       setActiveMoveTooltip(null);
                       return;
@@ -1106,17 +1134,15 @@ export default function BattleScreen() {
                     handleMove(move);
                   }}
                   onMouseEnter={() => {
-                    tooltipTimeout.current = setTimeout(() => setActiveMoveTooltip(move), 300);
+                    tooltipTimeout.current = setTimeout(() => {
+                      longPressActive.current = true;
+                      setActiveMoveTooltip(move);
+                    }, 300);
                   }}
                   onMouseLeave={() => {
                     clearTimeout(tooltipTimeout.current);
+                    longPressActive.current = false;
                     setActiveMoveTooltip(null);
-                  }}
-                  onPointerDown={() => {
-                    tooltipTimeout.current = setTimeout(() => setActiveMoveTooltip(move), 500);
-                  }}
-                  onPointerUp={() => {
-                    clearTimeout(tooltipTimeout.current);
                   }}
                   disabled={turn !== 'player' || isAnimating || move.pp <= 0}
                   className="bg-[#1a1a2e] border border-white/10 rounded-xl p-3 flex flex-col items-start justify-between active:bg-[#e63946]/20 disabled:opacity-40 transition-colors h-16"
