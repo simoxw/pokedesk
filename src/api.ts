@@ -157,6 +157,7 @@ export const api = {
             if (ac && ac > 0) return ac; 
             return moveData.effect_chance ?? undefined; 
           })(), 
+          stat_changes: moveData.stat_changes ?? [],
         }); 
       } catch (e) {
         console.error(`Error fetching move ${m.name}:`, e);
@@ -319,6 +320,7 @@ export const api = {
         category: moveData.damage_class.name as any,
         description: this.getItalianDescription(moveData.flavor_text_entries),
         meta: moveData.meta,
+        stat_changes: moveData.stat_changes ?? [],
         statusEffect: (() => { 
           const ailment = moveData.meta?.ailment?.name; 
           if (!ailment || ailment === 'none' || ailment === 'unknown') return undefined; 

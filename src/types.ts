@@ -32,6 +32,7 @@ export interface Move {
   effectChance?: number;
   statusEffect?: StatusEffect;
   meta?: any;
+  stat_changes?: Array<{ change: number; stat: { name: string } }>;
 }
 
 export type StatusEffect = 'PSN' | 'BRN' | 'PAR' | 'SLP' | 'FRZ' | null;

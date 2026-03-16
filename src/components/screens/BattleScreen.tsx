@@ -375,26 +375,23 @@ export default function BattleScreen() {
     const newPlayerHp = Math.max(0, currentPlayerPkmn.currentHp - enemyDamage);
     updatePokemon(currentPlayerPkmn.id, { currentHp: newPlayerHp });
 
-    // --- DRAIN: il nemico si cura di metà del danno inflitto --- 
-    const ENEMY_DRAIN_MOVES = new Set([ 
-      'mega-drain', 'giga-drain', 'absorb', 'leech-life', 
-      'drain-punch', 'dream-eater', 'horn-leech', 'oblivion-wing', 
-    ]); 
-    if ( 
-      ENEMY_DRAIN_MOVES.has(enemyMove.name.toLowerCase().replace(/ /g, '-')) || 
-      ENEMY_DRAIN_MOVES.has(enemyMove.id) 
-    ) { 
-      const drainHeal = Math.floor(enemyDamage / 2); 
-      if (drainHeal > 0) { 
-        const maxHp = liveEnemy.stats?.hp ?? liveEnemy.maxHp ?? 1; 
-        const healedHp = Math.min(maxHp, liveEnemy.currentHp + drainHeal); 
-        setEnemy((prev: any) => { 
-          const next = { ...prev, currentHp: healedHp }; 
-          enemyRef.current = next; 
-          return next; 
-        }); 
-        addLog(`${liveEnemy.name} ha assorbito ${drainHeal} HP!`); 
-      } 
+    // --- DRAIN: il nemico si cura in base al valore drain di PokeAPI ---
+    const enemyMetaDrain = enemyMove.meta?.drain ?? 0;
+    const enemyFallbackDrain = enemyMove.name?.toLowerCase().includes('assorb') ? 0.5 : 0;
+    const enemyDrainRatio = (enemyMetaDrain > 0 ? enemyMetaDrain / 100 : enemyFallbackDrain);
+    const isEnemyDrain = enemyDrainRatio > 0;
+    if (isEnemyDrain) {
+      const drainHeal = Math.floor(enemyDamage * enemyDrainRatio);
+      if (drainHeal > 0) {
+        const maxHp = liveEnemy.stats?.hp ?? liveEnemy.maxHp ?? 1;
+        const healedHp = Math.min(maxHp, liveEnemy.currentHp + drainHeal);
+        setEnemy((prev: any) => {
+          const next = { ...prev, currentHp: healedHp };
+          enemyRef.current = next;
+          return next;
+        });
+        addLog(`${liveEnemy.name} ha assorbito ${drainHeal} HP!`);
+      }
     } 
 
     await new Promise(r => setTimeout(r, 800));
@@ -542,57 +539,98 @@ export default function BattleScreen() {
   
     // --- STATUS MOVES che applicano stato al nemico --- 
     if (move.category === 'status') { 
-      // Boost/Debuff reale
-      const BOOST_IDS = new Set(['14','97','133','347','104','116','219','317']); 
-      const DEBUFF_IDS = new Set(['45','43','39','246','50','186','204']); 
+      // Usa i dati veri dalla mossa (move.stat_changes o move.meta.stat_changes). Se non ci sono, usa fallback per alcuni casi (es: Barriera).
+      let statChangesData: Array<{ change: number; stat: { name: string } }> =
+        move.stat_changes ?? move.meta?.stat_changes ?? [];
+      if (statChangesData.length === 0) {
+        const lowerName = move.name?.toLowerCase() ?? '';
+        if (move.id === '112' || lowerName.includes('barriera') || lowerName.includes('barrier')) {
+          statChangesData = [{ change: 2, stat: { name: 'defense' } }];
+        }
+      }
+      const STAT_MAP: Record<string, string> = {
+        attack: 'attack',
+        defense: 'defense',
+        'special-attack': 'spAtk',
+        'special-defense': 'spDef',
+        speed: 'speed',
+        accuracy: 'accuracy',
+        evasion: 'evasion',
+      };
 
-      if (BOOST_IDS.has(move.id)) {
-        setPlayerStages(prev => ({ ...prev, attack: Math.min(6, prev.attack + 2) }));
+      let playerBoosted = false;
+      let enemyDebuffed = false;
+
+      for (const sc of statChangesData) {
+        const statKey = STAT_MAP[sc.stat.name];
+        if (!statKey) continue;
+
+        if (sc.change > 0) {
+          // Boost al giocatore
+          setPlayerStages(prev => ({
+            ...prev,
+            [statKey]: Math.min(6, (prev[statKey] ?? 0) + sc.change),
+          }));
+          playerBoosted = true;
+        } else if (sc.change < 0) {
+          // Debuff al nemico
+          setEnemyStages(prev => ({
+            ...prev,
+            [statKey]: Math.max(-6, (prev[statKey] ?? 0) + sc.change),
+          }));
+          enemyDebuffed = true;
+        }
+      }
+
+      if (playerBoosted) {
         setStatChanges({ label: '↑ STAT +', positive: true });
         addLog(`Le statistiche di ${playerPkmn.name} sono aumentate!`);
-      } else if (DEBUFF_IDS.has(move.id)) {
-        setEnemyStages(prev => ({ ...prev, attack: Math.max(-6, prev.attack - 1) }));
+      }
+      if (enemyDebuffed) {
         setStatChanges({ label: '↓ STAT −', positive: false });
         addLog(`Le statistiche di ${currentEnemy?.name} sono diminuite!`);
       }
 
-      if (move.statusEffect && currentEnemy && !currentEnemy.status) { 
-        const chance = (!move.effectChance || move.effectChance === 0) ? 100 : move.effectChance; 
-        if (Math.random() * 100 < chance) { 
+      // Se non ci sono stat_changes nel meta, mantieni il comportamento esistente
+      // per status effect puri (già gestito sotto)
+      const statusEffect = move.statusEffect ?? (move.name?.toLowerCase().includes('fulmisguardo') ? 'PAR' : undefined);
+      const effectChance = (!move.effectChance || move.effectChance === 0) ? 100 : move.effectChance ?? 100;
+
+      if (statusEffect && currentEnemy && !currentEnemy.status) { 
+        if (Math.random() * 100 < effectChance) { 
           const nomi: Record<string, string> = { 
             'SLP': 'si è addormentato', 'PSN': 'è stato avvelenato', 
-            'BRN': 'si è scottato', 'PAR': 'è rimasto paralizzato', 'FRZ': 'si è congelato' 
+            'BRN': 'si è scottato', 'PAR': 'è rimasto paralizzato', 'FRZ': 'è stato congelato' 
           }; 
           return { 
-            newStatus: move.statusEffect, 
-            message: `${currentEnemy.name} ${nomi[move.statusEffect as string] ?? 'è stato colpito'}!` 
+            newStatus: statusEffect, 
+            message: `${currentEnemy.name} ${nomi[statusEffect as string] ?? 'è stato colpito'}!` 
           };
         } else { 
           addLog('Ma non ha avuto effetto!'); 
         } 
-      } else if (move.statusEffect && currentEnemy.status) { 
+      } else if (statusEffect && currentEnemy.status) { 
         addLog(`${currentEnemy.name} ha già un effetto di stato!`); 
       } 
       return {}; 
     } 
   
-    // --- DRAIN MOVES: danno + cura metà danno --- 
-    const DRAIN_MOVES = new Set([ 
-      'mega-drain', 'giga-drain', 'absorb', 'leech-life', 
-      'drain-punch', 'dream-eater', 'horn-leech', 'oblivion-wing', 
-    ]); 
-    if (DRAIN_MOVES.has(move.name.toLowerCase().replace(/ /g, '-')) || 
-        DRAIN_MOVES.has(move.id)) { 
-      const healing = Math.floor(realDamage / 2); 
-      if (healing > 0) { 
-        const newHp = Math.min(playerPkmn.stats.hp, playerPkmn.currentHp + healing); 
-        const actualHeal = newHp - playerPkmn.currentHp; 
-        if (actualHeal > 0) { 
-          updatePokemon(playerPkmn.id, { currentHp: newHp }); 
-          addLog(`${playerPkmn.name} ha assorbito ${actualHeal} HP!`); 
-        } 
-      } 
-      return {}; 
+    // --- DRAIN MOVES: cura basata sul valore drain di PokeAPI (es. 50 = 50% danno) ---
+    const metaDrain = move.meta?.drain ?? 0;
+    const fallbackDrain = move.name?.toLowerCase().includes('assorb') ? 0.5 : 0;
+    const drainRatio = (metaDrain > 0 ? metaDrain / 100 : fallbackDrain);
+    const isDrain = drainRatio > 0;
+    if (isDrain) {
+      const healing = Math.floor(realDamage * drainRatio);
+      if (healing > 0) {
+        const newHp = Math.min(playerPkmn.stats.hp, playerPkmn.currentHp + healing);
+        const actualHeal = newHp - playerPkmn.currentHp;
+        if (actualHeal > 0) {
+          updatePokemon(playerPkmn.id, { currentHp: newHp });
+          addLog(`${playerPkmn.name} ha assorbito ${actualHeal} HP!`);
+        }
+      }
+      return {};
     } 
 
     // --- MOSSE OFFENSIVE con effetto stato secondario --- 
@@ -892,7 +930,7 @@ export default function BattleScreen() {
             initial={{ x: -200 }}
             animate={{ x: '100vw' }}
             transition={{ duration: 25 + i * 8, repeat: Infinity, ease: 'linear', delay: i * 5 }}
-            className="absolute bg-white/60 rounded-full blur-2xl"
+            className="absolute bg-white/35 rounded-full blur-xl"
             style={{ 
               width: 150 + i * 60, 
               height: 50 + i * 20, 
@@ -904,7 +942,7 @@ export default function BattleScreen() {
       </div>
 
       {/* TERRENO (PRATO VERDE) GLOBALE - SOTTO TUTTO */}
-      <div className="absolute inset-x-0 bottom-0 z-0" style={{ height: '75%' }}>
+      <div className="absolute inset-x-0 bottom-0 z-0" style={{ height: '78%' }}>
         {/* Prato verde scuro/naturale */} 
         <div className="absolute inset-0" style={{ 
           background: 'linear-gradient(180deg, #3d7a25 0%, #2d5a1b 100%)', 
@@ -914,6 +952,10 @@ export default function BattleScreen() {
           backgroundImage: 'linear-gradient(rgba(255,255,255,0.1) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.1) 1px, transparent 1px)', 
           backgroundSize: '40px 30px', 
         }} /> 
+        {/* Sottile texture a spighe (erba) */} 
+        <div className="absolute inset-0 opacity-30" style={{
+          backgroundImage: 'repeating-linear-gradient(135deg, rgba(255,255,255,0.05) 0, rgba(255,255,255,0.05) 1px, transparent 1px, transparent 10px)'
+        }} />
         {/* Linea Orizzonte (Sfumata) */}
         <div className="absolute top-0 left-0 right-0 h-[4px]" style={{ 
           background: 'linear-gradient(180deg, rgba(0,0,0,0.1), transparent)', 
@@ -966,13 +1008,13 @@ export default function BattleScreen() {
         /> 
 
         {/* Enemy Pokemon Area */}
-        <div className="relative pt-6 px-6 h-[38%] flex flex-col items-center">
-          <div className="w-full bg-black/40 backdrop-blur rounded-2xl p-3 mb-2 max-w-[260px] self-start"> 
+        <div className="relative pt-4 px-4 h-[34%] flex flex-col items-center">
+          <div className="w-full bg-black/40 backdrop-blur rounded-2xl p-2 mb-1 max-w-[220px] self-start"> 
             <div className="flex flex-col gap-0.5 flex-1 min-w-0">
             {/* Riga 1: nome + status + livello */}
             <div className="flex items-center justify-between gap-1">
               <div className="flex items-center gap-1.5 min-w-0">
-                <span className="font-black text-sm uppercase truncate max-w-[110px]">{enemy?.name}</span>
+                <span className="font-black text-xs uppercase truncate max-w-[110px]">{enemy?.name}</span>
                 {enemy?.status && (
                   <span className={`text-[8px] font-black px-1 py-0.5 rounded shrink-0 ${
                     enemy.status === 'SLP' ? 'bg-purple-500/40 text-purple-300' :
@@ -983,7 +1025,7 @@ export default function BattleScreen() {
                   }`}>{enemy.status}</span>
                 )}
               </div>
-              <span className="text-[10px] text-white/50 font-bold shrink-0">Lv. {enemy?.level}</span>
+              <span className="text-[9px] text-white/50 font-bold shrink-0">Lv. {enemy?.level}</span>
             </div>
             {/* Riga 2: tipi */}
             <div className="flex gap-1 flex-wrap">
@@ -1020,38 +1062,44 @@ export default function BattleScreen() {
             animate={{ y: [0, -6, 0] }}
             transition={{ duration: 2, repeat: Infinity }}
             src={enemy?.sprites?.front_default}
-            className="w-40 h-40 object-contain drop-shadow-2xl"
+            className="w-48 h-48 object-contain drop-shadow-2xl"
           />
         </div>
 
         {/* Player Pokemon Area */}
-        <div className="relative mt-auto pb-6 pl-6 pr-3 flex items-end gap-3 h-[43%]">
+        <div className="relative mt-auto pb-4 pl-2 pr-2 flex items-end gap-2 h-[38%]">
           <motion.img
             animate={attackAnim ? { x: [0, 15, 0] } : { x: 0 }}
             transition={{ duration: 0.3 }}
             src={`https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/back/${playerPkmn?.isShiny ? 'shiny/' : ''}${playerPkmn?.pokemonId}.png`}
-            className="w-36 h-36 object-contain drop-shadow-2xl shrink-0"
+            className="w-44 h-44 object-contain drop-shadow-2xl shrink-0"
           />
-          <div className="flex-1 bg-black/40 backdrop-blur rounded-2xl p-4 mb-2">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-1.5 flex-wrap">
-                <span className="font-black text-sm uppercase truncate max-w-[140px]">{playerPkmn?.name}</span>
-                {playerPkmn?.status && ( 
-                  <span className={`text-[9px] font-black px-1 py-0.5 rounded ${ 
-                    playerPkmn.status === 'SLP' ? 'bg-purple-500/40 text-purple-300' : 
-                    playerPkmn.status === 'PSN' ? 'bg-purple-700/40 text-purple-200' : 
-                    playerPkmn.status === 'BRN' ? 'bg-orange-500/40 text-orange-300' : 
-                    playerPkmn.status === 'PAR' ? 'bg-yellow-500/40 text-yellow-300' : 
-                    playerPkmn.status === 'FRZ' ? 'bg-blue-400/40 text-blue-200' : '' 
-                  }`}>{playerPkmn.status}</span> 
-                )} 
+          <div className="flex-1 bg-black/40 backdrop-blur rounded-2xl p-3 mb-1 min-w-0 w-full">
+            <div className="flex flex-col gap-0.5">
+              {/* Riga 1: nome + status + livello */}
+              <div className="flex items-center justify-between gap-1">
+                <div className="flex items-center gap-1.5 min-w-0">
+                  <span className="font-black text-xs uppercase truncate max-w-[110px]">{playerPkmn?.name}</span>
+                  {playerPkmn?.status && (
+                    <span className={`text-[8px] font-black px-1 py-0.5 rounded shrink-0 ${
+                      playerPkmn.status === 'SLP' ? 'bg-purple-500/40 text-purple-300' :
+                      playerPkmn.status === 'PSN' ? 'bg-purple-700/40 text-purple-200' :
+                      playerPkmn.status === 'BRN' ? 'bg-orange-500/40 text-orange-300' :
+                      playerPkmn.status === 'PAR' ? 'bg-yellow-500/40 text-yellow-300' :
+                      playerPkmn.status === 'FRZ' ? 'bg-blue-400/40 text-blue-200' : ''
+                    }`}>{playerPkmn.status}</span>
+                  )}
+                </div>
+                <span className="text-[9px] text-white/50 font-bold shrink-0">Lv. {playerPkmn?.level}</span>
+              </div>
+              {/* Riga 2: tipo */}
+              <div className="flex gap-1 flex-wrap">
                 {playerPkmn?.types?.slice(0, 1).map((t: string) => (
                   <TypeBadge key={t} type={t as any} small />
                 ))}
               </div>
-              <span className="text-[10px] text-white/50 font-bold shrink-0">Lv.{playerPkmn?.level}</span>
             </div>
-              <div className="flex flex-wrap gap-1 mt-1"> 
+            <div className="flex flex-wrap gap-1 mt-1"> 
                 {Object.entries(playerStages).filter(([, v]) => v !== 0).map(([stat, val]) => ( 
                   <span key={stat} className={`text-[8px] font-black px-1 py-0.5 rounded ${val > 0 ? 'bg-blue-500/30 text-blue-300' : 'bg-red-500/30 text-red-300'}`}> 
                     {stat.toUpperCase()} {val > 0 ? `+${val}` : val} 
@@ -1075,10 +1123,10 @@ export default function BattleScreen() {
       </div>
 
       {/* LOG + CONTROLLI */}
-      <div className="bg-[#0f0f1a]/95 backdrop-blur-md border-t border-white/5 p-4 space-y-3 relative z-20 shrink-0">
+      <div className="bg-[#0f0f1a]/95 backdrop-blur-md border-t border-white/5 p-4 space-y-2 relative z-20 shrink-0">
         
         {/* Log */}
-        <div className="bg-[#1a1a2e] rounded-xl px-4 py-2 min-h-[52px] flex flex-col justify-center gap-0.5">
+        <div className="bg-[#1a1a2e] rounded-xl px-4 py-2 min-h-[44px] flex flex-col justify-center gap-0.5">
           <p className="text-sm font-bold text-white/80 leading-tight">{logs[0]}</p>
           {logs[1] && (
             <p className="text-xs text-white/40 leading-tight">{logs[1]}</p>
