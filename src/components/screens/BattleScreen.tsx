@@ -249,7 +249,7 @@ export default function BattleScreen() {
       const isActive = p.id === currentPkm.id; 
       const recoveredHp = isActive 
         ? Math.min(p.stats.hp, p.currentHp + Math.floor(p.stats.hp * 0.1)) 
-        : p.currentHp; 
+        : Math.max(1, p.currentHp); // KO → 1HP minimo, non resta a 0
       const recoveredMoves = p.moves.map((m: any) => ({ ...m, pp: m.maxPp })); 
       updatePokemon(p.id, { currentHp: recoveredHp, moves: recoveredMoves }); 
     });
