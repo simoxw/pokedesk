@@ -5,9 +5,20 @@ import { motion, AnimatePresence } from 'motion/react';
 import { ArrowLeft, Package, Heart, Zap, Star, Loader, X } from 'lucide-react'; 
 
 export default function BagScreen() {
-  const { inventory, setScreen, useItem, team, box, updatePokemon, expShareActive, toggleExpShare } = useStore();
+  const { inventory, setScreen, useItem, addItem, addCoins, team, box, updatePokemon, expShareActive, toggleExpShare } = useStore();
   const [tab, setTab] = useState<'balls' | 'heal' | 'candy'>('balls');
+
+  const SELL_PRICES: Record<string, number> = {
+    pokeball: 100,
+    potion: 150,
+    superpotion: 350,
+    hyperpotion: 750,
+    full_heal: 150,
+  };
+
   const [pendingItem, setPendingItem] = useState<{ id: string; name: string; icon: string } | null>(null);
+  const [sellItem, setSellItem] = useState<{ id: string; name: string; icon: string; sellPrice: number } | null>(null);
+  const [sellQty, setSellQty] = useState(1);
   const [isProcessing, setIsProcessing] = useState(false); 
   const [tmMoves, setTmMoves] = useState<any[]>([]); 
   const [tmPokemon, setTmPokemon] = useState<any>(null); 
@@ -79,14 +90,29 @@ export default function BagScreen() {
                 <p className="text-xs text-white/30">Posseduti: {inventory[item.id] || 0}</p>
               </div>
             </div>
-            {(inventory[item.id] || 0) > 0 && tab !== 'balls' && ( 
-              <button 
-                className={`px-4 py-2 rounded-xl text-xs font-bold ${ (item as any).isToggle ? (expShareActive ? 'bg-green-500' : 'bg-slate-600') : 'bg-[#e63946]' }`} 
-                onClick={() => (item as any).isToggle ? toggleExpShare() : setPendingItem(item)} 
-              > 
-                {(item as any).isToggle ? (expShareActive ? 'ON' : 'OFF') : 'USA'} 
-              </button> 
-            )} 
+            {(inventory[item.id] || 0) > 0 && (
+              <div className="flex items-center gap-2">
+                {SELL_PRICES[item.id] && (
+                  <button
+                    className="px-4 py-2 rounded-xl text-xs font-bold bg-yellow-500"
+                    onClick={() => {
+                      setSellItem({ id: item.id, name: item.name, icon: item.icon, sellPrice: SELL_PRICES[item.id] });
+                      setSellQty(1);
+                    }}
+                  >
+                    VENDI
+                  </button>
+                )}
+                {tab !== 'balls' && (
+                  <button 
+                    className={`px-4 py-2 rounded-xl text-xs font-bold ${ (item as any).isToggle ? (expShareActive ? 'bg-green-500' : 'bg-slate-600') : 'bg-[#e63946]' }`} 
+                    onClick={() => (item as any).isToggle ? toggleExpShare() : setPendingItem(item)} 
+                  > 
+                    {(item as any).isToggle ? (expShareActive ? 'ON' : 'OFF') : 'USA'} 
+                  </button> 
+                )}
+              </div>
+            )}
           </div> 
         ))} 
       </div>
@@ -277,6 +303,74 @@ export default function BagScreen() {
           </motion.div> 
         )} 
       </AnimatePresence> 
+
+      {/* Overlay vendita oggetto */}
+      <AnimatePresence>
+        {sellItem && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex flex-col justify-end"
+            onClick={() => setSellItem(null)}
+          >
+            <motion.div
+              initial={{ y: '100%' }}
+              animate={{ y: 0 }}
+              exit={{ y: '100%' }}
+              className="bg-[#1a1a2e] rounded-t-3xl p-6 space-y-3"
+              onClick={e => e.stopPropagation()}
+            >
+              <div className="flex items-center justify-between mb-2">
+                <div className="flex items-center gap-3">
+                  <span className="text-2xl">{sellItem.icon}</span>
+                  <div>
+                    <h3 className="font-black text-lg">Vendi {sellItem.name}</h3>
+                    <p className="text-xs text-white/40">Prezzo: {sellItem.sellPrice}¢ ciascuno</p>
+                  </div>
+                </div>
+                <button onClick={() => setSellItem(null)} className="p-2 bg-white/10 rounded-xl">
+                  ✕
+                </button>
+              </div>
+
+              <div className="space-y-2">
+                <p className="text-xs text-white/40">Scegli la quantità da vendere</p>
+                <div className="flex items-center gap-3">
+                  <input
+                    type="range"
+                    min={1}
+                    max={inventory[sellItem.id] || 1}
+                    value={sellQty}
+                    onChange={e => setSellQty(Math.min(Math.max(1, Number(e.target.value)), inventory[sellItem.id] || 1))}
+                    className="w-full"
+                  />
+                  <span className="min-w-[2.5rem] text-right text-sm font-bold">{sellQty}</span>
+                </div>
+                <div className="flex items-center justify-between text-[10px] text-white/40">
+                  <span>Disponibili: {inventory[sellItem.id] || 0}</span>
+                  <span>Totale: {(sellQty * sellItem.sellPrice).toLocaleString()}¢</span>
+                </div>
+              </div>
+
+              <button
+                disabled={(inventory[sellItem.id] || 0) <= 0}
+                onClick={() => {
+                  const maxQty = inventory[sellItem.id] || 0;
+                  const qty = Math.min(Math.max(1, sellQty), maxQty);
+                  if (qty <= 0) return;
+                  addItem(sellItem.id, -qty);
+                  addCoins(qty * sellItem.sellPrice);
+                  setSellItem(null);
+                }}
+                className="w-full bg-green-500 disabled:opacity-50 text-black font-bold py-3 rounded-2xl"
+              >
+                CONFERMA
+              </button>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       {/* Overlay selezione Mosse MT */}
       <AnimatePresence> 
