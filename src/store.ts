@@ -22,6 +22,8 @@ interface GameStore extends GameState {
   unlockMedal: (id: number) => void;
   addCharge: (amount: number) => void;
   consumeCharge: () => void;
+  consumeSafariCharge: () => void;
+  addSafariCharge: (amount: number) => void;
   updatePokedex: (pokemonId: number, status: 'seen' | 'caught') => void;
   incrementStat: (key: keyof GameState['stats']) => void;
   updatePlayTime: (seconds: number) => void;
@@ -55,6 +57,8 @@ export const useStore = create<GameStore>()(
       currentBattlePath: { battlesWon: 0, nextIsBoss: false },
       charges: 6,
       lastTickTimestamp: Date.now(),
+      safariCharges: 0,
+      lastSafariTickTimestamp: Date.now(),
       pokedex: {},
       stats: { totalCaught: 0, totalBattles: 0, shiniesFound: 0, pokemonReleased: 0 },
       settings: { audio: true, notifications: true },
@@ -277,6 +281,12 @@ export const useStore = create<GameStore>()(
         }
         return { charges: Math.max(0, state.charges - 1) };
       }),
+      consumeSafariCharge: () => set((state) => ({
+        safariCharges: Math.max(0, state.safariCharges - 1)
+      })),
+      addSafariCharge: (amount) => set((state) => ({
+        safariCharges: Math.min(5, state.safariCharges + amount)
+      })),
       updatePokedex: (id, status) => set((state) => ({
         pokedex: { ...state.pokedex, [id]: status === 'caught' ? 'caught' : (state.pokedex[id] === 'caught' ? 'caught' : 'seen') }
       })),
@@ -443,6 +453,8 @@ export const useStore = create<GameStore>()(
         currentBattlePath: { battlesWon: 0, nextIsBoss: false },
         charges: 6,
         lastTickTimestamp: Date.now(),
+        safariCharges: 0,
+        lastSafariTickTimestamp: Date.now(),
         pokedex: {},
         stats: { totalCaught: 0, totalBattles: 0, shiniesFound: 0, pokemonReleased: 0 },
         isFirstRun: true,

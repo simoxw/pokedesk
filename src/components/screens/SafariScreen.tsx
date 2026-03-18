@@ -1,14 +1,14 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useStore } from '../../store';
 import { api } from '../../api';
 import { CatchEngine } from '../../CatchEngine';
 import { BattleEngine } from '../../BattleEngine';
 import { motion, AnimatePresence } from 'motion/react';
-import { Zap, Sparkles, X, ArrowLeft } from 'lucide-react';
+import { Sparkles, ArrowLeft } from 'lucide-react';
 import confetti from 'canvas-confetti';
 
-export default function CatchScreen() {
-  const { consumeCharge, addPokemon, setScreen, medals, team, incrementStat, addItem, inventory, updatePokedex } = useStore();
+export default function SafariScreen() {
+  const { consumeSafariCharge, addPokemon, setScreen, medals, team, incrementStat, addItem, inventory, updatePokedex } = useStore();
   const medalsCount = medals.filter(m => m.isUnlocked).length;
   const [pokemon, setPokemon] = useState<any>(null);
   const [loading, setLoading] = useState(true);
@@ -18,20 +18,19 @@ export default function CatchScreen() {
   const [result, setResult] = useState<'success' | 'fail' | null>(null);
   const [circleSize, setCircleSize] = useState(100);
   const [attempts, setAttempts] = useState(0);
-  const [ballPos, setBallPos] = useState<{ x: number; y: number } | null>(null); 
-  const [ballVisible, setBallVisible] = useState(false); 
-  const maxAttempts = 3; 
+  const [ballPos, setBallPos] = useState<{ x: number; y: number } | null>(null);
+  const [ballVisible, setBallVisible] = useState(false);
+  const maxAttempts = 3;
   const [dropMessage, setDropMessage] = useState<string | null>(null);
-  const [apiError, setApiError] = useState<string | null>(null); 
+  const [apiError, setApiError] = useState<string | null>(null);
 
-  useEffect(() => { 
-    if (!inventory[ballType] || inventory[ballType] === 0) { 
-      const firstAvailable = ['pokeball','megaball','ultraball','masterball'] 
-        .find(b => (inventory[b] || 0) > 0); 
-      if (firstAvailable) setBallType(firstAvailable); 
-    } 
-  }, [inventory, ballType]); 
-
+  useEffect(() => {
+    if (!inventory[ballType] || inventory[ballType] === 0) {
+      const firstAvailable = ['pokeball', 'megaball', 'ultraball', 'masterball']
+        .find(b => (inventory[b] || 0) > 0);
+      if (firstAvailable) setBallType(firstAvailable);
+    }
+  }, [inventory, ballType]);
 
   useEffect(() => {
     const initEncounter = async () => {
@@ -39,33 +38,19 @@ export default function CatchScreen() {
       try {
         const avgLevel = team.length > 0 ? team.reduce((acc, p) => acc + p.level, 0) / team.length : 5;
         const level = Math.max(5, Math.floor(avgLevel + (Math.random() * 10 - 5)));
-        
-        // Gen sbloccate progressivamente con le medaglie 
-        const getRandomPokemonId = (medals: number): number => {
-          const ranges: Array<{min: number, max: number, weight: number}> = [
-            { min: 1,   max: 151, weight: 30 },  // Gen 1
-          ];
-          if (medals >= 1)  ranges.push({ min: 152, max: 251, weight: 25 }); // Gen 2
-          if (medals >= 5)  ranges.push({ min: 252, max: 386, weight: 22 }); // Gen 3
-          if (medals >= 10) ranges.push({ min: 387, max: 493, weight: 18 }); // Gen 4
-          if (medals >= 20) ranges.push({ min: 494, max: 649, weight: 15 }); // Gen 5
 
-          const totalWeight = ranges.reduce((sum, r) => sum + r.weight, 0);
-          let roll = Math.random() * totalWeight;
-          for (const range of ranges) {
-            roll -= range.weight;
-            if (roll <= 0) {
-              return Math.floor(Math.random() * (range.max - range.min + 1)) + range.min;
-            }
-          }
-          return Math.floor(Math.random() * 151) + 1; // fallback Gen 1
-        }; 
-        
-        const id = getRandomPokemonId(medalsCount); 
-                  
+        // Gen 6/7 only
+        const getRandomPokemonId = (): number => {
+          const isGen6 = Math.random() < 0.5;
+          const range = isGen6 ? { min: 650, max: 721 } : { min: 722, max: 809 };
+          return Math.floor(Math.random() * (range.max - range.min + 1)) + range.min;
+        };
+
+        const id = getRandomPokemonId();
+
         const data = await api.getPokemon(id);
         const species = await api.getSpecies(id);
-        
+
         setPokemon({ ...data, species, level });
         setIsShiny(CatchEngine.checkShiny());
         setLoading(false);
@@ -95,7 +80,7 @@ export default function CatchScreen() {
     if (attempts >= maxAttempts) return;
     setCatching(true);
 
-    // Animazione palla: parte dal basso al centro 
+    // Animazione palla: parte dal basso al centro
     setBallVisible(true);
     setBallPos({ x: 0, y: 0 });
 
@@ -104,20 +89,19 @@ export default function CatchScreen() {
     if (circleSize < 40) bonus = 2.0;
     else if (circleSize < 70) bonus = 1.5;
 
-    useStore.getState().useItem(ballType); 
-    const success = CatchEngine.calculateCatchRate(pokemon.species, ballType, bonus, isShiny); 
-    const newAttempts = attempts + 1; 
-    setAttempts(newAttempts); 
+    useStore.getState().useItem(ballType);
+    const success = CatchEngine.calculateCatchRate(pokemon.species, ballType, bonus, isShiny);
+    const newAttempts = attempts + 1;
+    setAttempts(newAttempts);
 
-    
-    await new Promise(r => setTimeout(r, 1200)); // animazione volo palla 
+    await new Promise(r => setTimeout(r, 1200)); // animazione volo palla
     setBallVisible(false);
     await new Promise(r => setTimeout(r, 300));
 
     if (success) {
       setResult('success');
       confetti({ particleCount: 100, spread: 70, origin: { y: 0.6 } });
-      
+
       const ivs = CatchEngine.generateIVs();
       const nature = CatchEngine.getNature();
       const baseStats = {
@@ -133,15 +117,15 @@ export default function CatchScreen() {
       const moves = await api.getPokemonMoves(pokemon, pokemon.level);
 
       const baseSpeciesId = await api.getBaseSpeciesId(pokemon.species);
-      const startExp = (() => { 
-        const l = pokemon.level; 
-        switch (pokemon.species.growth_rate.name) { 
-          case 'slow': return Math.floor(5 * l ** 3 / 4); 
-          case 'medium-slow': return Math.max(0, Math.floor(6/5 * l**3 - 15*l**2 + 100*l - 140)); 
-          case 'fast': return Math.floor(4 * l ** 3 / 5); 
-          default: return Math.floor(l ** 3); 
-        } 
-      })(); 
+      const startExp = (() => {
+        const l = pokemon.level;
+        switch (pokemon.species.growth_rate.name) {
+          case 'slow': return Math.floor(5 * l ** 3 / 4);
+          case 'medium-slow': return Math.max(0, Math.floor(6/5 * l**3 - 15*l**2 + 100*l - 140));
+          case 'fast': return Math.floor(4 * l ** 3 / 5);
+          default: return Math.floor(l ** 3);
+        }
+      })();
       addPokemon({
         id: Math.random().toString(36).substr(2, 9),
         pokemonId: pokemon.id,
@@ -164,31 +148,31 @@ export default function CatchScreen() {
       });
       incrementStat('totalCaught');
       if (isShiny) incrementStat('shiniesFound');
-      // +3 caramelle specie alla cattura 
+      // +3 caramelle specie alla cattura
       addItem(`candy_${baseSpeciesId}`, 3);
 
-      // Drop fissi sempre garantiti 
-      addItem('pokeball', 2); 
-      addItem('potion', 2); 
-      const drops: string[] = ['🔴 2 Pokéball', '🧪 2 Pozioni']; 
+      // Drop fissi sempre garantiti
+      addItem('pokeball', 2);
+      addItem('potion', 2);
+      const drops: string[] = ['🔴 2 Pokéball', '🧪 2 Pozioni'];
 
-      // Drop bonus casuali indipendenti 
-      if (Math.random() < 0.1) { 
-        addItem('superpotion', 1); 
-        drops.push('🧪 1 Superpozione'); 
-      } 
-      if (Math.random() < 0.1) { 
-        addItem('full_heal', 1); 
-        drops.push('💊 1 Cura Totale'); 
-      } 
+      // Drop bonus casuali indipendenti
+      if (Math.random() < 0.1) {
+        addItem('superpotion', 1);
+        drops.push('🧪 1 Superpozione');
+      }
+      if (Math.random() < 0.1) {
+        addItem('full_heal', 1);
+        drops.push('💊 1 Cura Totale');
+      }
 
-      setDropMessage(drops.join(' · ')); 
+      setDropMessage(drops.join(' · '));
     } else {
-      // Fallito: controlla se ha ancora tentativi 
+      // Fallito: controlla se ha ancora tentativi
       if (newAttempts >= maxAttempts) {
-        setResult('fail'); // Scappato dopo 3 tentativi 
+        setResult('fail'); // Scappato dopo 3 tentativi
       } else {
-        // Può riprovare 
+        // Può riprovare
         setCatching(false);
       }
     }
@@ -204,70 +188,70 @@ export default function CatchScreen() {
           <button onClick={() => setApiError(null)} className="ml-3 underline text-xs">Chiudi</button>
         </div>
       )}
-      {/* Pulsante Esci */} 
-      {!result && ( 
-        <button 
-          onClick={() => setScreen('HUB_SCREEN')} 
-          className="absolute top-4 left-4 z-30 p-2 bg-black/40 backdrop-blur-sm rounded-xl border border-white/10 text-white/70" 
-        > 
-          <ArrowLeft size={20} /> 
-        </button> 
-      )} 
+      {/* Pulsante Esci */}
+      {!result && (
+        <button
+          onClick={() => setScreen('HUB_SCREEN')}
+          className="absolute top-4 left-4 z-30 p-2 bg-black/40 backdrop-blur-sm rounded-xl border border-white/10 text-white/70"
+        >
+          <ArrowLeft size={20} />
+        </button>
+      )}
 
-      {/* Background */} 
-      <div className="absolute inset-0 overflow-hidden"> 
-        {/* Cielo sfumato */} 
-        <div className="absolute inset-0" style={{ 
-          background: 'linear-gradient(180deg, #1a1a4e 0%, #2d3a8c 30%, #5b8dd9 60%, #87ceeb 80%, #b8e0f0 100%)' 
-        }} /> 
+      {/* Background */}
+      <div className="absolute inset-0 overflow-hidden">
+        {/* Sfondo giungla */}
+        <div className="absolute inset-0" style={{
+          background: 'linear-gradient(180deg, #0a1f0a 0%, #0f2d0f 100%)'
+        }} />
 
-        {/* Luna */} 
-        <div className="absolute top-6 right-8 w-10 h-10 rounded-full bg-yellow-100 shadow-[0_0_20px_8px_rgba(255,255,200,0.3)]" /> 
+        {/* Luna */}
+        <div className="absolute top-6 right-8 w-10 h-10 rounded-full bg-yellow-100 shadow-[0_0_20px_8px_rgba(255,255,200,0.3)]" />
 
-        {/* Nuvole */} 
-        <CloudAnimation /> 
+        {/* Nuvole */}
+        <CloudAnimation />
 
-        {/* Orizzonte — collina lontana */} 
-        <div className="absolute bottom-0 left-0 right-0" style={{ height: '45%' }}> 
-          {/* Collina sfondo */} 
-          <div className="absolute bottom-0 left-0 right-0" style={{ 
-            height: '80%', 
-            background: 'linear-gradient(180deg, #2d5a1b 0%, #1a3a10 100%)', 
-            borderRadius: '60% 60% 0 0 / 30% 30% 0 0', 
-          }} /> 
-          {/* Erba primo piano */} 
-          <div className="absolute bottom-0 left-0 right-0 h-12" 
-            style={{ background: 'linear-gradient(180deg, #3a7a20 0%, #2a5a15 100%)' }} 
-          /> 
-          {/* Linea separazione erba */} 
-          <div className="absolute left-0 right-0 h-1 bg-green-300/30" 
-            style={{ bottom: '47px' }} 
-          /> 
-          {/* Puntini erba */} 
-          {Array.from({ length: 12 }).map((_, i) => ( 
-            <div 
-              key={i} 
-              className="absolute bottom-10 bg-green-300/40 rounded-full" 
-              style={{ 
-                width: 4 + Math.random() * 6, 
-                height: 8 + Math.random() * 10, 
-                left: `${5 + i * 8 + Math.random() * 4}%`, 
-                borderRadius: '50% 50% 0 0', 
-              }} 
-            /> 
-          ))} 
-        </div> 
+        {/* Orizzonte — collina lontana */}
+        <div className="absolute bottom-0 left-0 right-0" style={{ height: '45%' }}>
+          {/* Collina sfondo */}
+          <div className="absolute bottom-0 left-0 right-0" style={{
+            height: '80%',
+            background: 'linear-gradient(180deg, #2d5a1b 0%, #1a3a10 100%)',
+            borderRadius: '60% 60% 0 0 / 30% 30% 0 0',
+          }} />
+          {/* Erba primo piano */}
+          <div className="absolute bottom-0 left-0 right-0 h-12"
+            style={{ background: 'linear-gradient(180deg, #3a7a20 0%, #2a5a15 100%)' }}
+          />
+          {/* Linea separazione erba */}
+          <div className="absolute left-0 right-0 h-1 bg-green-300/30"
+            style={{ bottom: '47px' }}
+          />
+          {/* Puntini erba */}
+          {Array.from({ length: 12 }).map((_, i) => (
+            <div
+              key={i}
+              className="absolute bottom-10 bg-green-300/40 rounded-full"
+              style={{
+                width: 4 + Math.random() * 6,
+                height: 8 + Math.random() * 10,
+                left: `${5 + i * 8 + Math.random() * 4}%`,
+                borderRadius: '50% 50% 0 0',
+              }}
+            />
+          ))}
+        </div>
 
-        {/* Vignetta bordi */} 
-        <div className="absolute inset-0 pointer-events-none" 
-          style={{ boxShadow: 'inset 0 0 80px rgba(0,0,0,0.4)' }} 
-        /> 
-      </div> 
+        {/* Vignetta bordi */}
+        <div className="absolute inset-0 pointer-events-none"
+          style={{ boxShadow: 'inset 0 0 80px rgba(0,0,0,0.4)' }}
+        />
+      </div>
 
       {/* Pokemon */}
       <div className="flex-1 flex flex-col items-center justify-center relative z-10">
         <div className="text-center mb-12">
-          <h2 className="text-3xl font-black drop-shadow-lg">{api.getItalianName(pokemon.species.names)}</h2>
+          <h2 className="text-3xl font-black drop-shadow-lg text-emerald-400">ZONA SAFARI</h2>
           <p className="font-bold opacity-70">Lv. {pokemon.level}</p>
         </div>
 
@@ -334,9 +318,9 @@ export default function CatchScreen() {
                 <>
                   <div className="text-5xl mb-3">🎉</div>
                   <h3 className="text-2xl font-black mb-1">CATTURATO!</h3>
-                  {dropMessage && ( 
-                    <p className="text-yellow-400 text-xs font-bold mb-2">🎁 {dropMessage}</p> 
-                  )} 
+                  {dropMessage && (
+                    <p className="text-yellow-400 text-xs font-bold mb-2">🎁 {dropMessage}</p>
+                  )}
                   <p className="text-white/60 text-sm mb-4">{pokemon && (pokemon.species?.names ? api.getItalianName(pokemon.species.names) : pokemon.name)} aggiunto alla squadra!</p>
                 </>
               ) : (
@@ -355,41 +339,46 @@ export default function CatchScreen() {
             </motion.div>
           ) : (
             <div className="flex flex-col gap-6">
-              <div className="flex gap-3 overflow-x-auto pb-2 no-scrollbar"> 
-                {[ 
-                  { id: 'pokeball',   sprite: 'poke-ball',   label: 'Pokéball'   }, 
-                  { id: 'megaball',   sprite: 'great-ball',  label: 'Megaball'   }, 
-                  { id: 'ultraball',  sprite: 'ultra-ball',  label: 'Ultraball'  }, 
-                  { id: 'masterball', sprite: 'master-ball', label: 'Masterball' }, 
-                ].map(ball => { 
-                  const qty = inventory[ball.id] || 0; 
-                  const isEmpty = qty === 0; 
-                  return ( 
-                    <button 
-                      key={ball.id} 
-                      onClick={() => !isEmpty && setBallType(ball.id)} 
-                      disabled={isEmpty} 
-                      className={`flex-shrink-0 flex flex-col items-center gap-1 p-2 rounded-xl border-2 transition-all ${ 
-                        ballType === ball.id 
-                          ? 'border-[#e63946] bg-[#e63946]/20' 
-                          : isEmpty 
-                          ? 'border-white/5 opacity-30 cursor-not-allowed' 
-                          : 'border-white/10' 
-                      }`} 
-                    > 
-                      <img 
-                        src={`https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/items/${ball.sprite}.png`} 
-                        alt={ball.label} 
-                        className="w-10 h-10 object-contain" 
-                      /> 
-                      <span className={`text-[10px] font-black ${isEmpty ? 'text-white/30' : 'text-white/80'}`}> 
-                        x{qty} 
-                      </span> 
-                    </button> 
-                  ); 
-                })} 
-              </div> 
-
+              <div className="flex gap-3 overflow-x-auto pb-2 no-scrollbar">
+                {[{
+                  id: 'pokeball',   sprite: 'poke-ball',   label: 'Pokéball'
+                },
+                {
+                  id: 'megaball',   sprite: 'great-ball',  label: 'Megaball'
+                },
+                {
+                  id: 'ultraball',  sprite: 'ultra-ball',  label: 'Ultraball'
+                },
+                {
+                  id: 'masterball', sprite: 'master-ball', label: 'Masterball'
+                }].map(ball => {
+                  const qty = inventory[ball.id] || 0;
+                  const isEmpty = qty === 0;
+                  return (
+                    <button
+                      key={ball.id}
+                      onClick={() => !isEmpty && setBallType(ball.id)}
+                      disabled={isEmpty}
+                      className={`flex-shrink-0 flex flex-col items-center gap-1 p-2 rounded-xl border-2 transition-all ${
+                        ballType === ball.id
+                          ? 'border-[#e63946] bg-[#e63946]/20'
+                          : isEmpty
+                          ? 'border-white/5 opacity-30 cursor-not-allowed'
+                          : 'border-white/10'
+                      }`}
+                    >
+                      <img
+                        src={`https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/items/${ball.sprite}.png`}
+                        alt={ball.label}
+                        className="w-10 h-10 object-contain"
+                      />
+                      <span className={`text-[10px] font-black ${isEmpty ? 'text-white/30' : 'text-white/80'}`}>
+                        x{qty}
+                      </span>
+                    </button>
+                  );
+                })}
+              </div>
 
               {/* Indicatore tentativi */}
               <div className="flex justify-center gap-2 mb-2">
@@ -433,9 +422,9 @@ function CloudAnimation() {
           animate={{ x: '100vw' }}
           transition={{ duration: 20 + i * 5, repeat: Infinity, ease: 'linear', delay: i * 4 }}
           className="absolute bg-white/40 rounded-full blur-xl"
-          style={{ 
-            width: 100 + i * 50, 
-            height: 40 + i * 20, 
+          style={{
+            width: 100 + i * 50,
+            height: 40 + i * 20,
             top: i * 30,
             left: -200
           }}

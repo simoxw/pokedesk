@@ -44,6 +44,7 @@ export default function PokedexScreen() {
     { id: 4, label: 'Gen 4', range: [387, 493] },
     { id: 5, label: 'Gen 5', range: [494, 649] },
     { id: 6, label: 'Gen 6', range: [650, 721] },
+    { id: 7, label: 'Gen 7', range: [722, 809] },
   ];
 
   const TYPES = [
@@ -52,7 +53,7 @@ export default function PokedexScreen() {
     'rock', 'ghost', 'dragon', 'steel', 'dark', 'fairy'
   ];
  
-  const entries = Array.from({ length: 721 }, (_, i) => i + 1); 
+  const entries = Array.from({ length: 809 }, (_, i) => i + 1); 
  
   const handleSelect = async (id: number) => { 
     if (!pokedex[id]) return; 
@@ -164,7 +165,7 @@ export default function PokedexScreen() {
             <div className="text-[10px] text-white/40 font-bold uppercase">Visti</div> 
           </div> 
           <div className="flex-1 bg-[#1a1a2e] rounded-2xl p-3 text-center border border-white/5"> 
-            <div className="text-xl font-black text-white/60">721</div> 
+            <div className="text-xl font-black text-white/60">809</div> 
             <div className="text-[10px] text-white/40 font-bold uppercase">Totali</div> 
           </div> 
         </div> 

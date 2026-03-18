@@ -4,6 +4,7 @@ import StartScreen from './components/screens/StartScreen';
 import StarterDraft from './components/screens/StarterDraft';
 import HubScreen from './components/screens/HubScreen';
 import CatchScreen from './components/screens/CatchScreen';
+import SafariScreen from './components/screens/SafariScreen';
 import BattleScreen from './components/screens/BattleScreen';
 import TeamScreen from './components/screens/TeamScreen';
 import BoxScreen from './components/screens/BoxScreen';
@@ -56,6 +57,7 @@ export default function App() {
       case 'STARTER_DRAFT': return <StarterDraft />;
       case 'HUB_SCREEN': return <HubScreen />;
       case 'CATCH_SCREEN': return <CatchScreen />;
+      case 'SAFARI_SCREEN': return <SafariScreen />;
       case 'BATTLE_SCREEN': return <BattleScreen />;
       case 'TEAM_SCREEN': return <TeamScreen />;
       case 'BOX_SCREEN': return <BoxScreen />;
@@ -73,6 +75,7 @@ export default function App() {
     'START_SCREEN', 
     'STARTER_DRAFT', 
     'CATCH_SCREEN', 
+    'SAFARI_SCREEN',
     'BATTLE_SCREEN'
   ].includes(currentScreen);
 

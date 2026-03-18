@@ -3,11 +3,11 @@ import { useStore } from '../../store';
 import { useTickSystem } from '../../TickSystem';
 import { api } from '../../api';
 import { motion } from 'motion/react';
-import { Zap, Target, Sword } from 'lucide-react';
+import { Zap, Target, Sword, TreePine } from 'lucide-react';
 
 export default function HubScreen() {
-  const { charges, setScreen, team, updatePokemon, consumeCharge, currentBattlePath } = useStore();
-  const { getTimeToNextTick } = useTickSystem();
+  const { charges, safariCharges, setScreen, team, updatePokemon, consumeCharge, consumeSafariCharge, medals, currentBattlePath } = useStore();
+  const { getTimeToNextTick, getTimeToNextSafariTick } = useTickSystem();
 
   useEffect(() => {
     const fixMoves = async () => {
@@ -29,6 +29,11 @@ export default function HubScreen() {
   const nextTick = getTimeToNextTick();
   const minutes = Math.floor(nextTick / 60000);
   const seconds = Math.floor((nextTick % 60000) / 1000);
+
+  const safariUnlocked = medals.filter(m => m.isUnlocked).length >= 20;
+  const nextSafariTick = getTimeToNextSafariTick();
+  const safariMinutes = Math.floor(nextSafariTick / 60000);
+  const safariSeconds = Math.floor((nextSafariTick % 60000) / 1000);
 
   return (
     <div className="h-full relative overflow-hidden flex flex-col items-center justify-center p-6">
@@ -59,17 +64,17 @@ export default function HubScreen() {
         </div>
       </div>
 
-      <div className="relative z-10 flex flex-col items-center gap-12">
+      <div className="relative z-10 flex flex-col items-center gap-4">
         <div className="text-center">
           <motion.div
             animate={{ scale: [1, 1.05, 1] }}
             transition={{ duration: 2, repeat: Infinity }}
-            className="text-8xl font-black text-white flex items-center justify-center gap-2"
+            className="text-5xl font-black text-white flex items-center justify-center gap-2"
           >
             {charges}<span className="text-[#e63946]">/6</span>
-            <Zap className="text-yellow-400 fill-yellow-400" size={48} />
+            <Zap className="text-yellow-400 fill-yellow-400" size={28} />
           </motion.div>
-          <p className="text-white/50 font-mono mt-4">
+          <p className="text-white/50 font-mono mt-2 text-xs">
             {charges >= 6
               ? '⚡ CARICHE AL MASSIMO!'
               : `PROSSIMA CARICA IN ${minutes}:${seconds.toString().padStart(2, '0')}`}
@@ -164,6 +169,30 @@ export default function HubScreen() {
           >
             <Target size={32} />
             <span className="text-2xl font-black">CATTURA</span>
+          </motion.button>
+
+          <div className="text-center text-xs text-white/50">
+            🌿 {safariCharges}/5{safariUnlocked ? ` • ${safariMinutes}:${safariSeconds.toString().padStart(2, '0')}` : ''}
+          </div>
+
+          <motion.button
+            whileHover={{ scale: 1.05 }}
+            whileTap={{ scale: 0.95 }}
+            disabled={safariCharges === 0 || !safariUnlocked}
+            onClick={() => {
+              consumeSafariCharge();
+              setScreen('SAFARI_SCREEN');
+            }}
+            className={`w-full p-6 rounded-3xl flex items-center justify-center gap-4 shadow-xl ${
+              safariUnlocked
+                ? 'bg-[#1a3a1a] border border-green-800/40 text-white'
+                : 'bg-gray-800/60 border border-white/10 text-white/40'
+            }`}
+          >
+            {safariUnlocked ? <TreePine size={28} /> : <span className="text-2xl">🔒</span>}
+            <span className="text-2xl font-black">
+              {safariUnlocked ? 'ZONA SAFARI' : 'SAFARI (sblocca a 20 medaglie)'}
+            </span>
           </motion.button>
 
           <motion.button

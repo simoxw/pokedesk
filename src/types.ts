@@ -4,6 +4,7 @@ export type ScreenName =
   | 'HUB_SCREEN' 
   | 'CATCH_SCREEN' 
   | 'BATTLE_SCREEN' 
+  | 'SAFARI_SCREEN' 
   | 'TEAM_SCREEN' 
   | 'BOX_SCREEN' 
   | 'BAG_SCREEN' 
@@ -103,6 +104,8 @@ export interface GameState {
   };
   charges: number;
   lastTickTimestamp: number;
+  safariCharges: number;
+  lastSafariTickTimestamp: number;
   pokedex: Record<number, 'seen' | 'caught'>;
   stats: {
     totalCaught: number;
