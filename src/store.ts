@@ -112,14 +112,14 @@ export const useStore = create<GameStore>()(
               
               // Moves check
               const learnedMoves = await api.getMovesLearnedAtLevel(pokemonData, newLevel);
-              if (learnedMoves.length > 0) {
-                const newMove = learnedMoves[0];
+              for (const newMove of learnedMoves) {
                 const alreadyHas = p.moves.some(m => m.id === newMove.id);
                 if (!alreadyHas) {
                   if (p.moves.length < 4) {
                     useStore.getState().updatePokemon(p.id, { moves: [...p.moves, newMove] });
                   } else {
                     set({ pendingNewMove: { pokemonId: p.id, move: newMove } });
+                    break; // Only present the first one as pending
                   }
                 }
               }
@@ -189,14 +189,14 @@ export const useStore = create<GameStore>()(
               
               // Moves check
               const learnedMoves = await api.getMovesLearnedAtLevel(pokemonData, newLevel);
-              if (learnedMoves.length > 0) {
-                const newMove = learnedMoves[0];
+              for (const newMove of learnedMoves) {
                 const alreadyHas = p.moves.some(m => m.id === newMove.id);
                 if (!alreadyHas) {
                   if (p.moves.length < 4) {
                     useStore.getState().updatePokemon(p.id, { moves: [...p.moves, newMove] });
                   } else {
                     set({ pendingNewMove: { pokemonId: p.id, move: newMove } });
+                    break; // Only present the first one as pending
                   }
                 }
               }
@@ -314,21 +314,29 @@ export const useStore = create<GameStore>()(
                 const pokemonData = await api.getPokemon(p.pokemonId);
                 const speciesData = await api.getSpecies(p.pokemonId);
                 
-                // Moves check
-                const learnedMoves = await api.getMovesLearnedAtLevel(pokemonData, newLevel);
-                if (learnedMoves.length > 0) {
-                  const newMove = learnedMoves[0];
-                  const alreadyHas = p.moves.some(m => m.id === newMove.id);
-                  if (!alreadyHas) {
-                    if (p.moves.length < 4) {
-                      useStore.getState().updatePokemon(p.id, { moves: [...p.moves, newMove] });
-                    } else {
-                      set({ pendingNewMove: { pokemonId: p.id, move: newMove } });
+                // Moves check for all intermediate levels
+                const newMovesToLearn: Move[] = [];
+                for (let lvl = p.level + 1; lvl <= newLevel; lvl++) {
+                  const learnedMoves = await api.getMovesLearnedAtLevel(pokemonData, lvl);
+                  for (const newMove of learnedMoves) {
+                    const alreadyHas = p.moves.some(m => m.id === newMove.id);
+                    const alreadyInList = newMovesToLearn.some(m => m.id === newMove.id);
+                    if (!alreadyHas && !alreadyInList) {
+                      newMovesToLearn.push(newMove);
                     }
                   }
                 }
+                // Process accumulated moves
+                for (const move of newMovesToLearn) {
+                  if (p.moves.length < 4) {
+                    useStore.getState().updatePokemon(p.id, { moves: [...p.moves, move] });
+                  } else {
+                    set({ pendingNewMove: { pokemonId: p.id, move: move } });
+                    break; // Only present the first one as pending
+                  }
+                }
 
-                // Evolution check
+                // Evolution check only for final level
                 const evolution = await api.getEvolutionTarget(speciesData, newLevel);
                 if (evolution && !useStore.getState().pendingEvolution && !useStore.getState().pendingNewMove) {
                   try {

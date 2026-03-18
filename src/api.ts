@@ -298,47 +298,50 @@ export const api = {
   },
 
   async getMovesLearnedAtLevel(pokemonData: any, level: number): Promise<Move[]> {
-    const candidateMove = pokemonData.moves.find((m: any) =>
+    const candidateMoves = pokemonData.moves.filter((m: any) =>
       m.version_group_details.some((v: any) => v.move_learn_method.name === 'level-up' && v.level_learned_at === level)
     );
 
-    if (!candidateMove) return [];
+    if (candidateMoves.length === 0) return [];
 
-    try {
-      const moveData = await this.getMove(candidateMove.move.name);
-      if (!moveData) return [];
+    const results: Move[] = [];
+    for (const candidateMove of candidateMoves) {
+      try {
+        const moveData = await this.getMove(candidateMove.move.name);
+        if (!moveData) continue;
 
-      return [{
-        id: moveData.id.toString(),
-        name: this.getItalianName(moveData.names),
-        type: moveData.type.name,
-        power: moveData.power || 0,
-        accuracy: moveData.accuracy || 100,
-        pp: moveData.pp,
-        maxPp: moveData.pp,
-        priority: moveData.priority || 0,
-        category: moveData.damage_class.name as any,
-        description: this.getItalianDescription(moveData.flavor_text_entries),
-        meta: moveData.meta,
-        stat_changes: moveData.stat_changes ?? [],
-        statusEffect: (() => { 
-          const ailment = moveData.meta?.ailment?.name; 
-          if (!ailment || ailment === 'none' || ailment === 'unknown') return undefined; 
-          if (ailment === 'sleep') return 'SLP'; 
-          if (ailment === 'poison' || ailment === 'bad-poison') return 'PSN'; 
-          if (ailment === 'burn') return 'BRN'; 
-          if (ailment === 'paralysis') return 'PAR'; 
-          if (ailment === 'freeze') return 'FRZ'; 
-          return undefined; 
-        })(), 
-        effectChance: moveData.meta?.ailment_chance > 0 
-          ? moveData.meta.ailment_chance 
-          : (moveData.effect_chance ?? undefined),
-      }];
-    } catch (e) {
-      console.error(`Error fetching move ${candidateMove.move.name}:`, e);
-      return [];
+        results.push({
+          id: moveData.id.toString(),
+          name: this.getItalianName(moveData.names),
+          type: moveData.type.name,
+          power: moveData.power || 0,
+          accuracy: moveData.accuracy || 100,
+          pp: moveData.pp,
+          maxPp: moveData.pp,
+          priority: moveData.priority || 0,
+          category: moveData.damage_class.name as any,
+          description: this.getItalianDescription(moveData.flavor_text_entries),
+          meta: moveData.meta,
+          stat_changes: moveData.stat_changes ?? [],
+          statusEffect: (() => { 
+            const ailment = moveData.meta?.ailment?.name; 
+            if (!ailment || ailment === 'none' || ailment === 'unknown') return undefined; 
+            if (ailment === 'sleep') return 'SLP'; 
+            if (ailment === 'poison' || ailment === 'bad-poison') return 'PSN'; 
+            if (ailment === 'burn') return 'BRN'; 
+            if (ailment === 'paralysis') return 'PAR'; 
+            if (ailment === 'freeze') return 'FRZ'; 
+            return undefined; 
+          })(), 
+          effectChance: moveData.meta?.ailment_chance > 0 
+            ? moveData.meta.ailment_chance 
+            : (moveData.effect_chance ?? undefined),
+        });
+      } catch (e) {
+        console.error(`Error fetching move ${candidateMove.move.name}:`, e);
+      }
     }
+    return results;
   },
 
   getItalianDescription(entries: any[]): string {
