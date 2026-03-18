@@ -216,7 +216,7 @@ export default function SafariScreen() {
       <div className="absolute inset-0 overflow-hidden">
         {/* Sfondo giungla */}
         <div className="absolute inset-0" style={{
-          background: 'linear-gradient(180deg, #0a1f0a 0%, #0f2d0f 100%)'
+          background: 'linear-gradient(180deg, #0d2e0d 0%, #143d14 100%)'
         }} />
 
         {/* Luna */}
@@ -230,12 +230,12 @@ export default function SafariScreen() {
           {/* Collina sfondo */}
           <div className="absolute bottom-0 left-0 right-0" style={{
             height: '80%',
-            background: 'linear-gradient(180deg, #2d5a1b 0%, #1a3a10 100%)',
+            background: 'linear-gradient(180deg, #3d7a25 0%, #2a5218 100%)',
             borderRadius: '60% 60% 0 0 / 30% 30% 0 0',
           }} />
           {/* Erba primo piano */}
           <div className="absolute bottom-0 left-0 right-0 h-12"
-            style={{ background: 'linear-gradient(180deg, #3a7a20 0%, #2a5a15 100%)' }}
+            style={{ background: 'linear-gradient(180deg, #4d9a2a 0%, #3a7a1e 100%)' }}
           />
           {/* Linea separazione erba */}
           <div className="absolute left-0 right-0 h-1 bg-green-300/30"

@@ -944,7 +944,7 @@ export default function BattleScreen() {
       <div className="absolute inset-x-0 bottom-0 z-0" style={{ height: '78%' }}>
         {/* Prato verde scuro/naturale */} 
         <div className="absolute inset-0" style={{ 
-          background: 'linear-gradient(180deg, #3d7a25 0%, #2d5a1b 100%)', 
+          background: 'linear-gradient(180deg, #4d9a2a 0%, #3a7a25 100%)', 
         }} /> 
         {/* Griglia prato (molto sottile) */} 
         <div className="absolute inset-0 opacity-10" style={{ 
