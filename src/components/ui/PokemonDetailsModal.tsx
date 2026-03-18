@@ -157,8 +157,18 @@ export default function PokemonDetailsModal({ pokemon, onClose }: PokemonDetails
                     <p className="text-[10px] text-white/50 leading-tight line-clamp-2">{move.description}</p>
                   </div>
                   <div className="text-right">
-                    <p className="text-xs font-black">{move.power || '--'}</p>
-                    <p className="text-[8px] uppercase opacity-30 font-bold">Potenza</p>
+                    <div className="flex flex-col items-end gap-1">
+                      <div className="text-xs font-black">POT. {move.power || '--'}</div>
+                      <div className={`text-[8px] uppercase font-bold ${
+                        move.category === 'physical' ? 'text-orange-400' :
+                        move.category === 'special' ? 'text-purple-400' :
+                        'text-gray-400'
+                      }`}>
+                        {move.category === 'physical' ? 'FIS.' :
+                         move.category === 'special' ? 'SP.' :
+                         'STATO'}
+                      </div>
+                    </div>
                   </div>
                 </div>
               ))}

@@ -279,7 +279,10 @@ export default function BoxScreen() {
                   <h3 className="text-3xl font-black uppercase">{selectedPkmn.name}</h3>
                   <p className="text-[#e63946] font-bold">Livello {selectedPkmn.level}</p>
                   <div className="mt-2 text-xs text-white/50">
-                    IV: {selectedPkmn.ivs.hp}/{selectedPkmn.ivs.attack}/{selectedPkmn.ivs.defense}...
+                    {(() => {
+                      const ivTotal = selectedPkmn.ivs.hp + selectedPkmn.ivs.attack + selectedPkmn.ivs.defense + selectedPkmn.ivs.spAtk + selectedPkmn.ivs.spDef + selectedPkmn.ivs.speed;
+                      return `IV: ${selectedPkmn.ivs.hp}/${selectedPkmn.ivs.attack}/${selectedPkmn.ivs.defense}/${selectedPkmn.ivs.spAtk}/${selectedPkmn.ivs.spDef}/${selectedPkmn.ivs.speed} (${ivTotal}/186)`;
+                    })()}
                   </div>
                 </div>
               </div>
