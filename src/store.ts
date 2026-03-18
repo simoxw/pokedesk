@@ -126,7 +126,7 @@ export const useStore = create<GameStore>()(
 
               // Evolution check
               const evolution = await api.getEvolutionTarget(speciesData, newLevel);
-              if (evolution && !useStore.getState().pendingEvolution && !useStore.getState().pendingNewMove) {
+              if (evolution && !useStore.getState().pendingNewMove) {
                 try {
                   const newPokemonData = await api.getPokemon(evolution.newId);
                   const newTypes = newPokemonData.types.map((t: any) => t.type.name);
@@ -149,7 +149,15 @@ export const useStore = create<GameStore>()(
           })();
 
           const newCurrentHp = Math.min(newStats.hp, Math.max(0, p.currentHp + (newStats.hp - p.stats.hp)));
-          return { ...p, level: newLevel, stats: newStats, currentHp: newCurrentHp };
+          const expForNewLevel = (() => {
+            const gr = p.growthRate ?? 'medium';
+            if (gr === 'slow') return Math.floor(5 * newLevel ** 3 / 4);
+            if (gr === 'medium-slow') return Math.max(0, Math.floor(6/5 * newLevel**3 - 15*newLevel**2 + 100*newLevel - 140));
+            if (gr === 'fast') return Math.floor(4 * newLevel ** 3 / 5);
+            return Math.floor(newLevel ** 3);
+          })();
+          const newExp = Math.max(p.exp, expForNewLevel);
+          return { ...p, level: newLevel, exp: newExp, stats: newStats, currentHp: newCurrentHp };
         });
         return {
           team: applyTo(state.team),
@@ -195,7 +203,7 @@ export const useStore = create<GameStore>()(
 
               // Evolution check
               const evolution = await api.getEvolutionTarget(speciesData, newLevel);
-              if (evolution && !useStore.getState().pendingEvolution && !useStore.getState().pendingNewMove) {
+              if (evolution && !useStore.getState().pendingNewMove) {
                 try {
                   const newPokemonData = await api.getPokemon(evolution.newId);
                   const newTypes = newPokemonData.types.map((t: any) => t.type.name);
@@ -218,7 +226,15 @@ export const useStore = create<GameStore>()(
           })();
 
           const newCurrentHp = Math.min(newStats.hp, Math.max(0, p.currentHp + (newStats.hp - p.stats.hp)));
-          return { ...p, level: newLevel, stats: newStats, currentHp: newCurrentHp };
+          const expForNewLevel = (() => {
+            const gr = p.growthRate ?? 'medium';
+            if (gr === 'slow') return Math.floor(5 * newLevel ** 3 / 4);
+            if (gr === 'medium-slow') return Math.max(0, Math.floor(6/5 * newLevel**3 - 15*newLevel**2 + 100*newLevel - 140));
+            if (gr === 'fast') return Math.floor(4 * newLevel ** 3 / 5);
+            return Math.floor(newLevel ** 3);
+          })();
+          const newExp = Math.max(p.exp, expForNewLevel);
+          return { ...p, level: newLevel, exp: newExp, stats: newStats, currentHp: newCurrentHp };
         });
         return {
           team: applyTo(state.team),
