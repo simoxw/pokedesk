@@ -116,11 +116,13 @@ export const useStore = create<GameStore>()(
               
               // Moves check
               const learnedMoves = await api.getMovesLearnedAtLevel(pokemonData, newLevel);
+              const freshPkmn = useStore.getState().team.find(t => t.id === p.id) ?? useStore.getState().box.find(t => t.id === p.id);
+              const currentMoves = freshPkmn?.moves ?? p.moves;
               for (const newMove of learnedMoves) {
-                const alreadyHas = p.moves.some(m => m.id === newMove.id);
+                const alreadyHas = currentMoves.some(m => m.id === newMove.id) ?? false;
                 if (!alreadyHas) {
-                  if (p.moves.length < 4) {
-                    useStore.getState().updatePokemon(p.id, { moves: [...p.moves, newMove] });
+                  if (currentMoves.length < 4) {
+                    useStore.getState().updatePokemon(p.id, { moves: [...currentMoves, newMove] });
                   } else {
                     set({ pendingNewMove: { pokemonId: p.id, move: newMove } });
                     break; // Only present the first one as pending
@@ -130,7 +132,7 @@ export const useStore = create<GameStore>()(
 
               // Evolution check
               const evolution = await api.getEvolutionTarget(speciesData, newLevel);
-              if (evolution && !useStore.getState().pendingNewMove) {
+              if (evolution && !useStore.getState().pendingEvolution) {
                 try {
                   const newPokemonData = await api.getPokemon(evolution.newId);
                   const newTypes = newPokemonData.types.map((t: any) => t.type.name);
@@ -193,11 +195,13 @@ export const useStore = create<GameStore>()(
               
               // Moves check
               const learnedMoves = await api.getMovesLearnedAtLevel(pokemonData, newLevel);
+              const freshPkmn = useStore.getState().team.find(t => t.id === p.id) ?? useStore.getState().box.find(t => t.id === p.id);
+              const currentMoves = freshPkmn?.moves ?? p.moves;
               for (const newMove of learnedMoves) {
-                const alreadyHas = p.moves.some(m => m.id === newMove.id);
+                const alreadyHas = currentMoves.some(m => m.id === newMove.id) ?? false;
                 if (!alreadyHas) {
-                  if (p.moves.length < 4) {
-                    useStore.getState().updatePokemon(p.id, { moves: [...p.moves, newMove] });
+                  if (currentMoves.length < 4) {
+                    useStore.getState().updatePokemon(p.id, { moves: [...currentMoves, newMove] });
                   } else {
                     set({ pendingNewMove: { pokemonId: p.id, move: newMove } });
                     break; // Only present the first one as pending
@@ -206,8 +210,10 @@ export const useStore = create<GameStore>()(
               }
 
               // Evolution check
+              console.log('[EVO CHECK]', p.pokemonId, p.name, 'livello:', newLevel, 'speciesData.name:', speciesData.name);
               const evolution = await api.getEvolutionTarget(speciesData, newLevel);
-              if (evolution && !useStore.getState().pendingNewMove) {
+              console.log('[EVO RESULT]', evolution);
+              if (evolution && !useStore.getState().pendingEvolution) {
                 try {
                   const newPokemonData = await api.getPokemon(evolution.newId);
                   const newTypes = newPokemonData.types.map((t: any) => t.type.name);
