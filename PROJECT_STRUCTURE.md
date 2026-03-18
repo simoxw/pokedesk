@@ -45,6 +45,7 @@ Schermi principali dell'app, ciascuno rappresentante una vista o sezione.
 - **OptionsScreen.tsx**: Schermo impostazioni per configurare l'app (es. audio, lingua).
 - **PokedexScreen.tsx**: Schermo Pokédex per visualizzare informazioni sui Pokémon.
 - **ProfileScreen.tsx**: Schermo profilo utente, con statistiche e progressi.
+- **SafariScreen.tsx**: Schermo Zona Safari per incontrare Pokémon speciali con cariche dedicate.
 - **ShopScreen.tsx**: Schermo negozio per acquistare oggetti o Pokémon.
 - **StarterDraft.tsx**: Schermo per selezionare il Pokémon iniziale all'inizio del gioco.
 - **StartScreen.tsx**: Schermo di avvio con menu principale e opzioni di gioco.

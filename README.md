@@ -6,10 +6,11 @@ Un simulatore di battaglie e cattura Pokémon moderno, sviluppato come Progressi
 
 - **Sistema di Battaglia Completo**: Battaglie a turni con calcolo dei danni basato su statistiche, tipi, critici e modificatori di stadio (stat stages).
 - **Stati Alterati**: Gestione di Sonno (SLP), Paralisi (PAR), Scottatura (BRN), Avvelenamento (PSN) e Congelamento (FRZ) con effetti reali sul combattimento.
-- **Cattura Pokémon**: Meccanica di cattura con probabilità basate su HP rimanenti e tipo di Pokéball (Gen 1-4).
+- **Cattura Pokémon**: Meccanica di cattura con probabilità basate su HP rimanenti e tipo di Pokéball (ora include fino alla Gen 5 per l’incontro). 
+- **Zona Safari**: Modalità speciale di cattura con cariche separate e spawn esclusivi (Gen 6+). 
 - **Progressione e Crescita**: Guadagno ESP, livellamento, evoluzioni automatiche e apprendimento di nuove mosse.
 - **Gestione Squadra**: Team di 4 Pokémon attivi, Box per i Pokémon in eccesso e gestione strumenti (Pozioni, Caramelle Rare, ecc.).
-- **Sistema di Cariche**: Meccanica di energia temporizzata per limitare le azioni (Cattura/Lotta) e incentivare il ritorno quotidiano.
+- **Sistema di Cariche**: Meccanica di energia temporizzata per limitare le azioni (Cattura/Lotta/Safari) e incentivare il ritorno quotidiano.
 - **PWA Ready**: Installabile su dispositivi mobile con supporto offline e notifiche.
 
 ## 🛠️ Tecnologie Utilizzate

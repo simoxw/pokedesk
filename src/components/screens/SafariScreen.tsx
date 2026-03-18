@@ -39,11 +39,25 @@ export default function SafariScreen() {
         const avgLevel = team.length > 0 ? team.reduce((acc, p) => acc + p.level, 0) / team.length : 5;
         const level = Math.max(5, Math.floor(avgLevel + (Math.random() * 10 - 5)));
 
-        // Gen 6/7 only
         const getRandomPokemonId = (): number => {
-          const isGen6 = Math.random() < 0.5;
-          const range = isGen6 ? { min: 650, max: 721 } : { min: 722, max: 809 };
-          return Math.floor(Math.random() * (range.max - range.min + 1)) + range.min;
+          const gen7Unlocked = medalsCount >= 25;
+          const gen8Unlocked = medalsCount >= 30;
+
+          if (gen8Unlocked) {
+            // 33% Gen6, 33% Gen7, 34% Gen8
+            const roll = Math.random();
+            if (roll < 0.33) return Math.floor(Math.random() * (721 - 650 + 1)) + 650;
+            if (roll < 0.66) return Math.floor(Math.random() * (809 - 722 + 1)) + 722;
+            return Math.floor(Math.random() * (898 - 810 + 1)) + 810;
+          } else if (gen7Unlocked) {
+            // 55% Gen6, 45% Gen7
+            const roll = Math.random();
+            if (roll < 0.55) return Math.floor(Math.random() * (721 - 650 + 1)) + 650;
+            return Math.floor(Math.random() * (809 - 722 + 1)) + 722;
+          } else {
+            // 100% Gen6
+            return Math.floor(Math.random() * (721 - 650 + 1)) + 650;
+          }
         };
 
         const id = getRandomPokemonId();
@@ -251,7 +265,10 @@ export default function SafariScreen() {
       {/* Pokemon */}
       <div className="flex-1 flex flex-col items-center justify-center relative z-10">
         <div className="text-center mb-12">
-          <h2 className="text-3xl font-black drop-shadow-lg text-emerald-400">ZONA SAFARI</h2>
+          <h2 className="text-3xl font-black drop-shadow-lg text-emerald-400">
+            {api.getItalianName(pokemon.species.names)}
+          </h2>
+          <p className="text-emerald-400/50 text-xs font-bold uppercase tracking-widest">Zona Safari</p>
           <p className="font-bold opacity-70">Lv. {pokemon.level}</p>
         </div>
 
