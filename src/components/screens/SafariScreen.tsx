@@ -277,7 +277,15 @@ export default function SafariScreen() {
           <motion.img
             animate={catching ? { scale: [1, 0.8, 1] } : { y: [0, -10, 0] }}
             transition={catching ? { duration: 0.4 } : { duration: 3, repeat: Infinity }}
-            src={isShiny ? pokemon.sprites.front_shiny : pokemon.sprites.front_default}
+            src={isShiny 
+              ? (pokemon.sprites.other?.['official-artwork']
+                ?.front_shiny 
+                || pokemon.sprites.other?.['official-artwork']
+                ?.front_default 
+                || pokemon.sprites.front_shiny)
+              : (pokemon.sprites.other?.['official-artwork']
+                ?.front_default 
+                || pokemon.sprites.front_default)}
             className="w-80 h-80 object-contain drop-shadow-2xl"
           />
           {isShiny && !catching && (
