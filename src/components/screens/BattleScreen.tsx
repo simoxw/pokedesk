@@ -1092,9 +1092,9 @@ export default function BattleScreen() {
                 </div>
                 <span className="text-[9px] text-white/50 font-bold shrink-0">Lv. {playerPkmn?.level}</span>
               </div>
-              {/* Riga 2: tipo */}
+              {/* Riga 2: tipi */}
               <div className="flex gap-1 flex-wrap">
-                {playerPkmn?.types?.slice(0, 1).map((t: string) => (
+                {playerPkmn?.types?.map((t: string) => (
                   <TypeBadge key={t} type={t as any} small />
                 ))}
               </div>
