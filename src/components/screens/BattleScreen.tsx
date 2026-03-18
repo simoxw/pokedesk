@@ -29,6 +29,7 @@ export default function BattleScreen() {
   const [playerFlinch, setPlayerFlinch] = useState(false);
   const [enemyPhase, setEnemyPhase] = useState(1); 
   const [enemy2, setEnemy2] = useState<any>(null); 
+  const [enemy3, setEnemy3] = useState<any>(null);
   const [activeMoveTooltip, setActiveMoveTooltip] = useState<any>(null);
   const tooltipTimeout = React.useRef<any>(null);
   const longPressActive = React.useRef(false);
@@ -140,6 +141,38 @@ export default function BattleScreen() {
           }); 
         } 
 
+        if (medalsCount >= 21) {
+          addLog("⚔️ Capopalestra potente (3 Pokémon)!");
+          const id3 = getRandomPokemonId(medalsCount);
+          const data3 = await api.getPokemon(id3);
+          const ivs3 = CatchEngine.generateIVs();
+          const baseStats3 = {
+            hp: data3.stats[0].base_stat,
+            attack: data3.stats[1].base_stat,
+            defense: data3.stats[2].base_stat,
+            spAtk: data3.stats[3].base_stat,
+            spDef: data3.stats[4].base_stat,
+            speed: data3.stats[5].base_stat,
+          };
+          const stats3 = BattleEngine.calculateStats(
+            level, baseStats3, ivs3, 
+            { hp:0, attack:0, defense:0, spAtk:0, spDef:0, speed:0 }, 
+            'Quirky'
+          );
+          const moves3 = await api.getPokemonMoves(data3, level);
+          setEnemy3({
+            ...data3,
+            rawStats: data3.stats,
+            name: "Capopalestra 3°",
+            level,
+            currentHp: stats3.hp,
+            maxHp: stats3.hp,
+            stats: stats3,
+            moves: moves3,
+            types: data3.types.map((t: any) => t.type.name),
+          });
+        }
+
 
         const baseStats = {
           hp: data.stats[0].base_stat,
@@ -217,6 +250,18 @@ export default function BattleScreen() {
       setIsAnimating(false); 
       return true; // continue battle
     } 
+
+    if (isBoss && enemyPhase === 2 && enemy3) {
+      addLog(`⚔️ Il Capopalestra lancia il terzo Pokémon!`);
+      setEnemyPhase(3);
+      setEnemy(enemy3);
+      enemyRef.current = enemy3;
+      setPlayerStages({ attack:0, defense:0, spAtk:0, spDef:0, speed:0, accuracy:0, evasion:0 });
+      setEnemyStages({ attack:0, defense:0, spAtk:0, spDef:0, speed:0, accuracy:0, evasion:0 });
+      setTurn('player');
+      setIsAnimating(false);
+      return true;
+    }
 
     recordBattleWin(); 
     if (isBoss) { 
