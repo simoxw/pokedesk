@@ -82,7 +82,7 @@ export default function App() {
   return (
     <div className="min-h-screen bg-[#0f0f1a] text-[#f0f0f0] font-sans overflow-hidden flex flex-col">
       <main className="flex-1 relative">
-        <AnimatePresence mode="wait">
+        <AnimatePresence mode="sync">
           <motion.div
             key={currentScreen}
             initial={{ opacity: 0, x: 20 }}

@@ -81,6 +81,7 @@ export default function BattleScreen() {
     const initBattle = async () => {
       setLoading(true);
       try {
+        setLogs(['Inizia la battaglia!']);
         // Gen sbloccate progressivamente con le medaglie 
         const getRandomPokemonId = (medals: number): number => {
           const ranges: Array<{min: number, max: number, weight: number}> = [
@@ -139,38 +140,38 @@ export default function BattleScreen() {
             moves: moves2, 
             types: data2.types.map((t: any) => t.type.name), 
           }); 
-        } 
 
-        if (medalsCount >= 21) {
-          addLog("⚔️ Capopalestra potente (3 Pokémon)!");
-          const id3 = getRandomPokemonId(medalsCount);
-          const data3 = await api.getPokemon(id3);
-          const ivs3 = CatchEngine.generateIVs();
-          const baseStats3 = {
-            hp: data3.stats[0].base_stat,
-            attack: data3.stats[1].base_stat,
-            defense: data3.stats[2].base_stat,
-            spAtk: data3.stats[3].base_stat,
-            spDef: data3.stats[4].base_stat,
-            speed: data3.stats[5].base_stat,
-          };
-          const stats3 = BattleEngine.calculateStats(
-            level, baseStats3, ivs3, 
-            { hp:0, attack:0, defense:0, spAtk:0, spDef:0, speed:0 }, 
-            'Quirky'
-          );
-          const moves3 = await api.getPokemonMoves(data3, level);
-          setEnemy3({
-            ...data3,
-            rawStats: data3.stats,
-            name: "Capopalestra 3°",
-            level,
-            currentHp: stats3.hp,
-            maxHp: stats3.hp,
-            stats: stats3,
-            moves: moves3,
-            types: data3.types.map((t: any) => t.type.name),
-          });
+          if (medalsCount >= 21) {
+            addLog("⚔️ Capopalestra potente (3 Pokémon)!");
+            const id3 = getRandomPokemonId(medalsCount);
+            const data3 = await api.getPokemon(id3);
+            const ivs3 = CatchEngine.generateIVs();
+            const baseStats3 = {
+              hp: data3.stats[0].base_stat,
+              attack: data3.stats[1].base_stat,
+              defense: data3.stats[2].base_stat,
+              spAtk: data3.stats[3].base_stat,
+              spDef: data3.stats[4].base_stat,
+              speed: data3.stats[5].base_stat,
+            };
+            const stats3 = BattleEngine.calculateStats(
+              level, baseStats3, ivs3, 
+              { hp:0, attack:0, defense:0, spAtk:0, spDef:0, speed:0 }, 
+              'Quirky'
+            );
+            const moves3 = await api.getPokemonMoves(data3, level);
+            setEnemy3({
+              ...data3,
+              rawStats: data3.stats,
+              name: "Capopalestra 3°",
+              level,
+              currentHp: stats3.hp,
+              maxHp: stats3.hp,
+              stats: stats3,
+              moves: moves3,
+              types: data3.types.map((t: any) => t.type.name),
+            });
+          }
         }
 
 
@@ -1226,15 +1227,19 @@ export default function BattleScreen() {
                     handleMove(move);
                   }}
                   onMouseEnter={() => {
-                    tooltipTimeout.current = setTimeout(() => {
-                      longPressActive.current = true;
-                      setActiveMoveTooltip(move);
-                    }, 300);
+                    if (window.matchMedia('(hover: hover)').matches) {
+                      tooltipTimeout.current = setTimeout(() => {
+                        longPressActive.current = true;
+                        setActiveMoveTooltip(move);
+                      }, 300);
+                    }
                   }}
                   onMouseLeave={() => {
-                    clearTimeout(tooltipTimeout.current);
-                    longPressActive.current = false;
-                    setActiveMoveTooltip(null);
+                    if (window.matchMedia('(hover: hover)').matches) {
+                      clearTimeout(tooltipTimeout.current);
+                      longPressActive.current = false;
+                      setActiveMoveTooltip(null);
+                    }
                   }}
                   disabled={turn !== 'player' || isAnimating || move.pp <= 0}
                   className="bg-[#1a1a2e] border border-white/10 rounded-xl p-3 flex flex-col items-start justify-between active:bg-[#e63946]/20 disabled:opacity-40 transition-colors h-16"
