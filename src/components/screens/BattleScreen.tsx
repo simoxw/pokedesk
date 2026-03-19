@@ -328,6 +328,16 @@ export default function BattleScreen() {
       ? movePool[Math.floor(Math.random() * movePool.length)] 
       : { name: 'Lotta', type: 'normal', power: 40, category: 'physical', pp: 1, maxPp: 1, id: '0', accuracy: 100, priority: 0, description: '' };
 
+    setEnemy(prev => {
+      if (!prev) return prev;
+      const updatedMoves = prev.moves.map((m: any) =>
+        m.id === enemyMove.id ? { ...m, pp: Math.max(0, m.pp - 1) } : m
+      );
+      const next = { ...prev, moves: updatedMoves };
+      enemyRef.current = next;
+      return next;
+    });
+
     // --- CHECK STATUS NEMICO: blocca il turno se necessario ---
     // SLP: 20% chance di svegliarsi ogni turno
     if (liveEnemy.status === 'SLP') {
