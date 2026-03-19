@@ -1,4 +1,22 @@
 import React from 'react';
+import { useStore } from '../../store';
+
+const NATURE_MODS: Record<string, { up: string; down: string }> = {
+  Lonely: { up: 'attack', down: 'defense' }, Brave: { up: 'attack', down: 'speed' },
+  Adamant: { up: 'attack', down: 'spAtk' }, Naughty: { up: 'attack', down: 'spDef' },
+  Bold: { up: 'defense', down: 'attack' }, Relaxed: { up: 'defense', down: 'speed' },
+  Impish: { up: 'defense', down: 'spAtk' }, Lax: { up: 'defense', down: 'spDef' },
+  Timid: { up: 'speed', down: 'attack' }, Hasty: { up: 'speed', down: 'defense' },
+  Jolly: { up: 'speed', down: 'spAtk' }, Naive: { up: 'speed', down: 'spDef' },
+  Modest: { up: 'spAtk', down: 'attack' }, Mild: { up: 'spAtk', down: 'defense' },
+  Quiet: { up: 'spAtk', down: 'speed' }, Rash: { up: 'spAtk', down: 'spDef' },
+  Calm: { up: 'spDef', down: 'attack' }, Gentle: { up: 'spDef', down: 'defense' },
+  Sassy: { up: 'spDef', down: 'speed' }, Careful: { up: 'spDef', down: 'spAtk' },
+};
+
+const STAT_LABELS_NATURE: Record<string, string> = {
+  attack: 'Attacco', defense: 'Difesa', spAtk: 'Att.Sp.', spDef: 'Dif.Sp.', speed: 'Velocità',
+};
 
 function getExpForLevel(growthRate: string, level: number): number { 
   if (level >= 100) return 0; 
@@ -33,7 +51,11 @@ interface PokemonDetailsModalProps {
 }
 
 export default function PokemonDetailsModal({ pokemon, onClose }: PokemonDetailsModalProps) {
+  const { favorites, toggleFavorite } = useStore();
   if (!pokemon) return null;
+
+  const isFavorite = favorites.includes(pokemon.id);
+  const natureMod = NATURE_MODS[pokemon.nature] ?? null;
 
   const statIcons = {
     hp: <Heart size={16} className="text-red-400" />,
@@ -68,9 +90,17 @@ export default function PokemonDetailsModal({ pokemon, onClose }: PokemonDetails
             </div>
             <h2 className="text-2xl font-black uppercase tracking-tighter">{pokemon.name}</h2>
           </div>
-          <button onClick={onClose} className="p-2 bg-white/10 rounded-full">
-            <X size={24} />
-          </button>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => toggleFavorite(pokemon.id)}
+              className={`p-2 rounded-full transition-colors ${isFavorite ? 'text-yellow-400' : 'text-white/30 hover:text-yellow-400'}`}
+            >
+              ★
+            </button>
+            <button onClick={onClose} className="p-2 bg-white/10 rounded-full">
+              <X size={24} />
+            </button>
+          </div>
         </header>
 
         <div className="flex flex-col gap-8 pb-12">
@@ -95,6 +125,15 @@ export default function PokemonDetailsModal({ pokemon, onClose }: PokemonDetails
               <div className="space-y-1">
                 <p className="text-[10px] uppercase font-black text-white/30">Natura</p>
                 <p className="font-bold text-lg">{pokemon.nature}</p>
+                {natureMod ? (
+                  <p className="text-[11px] font-bold">
+                    <span className="text-green-400">+{STAT_LABELS_NATURE[natureMod.up]}</span>
+                    <span className="text-white/30"> / </span>
+                    <span className="text-red-400">-{STAT_LABELS_NATURE[natureMod.down]}</span>
+                  </p>
+                ) : (
+                  <p className="text-[11px] text-white/30">Neutrale</p>
+                )}
               </div>
               <div className="mb-4"> 
                 <div className="flex justify-between items-center mb-1"> 

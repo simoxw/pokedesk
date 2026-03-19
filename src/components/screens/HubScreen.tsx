@@ -1,13 +1,35 @@
 import React, { useEffect } from 'react';
 import { useStore } from '../../store';
-import { useTickSystem } from '../../TickSystem';
 import { api } from '../../api';
 import { motion } from 'motion/react';
 import { Zap, Target, Sword, TreePine } from 'lucide-react';
 
 export default function HubScreen() {
-  const { charges, safariCharges, setScreen, team, updatePokemon, consumeCharge, consumeSafariCharge, medals, currentBattlePath } = useStore();
-  const { getTimeToNextTick, getTimeToNextSafariTick } = useTickSystem();
+  const { 
+    charges, 
+    safariCharges, 
+    setScreen, 
+    team, 
+    updatePokemon, 
+    consumeCharge, 
+    consumeSafariCharge, 
+    medals, 
+    currentBattlePath,
+    lastTickTimestamp, 
+    lastSafariTickTimestamp 
+  } = useStore();
+
+  const getTimeToNextTick = () => {
+    if (charges >= 6) return 0;
+    const elapsed = Date.now() - lastTickTimestamp;
+    return Math.max(0, 300000 - (elapsed % 300000));
+  };
+
+  const getTimeToNextSafariTick = () => {
+    if (safariCharges >= 5) return 0;
+    const elapsed = Date.now() - lastSafariTickTimestamp;
+    return Math.max(0, 1800000 - (elapsed % 1800000));
+  };
 
   useEffect(() => {
     const fixMoves = async () => {

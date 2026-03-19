@@ -11,8 +11,9 @@ const TYPE_LIST = ['fire','water','grass','electric','ice','fighting','poison','
 type SortKey = 'name' | 'level' | 'number' | 'type' | 'iv'; 
 
 export default function BoxScreen() { 
-  const { box, setScreen, addToTeam, releasePokemon, team, inventory, useSpeciesCandy } = useStore(); 
+  const { box, setScreen, addToTeam, releasePokemon, team, inventory, useSpeciesCandy, favorites } = useStore(); 
   const [currentBox, setCurrentBox] = useState(0); 
+  const [showFavoritesOnly, setShowFavoritesOnly] = React.useState(false);
   const [search, setSearch] = useState(''); 
   const [filterType, setFilterType] = useState<string | null>(null); 
   const [sortBy, setSortBy] = useState<SortKey>('number'); 
@@ -42,6 +43,7 @@ export default function BoxScreen() {
   // Filtra e ordina 
   const filtered = useMemo(() => { 
     let result = [...box]; 
+    if (showFavoritesOnly) result = result.filter(p => favorites.includes(p.id));
     if (search) result = result.filter(p => p.name.toLowerCase().includes(search.toLowerCase())); 
     if (filterType) result = result.filter(p => p.types.includes(filterType as any)); 
     result.sort((a, b) => { 
@@ -82,18 +84,24 @@ export default function BoxScreen() {
           <button 
             onClick={() => { 
               setMultiSelectMode(m => !m); 
-              setSelectedIds(new Set()); 
-            }} 
-            className={`p-2 rounded-xl border transition-all ${multiSelectMode ? 'bg-[#e63946] border-[#e63946]' : 'bg-[#1a1a2e] border-white/10'}`} 
-          > 
-            <CheckSquare size={18} /> 
-          </button> 
-          <button 
-            onClick={() => setShowFilters(!showFilters)} 
-            className={`p-2 rounded-xl border transition-all ${showFilters ? 'bg-[#e63946] border-[#e63946]' : 'bg-[#1a1a2e] border-white/10'}`} 
-          > 
-            <SlidersHorizontal size={18} /> 
-          </button> 
+            setSelectedIds(new Set()); 
+          }} 
+          className={`p-2 rounded-xl border transition-all ${multiSelectMode ? 'bg-[#e63946] border-[#e63946]' : 'bg-[#1a1a2e] border-white/10'}`} 
+        > 
+          <CheckSquare size={18} /> 
+        </button> 
+        <button
+          onClick={() => setShowFavoritesOnly(f => !f)}
+          className={`p-2 rounded-xl border transition-all text-lg ${showFavoritesOnly ? 'bg-yellow-500/20 border-yellow-500/50 text-yellow-400' : 'bg-[#1a1a2e] border-white/10 text-white/40'}`}
+        >
+          ★
+        </button>
+        <button 
+          onClick={() => setShowFilters(!showFilters)} 
+          className={`p-2 rounded-xl border transition-all ${showFilters ? 'bg-[#e63946] border-[#e63946]' : 'bg-[#1a1a2e] border-white/10'}`} 
+        > 
+          <SlidersHorizontal size={18} /> 
+        </button> 
         </div> 
 
         {/* Search */} 
@@ -221,6 +229,9 @@ export default function BoxScreen() {
                      <Sparkles size={8} /> 
                    </span> 
                  )} 
+                 {favorites.includes(pkmn.id) && (
+                   <span className="absolute top-0.5 left-0.5 text-yellow-400 text-[9px] leading-none">★</span>
+                 )}
                  <span className="absolute top-0.5 left-1 text-[7px] font-mono text-white/20"> 
                    {String(pkmn.pokemonId).padStart(3,'0')} 
                  </span> 

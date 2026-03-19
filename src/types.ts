@@ -129,6 +129,7 @@ export interface GameState {
     pokemonId: string;
     move: Move;
   } | null;
+  favorites: string[];
   isFirstRun: boolean;
   currentScreen: ScreenName;
 }

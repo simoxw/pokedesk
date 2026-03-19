@@ -34,6 +34,7 @@ interface GameStore extends GameState {
   dismissNewMove: () => void;
   replaceMove: (pokemonId: string, oldMoveId: string, newMove: Move) => void;
   updateSettings: (settings: Partial<GameState['settings']>) => void;
+  toggleFavorite: (id: string) => void;
   recordBattleWin: () => void;
   toggleExpShare: () => void;
 }
@@ -65,6 +66,7 @@ export const useStore = create<GameStore>()(
       expShareActive: false,
       pendingEvolution: null,
       pendingNewMove: null,
+      favorites: [],
       isFirstRun: true,
       currentScreen: 'START_SCREEN',
 
@@ -428,6 +430,11 @@ export const useStore = create<GameStore>()(
         };
       }),
       updateSettings: (updates) => set((state) => ({ settings: { ...state.settings, ...updates } })),
+      toggleFavorite: (id) => set((state) => ({
+        favorites: state.favorites.includes(id)
+          ? state.favorites.filter(f => f !== id)
+          : [...state.favorites, id]
+      })),
       toggleExpShare: () => set((state) => ({ expShareActive: !state.expShareActive })),
       recordBattleWin: () => set((state) => {
         let { battlesWon, nextIsBoss } = state.currentBattlePath;
@@ -466,7 +473,10 @@ export const useStore = create<GameStore>()(
         isFirstRun: true,
         currentScreen: 'START_SCREEN',
         settings: { audio: true, notifications: true },
-        expShareActive: false
+        expShareActive: false,
+        pendingEvolution: null,
+        pendingNewMove: null,
+        favorites: []
       }),
     }),
     {
