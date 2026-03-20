@@ -48,7 +48,7 @@ const MISSION_POOL = [
   { type: 'catch' as const, target: 3, description: 'Cattura 3 Pokémon', reward: { coins: 400, items: { potion: 2 } } },
   { type: 'battleWin' as const, target: 3, description: 'Vinci 3 battaglie', reward: { coins: 400 } },
   { type: 'battleWin' as const, target: 5, description: 'Vinci 5 battaglie', reward: { coins: 700, items: { superpotion: 1 } } },
-  { type: 'battleWin' as const, target: 1, description: 'Sconfiggi un Capopalestra', reward: { coins: 800, items: { rare_candy: 1 } } },
+  { type: 'defeatGym' as const, target: 1, description: 'Sconfiggi un Capopalestra', reward: { coins: 800, items: { rare_candy: 1 } } },
   { type: 'useItem' as const, target: 1, description: 'Usa una pozione', reward: { coins: 200 } },
   { type: 'useItem' as const, target: 3, description: 'Usa 3 oggetti curativi', reward: { coins: 350 } },
   { type: 'catchShiny' as const, target: 1, description: 'Cattura uno Shiny ✨', reward: { coins: 2000, items: { rare_candy: 2 } } },
@@ -355,7 +355,6 @@ export const useStore = create<GameStore>()(
       incrementStat: (key) => set((state) => {
         const missionUpdate =
           key === 'totalCaught' ? updateMissionProgress(state, 'catch') :
-          key === 'totalBattles' ? updateMissionProgress(state, 'battleWin') :
           key === 'shiniesFound' ? updateMissionProgress(state, 'catchShiny') :
           {};
         return {
@@ -544,6 +543,7 @@ export const useStore = create<GameStore>()(
             currentBattlePath: { battlesWon: 0, nextIsBoss: false },
             medals: newMedals,
             pendingMedalUnlock: nextMedal ? { ...nextMedal, isUnlocked: true } : null,
+            ...updateMissionProgress(state, 'defeatGym'),
           };
         }
       }),

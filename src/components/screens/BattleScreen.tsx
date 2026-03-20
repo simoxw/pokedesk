@@ -316,21 +316,85 @@ export default function BattleScreen() {
     const liveEnemy = enemyRef.current ?? enemy;
     if (!liveEnemy || liveEnemy.currentHp <= 0) return;
 
-    const validMoves = liveEnemy.moves.filter((m: any) => 
-      m.pp > 0 && (m.category !== 'status' || !!m.statusEffect) 
-    );
-    
-    // Costruisci pool pesato: mosse super efficaci 3x, normali 1x, non efficaci 0.5x 
-    const movePool: any[] = []; 
-    validMoves.forEach((m: any) => { 
-      const eff = BattleEngine.getTypeEffectiveness(m.type, currentPlayerPkmn.types); 
-      const weight = eff > 1 ? 3 : eff < 1 ? 1 : 2; 
-      for (let i = 0; i < weight; i++) movePool.push(m); 
-    }); 
-    
-    const enemyMove = movePool.length > 0 
-      ? movePool[Math.floor(Math.random() * movePool.length)] 
-      : { name: 'Lotta', type: 'normal', power: 40, category: 'physical', pp: 1, maxPp: 1, id: '0', accuracy: 100, priority: 0, description: '' };
+    const validMoves = liveEnemy.moves.filter((m: any) => m.pp > 0);
+
+    // Boss usa Superpozione se HP < 25% (30% probabilità)
+    if (isBoss && liveEnemy.currentHp / liveEnemy.maxHp < 0.25 && Math.random() < 0.30) {
+      const heal = Math.floor(liveEnemy.maxHp * 0.5);
+      const newHp = Math.min(liveEnemy.maxHp, liveEnemy.currentHp + heal);
+      setEnemy((prev: any) => {
+        const next = { ...prev, currentHp: newHp };
+        enemyRef.current = next;
+        return next;
+      });
+      addLog(`${liveEnemy.name} usa Superpozione! (+${heal} HP)`);
+      setTurn('player');
+      setIsAnimating(false);
+      return;
+    }
+
+    // AI priority list
+    let enemyMove: any;
+
+    // Priorità 1: mossa che fa KO
+    const effEnemyAtkTemp = {
+      ...liveEnemy,
+      stats: {
+        ...liveEnemy.stats,
+        attack: applyStage(liveEnemy.stats.attack, enemyStages.attack),
+        spAtk: applyStage(liveEnemy.stats.spAtk, enemyStages.spAtk),
+      }
+    };
+    const effPlayerDefTemp = {
+      ...currentPlayerPkmn,
+      stats: {
+        ...currentPlayerPkmn.stats,
+        defense: applyStage(currentPlayerPkmn.stats.defense, playerStages.defense),
+        spDef: applyStage(currentPlayerPkmn.stats.spDef, playerStages.spDef),
+      }
+    };
+
+    const koMove = validMoves.find((m: any) => {
+      if (m.category === 'status') return false;
+      const dmg = BattleEngine.calculateDamage(effEnemyAtkTemp as any, effPlayerDefTemp as any, m, false);
+      return dmg >= currentPlayerPkmn.currentHp;
+    });
+
+    if (koMove) {
+      enemyMove = koMove;
+    }
+    // Priorità 2: mossa superefficace
+    else {
+      const superEffective = validMoves.filter((m: any) =>
+        m.category !== 'status' &&
+        BattleEngine.getTypeEffectiveness(m.type, currentPlayerPkmn.types) >= 2
+      );
+
+      // Priorità 3: mossa di stato se player non ha status e nemico ha >50% HP
+      const statusMoves = validMoves.filter((m: any) =>
+        m.category === 'status' && m.statusEffect && !currentPlayerPkmn.status
+      );
+
+      if (superEffective.length > 0 && Math.random() < 0.75) {
+        // 75% chance di usare superefficace se disponibile
+        enemyMove = superEffective[Math.floor(Math.random() * superEffective.length)];
+      } else if (statusMoves.length > 0 && liveEnemy.currentHp / liveEnemy.maxHp > 0.5 && Math.random() < 0.40) {
+        // 40% chance di usare stato se nemico ha vita alta e player non ha status
+        enemyMove = statusMoves[Math.floor(Math.random() * statusMoves.length)];
+      } else {
+        // Priorità 4: random tra offensive
+        const offensiveMoves = validMoves.filter((m: any) => m.category !== 'status');
+        const pool = offensiveMoves.length > 0 ? offensiveMoves : validMoves;
+        enemyMove = pool[Math.floor(Math.random() * pool.length)];
+      }
+    }
+
+    // Fallback assoluto
+    if (!enemyMove) {
+      enemyMove = validMoves.length > 0
+        ? validMoves[Math.floor(Math.random() * validMoves.length)]
+        : { name: 'Lotta', type: 'normal', power: 40, category: 'physical', pp: 1, maxPp: 1, id: '0', accuracy: 100, priority: 0, description: '' };
+    }
 
     setEnemy(prev => {
       if (!prev) return prev;

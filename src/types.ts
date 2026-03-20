@@ -89,7 +89,7 @@ export interface Medal {
 export interface DailyMission {
   id: string;
   description: string;
-  type: 'catch' | 'battleWin' | 'useItem' | 'catchShiny';
+  type: 'catch' | 'battleWin' | 'defeatGym' | 'useItem' | 'catchShiny';
   target: number;
   current: number;
   completed: boolean;
