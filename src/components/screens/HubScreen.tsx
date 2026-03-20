@@ -227,16 +227,21 @@ export default function HubScreen() {
               consumeSafariCharge();
               setScreen('SAFARI_SCREEN');
             }}
-            className={`w-full p-6 rounded-3xl flex items-center justify-center gap-4 shadow-xl ${
+            className={`w-full p-4 rounded-3xl flex items-center justify-center gap-3 shadow-xl ${
               safariUnlocked
                 ? 'bg-[#1a3a1a] border border-green-800/40 text-white'
                 : 'bg-gray-800/60 border border-white/10 text-white/40'
             }`}
           >
-            {safariUnlocked ? <TreePine size={28} /> : <span className="text-2xl">🔒</span>}
-            <span className="text-2xl font-black">
-              {safariUnlocked ? 'ZONA SAFARI' : 'SAFARI (sblocca a 20 medaglie)'}
+            {safariUnlocked ? <TreePine size={24} /> : <span className="text-xl">🔒</span>}
+            <span className="text-lg font-black">
+              {safariUnlocked ? 'ZONA SAFARI' : 'SAFARI'}
             </span>
+            {!safariUnlocked && (
+              <span className="text-[10px] font-bold text-white/40 ml-1">
+                (20 medaglie)
+              </span>
+            )}
           </motion.button>
 
           <motion.button
