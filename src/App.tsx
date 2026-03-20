@@ -19,12 +19,14 @@ import TypeBadge from './components/ui/TypeBadge';
 import { useTickSystem } from './TickSystem';
 import { NotificationService } from './NotificationService';
 import { AnimatePresence, motion } from 'motion/react';
+import confetti from 'canvas-confetti';
 
 export default function App() {
   const { 
     currentScreen, 
     isFirstRun, 
     settings, 
+    pendingMedalUnlock,
     pendingEvolution, 
     pendingNewMove, 
     team, 
@@ -32,6 +34,7 @@ export default function App() {
     confirmEvolution, 
     dismissEvolution, 
     dismissNewMove, 
+    dismissMedalUnlock,
     replaceMove 
   } = useStore();
   const { getTimeToNextTick } = useTickSystem();
@@ -50,6 +53,17 @@ export default function App() {
     window.addEventListener('swUpdate', onUpdate);
     return () => window.removeEventListener('swUpdate', onUpdate);
   }, []);
+
+  useEffect(() => {
+    if (!pendingMedalUnlock) return;
+    confetti({
+      particleCount: 200,
+      spread: 120,
+      startVelocity: 50,
+      origin: { y: 0.4 },
+      colors: ['#f59e0b', '#f43f5e', '#22d3ee', '#a855f7', '#34d399']
+    });
+  }, [pendingMedalUnlock]);
 
   const renderScreen = () => {
     switch (currentScreen) {
@@ -212,6 +226,40 @@ export default function App() {
             </motion.div>
           );
         })()}
+      </AnimatePresence>
+
+      {/* Modale Medaglia Sbloccata */}
+      <AnimatePresence>
+        {pendingMedalUnlock && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-[100] flex items-center justify-center bg-black/80 p-6 backdrop-blur-sm"
+          >
+            <motion.div
+              initial={{ scale: 0.5, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.8, opacity: 0 }}
+              transition={{ type: 'spring', stiffness: 500, damping: 30 }}
+              className="w-full max-w-sm rounded-3xl bg-gradient-to-b from-slate-900 to-indigo-950 p-6 text-center shadow-2xl border border-white/10"
+            >
+              <div className="text-6xl mb-4">🏆</div>
+              <h2 className="text-2xl font-bold text-white mb-2">Medaglia conquistata!</h2>
+              <p className="text-sm text-white/70 mb-5">{pendingMedalUnlock.name}</p>
+              <div className="flex justify-center gap-2 mb-6">
+                <TypeBadge type={pendingMedalUnlock.type as any} small />
+                <span className="text-xs text-white/70">#{pendingMedalUnlock.id + 1}</span>
+              </div>
+              <button
+                onClick={dismissMedalUnlock}
+                className="w-full rounded-xl bg-emerald-500 py-3 font-bold text-slate-900 hover:bg-emerald-400 transition-colors"
+              >
+                RITIRA
+              </button>
+            </motion.div>
+          </motion.div>
+        )}
       </AnimatePresence>
 
       {updateAvailable && (

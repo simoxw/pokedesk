@@ -118,6 +118,7 @@ export interface GameState {
     notifications: boolean;
   };
   expShareActive: boolean;
+  pendingMedalUnlock: Medal | null;
   pendingEvolution: {
     pokemonId: string;
     newPokemonId: number;

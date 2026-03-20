@@ -32,6 +32,7 @@ interface GameStore extends GameState {
   confirmEvolution: () => void;
   dismissEvolution: () => void;
   dismissNewMove: () => void;
+  dismissMedalUnlock: () => void;
   replaceMove: (pokemonId: string, oldMoveId: string, newMove: Move) => void;
   updateSettings: (settings: Partial<GameState['settings']>) => void;
   toggleFavorite: (id: string) => void;
@@ -64,6 +65,7 @@ export const useStore = create<GameStore>()(
       stats: { totalCaught: 0, totalBattles: 0, shiniesFound: 0, pokemonReleased: 0 },
       settings: { audio: true, notifications: true },
       expShareActive: false,
+      pendingMedalUnlock: null,
       pendingEvolution: null,
       pendingNewMove: null,
       favorites: [],
@@ -411,6 +413,7 @@ export const useStore = create<GameStore>()(
       }), 
       dismissEvolution: () => set({ pendingEvolution: null }),
       dismissNewMove: () => set({ pendingNewMove: null }),
+      dismissMedalUnlock: () => set({ pendingMedalUnlock: null }),
       replaceMove: (pokemonId, oldMoveId, newMove) => set((state) => {
         const updatePkmn = (p: Pokemon) => {
           if (p.id !== pokemonId) return p;
@@ -452,7 +455,8 @@ export const useStore = create<GameStore>()(
           }
           return {
             currentBattlePath: { battlesWon: 0, nextIsBoss: false },
-            medals: newMedals
+            medals: newMedals,
+            pendingMedalUnlock: nextMedal ? { ...nextMedal, isUnlocked: true } : null,
           };
         }
       }),

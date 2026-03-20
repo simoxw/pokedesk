@@ -31,6 +31,7 @@ export default function BattleScreen() {
   const [enemy2, setEnemy2] = useState<any>(null); 
   const [enemy3, setEnemy3] = useState<any>(null);
   const [activeMoveTooltip, setActiveMoveTooltip] = useState<any>(null);
+  const [lastEnemyMove, setLastEnemyMove] = useState<{ name: string; type: string } | null>(null);
   const tooltipTimeout = React.useRef<any>(null);
   const longPressActive = React.useRef(false);
   const enemyRef = React.useRef<any>(null);
@@ -80,6 +81,7 @@ export default function BattleScreen() {
   useEffect(() => {
     const initBattle = async () => {
       setLoading(true);
+      setLastEnemyMove(null);
       try {
         setLogs(['Inizia la battaglia!']);
         // Gen sbloccate progressivamente con le medaglie 
@@ -242,6 +244,7 @@ export default function BattleScreen() {
 
     if (isBoss && enemyPhase === 1 && enemy2) { 
       addLog(`⚔️ Il Capopalestra lancia il secondo Pokémon!`); 
+      setLastEnemyMove(null);
       setEnemyPhase(2); 
       setEnemy(enemy2); 
       enemyRef.current = enemy2; 
@@ -254,6 +257,7 @@ export default function BattleScreen() {
 
     if (isBoss && enemyPhase === 2 && enemy3) {
       addLog(`⚔️ Il Capopalestra lancia il terzo Pokémon!`);
+      setLastEnemyMove(null);
       setEnemyPhase(3);
       setEnemy(enemy3);
       enemyRef.current = enemy3;
@@ -411,6 +415,7 @@ export default function BattleScreen() {
       }
     };
     const enemyDamage = BattleEngine.calculateDamage(effEnemyAtk as any, effPlayerDef as any, enemyMove, false);
+    setLastEnemyMove({ name: enemyMove.name, type: enemyMove.type });
     addLog(`${liveEnemy.name} usa ${enemyMove.name}!${enemyDamage > 0 ? ` (${enemyDamage} danni)` : ''}`);
     const typeMultiplier = BattleEngine.getTypeEffectiveness(enemyMove.type, currentPlayerPkmn.types);
     const effLabel = BattleEngine.getTypeEffectivenessLabel(typeMultiplier);
@@ -1113,12 +1118,20 @@ export default function BattleScreen() {
             </div>
           </div>
 
-          <motion.img
-            animate={{ y: [0, -6, 0] }}
-            transition={{ duration: 2, repeat: Infinity }}
-            src={enemy?.sprites?.front_default}
-            className="w-48 h-48 object-contain drop-shadow-2xl"
-          />
+          <div className="relative">
+            <motion.img
+              animate={{ y: [0, -6, 0] }}
+              transition={{ duration: 2, repeat: Infinity }}
+              src={enemy?.sprites?.front_default}
+              className="w-48 h-48 object-contain drop-shadow-2xl"
+            />
+            {lastEnemyMove && (
+              <div className="absolute top-full left-1/2 mt-1 -translate-x-1/2 flex items-center gap-1 bg-black/60 rounded-full px-2 py-0.5 whitespace-nowrap">
+                <TypeBadge type={lastEnemyMove.type as any} small />
+                <span className="text-[9px] text-white/70 font-bold">{lastEnemyMove.name}</span>
+              </div>
+            )}
+          </div>
         </div>
 
         {/* Player Pokemon Area */}
@@ -1182,9 +1195,19 @@ export default function BattleScreen() {
         
         {/* Log */}
         <div className="bg-[#1a1a2e] rounded-xl px-4 py-2 min-h-[44px] flex flex-col justify-center gap-0.5">
-          <p className="text-sm font-bold text-white/80 leading-tight">{logs[0]}</p>
+          <p className={`text-sm font-bold leading-tight ${
+            logs[0]?.includes('superefficace') ? 'text-green-400' :
+            logs[0]?.includes('poco efficace') ? 'text-orange-400' :
+            logs[0]?.includes('Non ha effetto') ? 'text-purple-400' :
+            'text-white/80'
+          }`}>{logs[0]}</p>
           {logs[1] && (
-            <p className="text-xs text-white/40 leading-tight">{logs[1]}</p>
+            <p className={`text-xs leading-tight ${
+              logs[1]?.includes('superefficace') ? 'text-green-400' :
+              logs[1]?.includes('poco efficace') ? 'text-orange-400' :
+              logs[1]?.includes('Non ha effetto') ? 'text-purple-400' :
+              'text-white/40'
+            }`}>{logs[1]}</p>
           )}
         </div>
 
