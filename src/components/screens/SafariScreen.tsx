@@ -6,11 +6,13 @@ import { BattleEngine } from '../../BattleEngine';
 import { motion, AnimatePresence } from 'motion/react';
 import { Sparkles, ArrowLeft } from 'lucide-react';
 import confetti from 'canvas-confetti';
+import { pickRarityTier, getRandomIdByRarity, RARITY, RarityTier } from '../../rarityTable';
 
 export default function SafariScreen() {
   const { consumeSafariCharge, addPokemon, setScreen, medals, team, incrementStat, addItem, inventory, updatePokedex } = useStore();
   const medalsCount = medals.filter(m => m.isUnlocked).length;
   const [pokemon, setPokemon] = useState<any>(null);
+  const [currentRarity, setCurrentRarity] = useState<RarityTier>('common');
   const [loading, setLoading] = useState(true);
   const [isShiny, setIsShiny] = useState(false);
   const [ballType, setBallType] = useState('pokeball');
@@ -39,10 +41,19 @@ export default function SafariScreen() {
         const avgLevel = team.length > 0 ? team.reduce((acc, p) => acc + p.level, 0) / team.length : 5;
         const level = Math.max(5, Math.floor(avgLevel + (Math.random() * 10 - 5)));
 
-        const getRandomPokemonId = (): number => {
-          const gen7Unlocked = medalsCount >= 25;
-          const gen8Unlocked = medalsCount >= 30;
+        const rarityTier = pickRarityTier();
+        setCurrentRarity(rarityTier);
 
+        const gen7Unlocked = medalsCount >= 25;
+        const gen8Unlocked = medalsCount >= 30;
+
+        const unlockedGens = [6];
+        if (gen7Unlocked) unlockedGens.push(7);
+        if (gen8Unlocked) unlockedGens.push(8);
+
+        const idFromRarity = getRandomIdByRarity(unlockedGens, rarityTier);
+
+        const getRandomPokemonId = (): number => {
           if (gen8Unlocked) {
             // 33% Gen6, 33% Gen7, 34% Gen8
             const roll = Math.random();
@@ -60,7 +71,7 @@ export default function SafariScreen() {
           }
         };
 
-        const id = getRandomPokemonId();
+        const id = idFromRarity ?? getRandomPokemonId();
 
         const data = await api.getPokemon(id);
         const species = await api.getSpecies(id);
@@ -268,6 +279,11 @@ export default function SafariScreen() {
           <h2 className="text-3xl font-black drop-shadow-lg text-emerald-400">
             {api.getItalianName(pokemon.species.names)}
           </h2>
+          {RARITY[currentRarity].label && (
+            <p className={`text-xs font-black uppercase tracking-widest mt-1 ${RARITY[currentRarity].color}`}>
+              {RARITY[currentRarity].label}
+            </p>
+          )}
           <p className="text-emerald-400/50 text-xs font-bold uppercase tracking-widest">Zona Safari</p>
           <p className="font-bold opacity-70">Lv. {pokemon.level}</p>
         </div>

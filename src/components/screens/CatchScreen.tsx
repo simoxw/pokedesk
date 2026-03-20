@@ -6,11 +6,13 @@ import { BattleEngine } from '../../BattleEngine';
 import { motion, AnimatePresence } from 'motion/react';
 import { Zap, Sparkles, X, ArrowLeft } from 'lucide-react';
 import confetti from 'canvas-confetti';
+import { pickRarityTier, getRandomIdByRarity, RARITY, RarityTier } from '../../rarityTable';
 
 export default function CatchScreen() {
   const { consumeCharge, addPokemon, setScreen, medals, team, incrementStat, addItem, inventory, updatePokedex } = useStore();
   const medalsCount = medals.filter(m => m.isUnlocked).length;
   const [pokemon, setPokemon] = useState<any>(null);
+  const [currentRarity, setCurrentRarity] = useState<RarityTier>('common');
   const [loading, setLoading] = useState(true);
   const [isShiny, setIsShiny] = useState(false);
   const [ballType, setBallType] = useState('pokeball');
@@ -40,28 +42,17 @@ export default function CatchScreen() {
         const avgLevel = team.length > 0 ? team.reduce((acc, p) => acc + p.level, 0) / team.length : 5;
         const level = Math.max(5, Math.floor(avgLevel + (Math.random() * 10 - 5)));
         
-        // Gen sbloccate progressivamente con le medaglie 
-        const getRandomPokemonId = (medals: number): number => {
-          const ranges: Array<{min: number, max: number, weight: number}> = [
-            { min: 1,   max: 151, weight: 30 },  // Gen 1
-          ];
-          if (medals >= 1)  ranges.push({ min: 152, max: 251, weight: 25 }); // Gen 2
-          if (medals >= 5)  ranges.push({ min: 252, max: 386, weight: 22 }); // Gen 3
-          if (medals >= 10) ranges.push({ min: 387, max: 493, weight: 18 }); // Gen 4
-          if (medals >= 20) ranges.push({ min: 494, max: 649, weight: 15 }); // Gen 5
+        // Gen sbloccate progressivamente con le medaglie
+        const unlockedGens: number[] = [1];
+        if (medalsCount >= 1) unlockedGens.push(2);
+        if (medalsCount >= 5) unlockedGens.push(3);
+        if (medalsCount >= 10) unlockedGens.push(4);
+        if (medalsCount >= 20) unlockedGens.push(5);
 
-          const totalWeight = ranges.reduce((sum, r) => sum + r.weight, 0);
-          let roll = Math.random() * totalWeight;
-          for (const range of ranges) {
-            roll -= range.weight;
-            if (roll <= 0) {
-              return Math.floor(Math.random() * (range.max - range.min + 1)) + range.min;
-            }
-          }
-          return Math.floor(Math.random() * 151) + 1; // fallback Gen 1
-        }; 
-        
-        const id = getRandomPokemonId(medalsCount); 
+        const rarityTier = pickRarityTier();
+        const id = getRandomIdByRarity(unlockedGens, rarityTier) ?? Math.floor(Math.random() * 151) + 1;
+        setCurrentRarity(rarityTier);
+
                   
         const data = await api.getPokemon(id);
         const species = await api.getSpecies(id);
@@ -268,6 +259,11 @@ export default function CatchScreen() {
       <div className="flex-1 flex flex-col items-center justify-center relative z-10">
         <div className="text-center mb-12">
           <h2 className="text-3xl font-black drop-shadow-lg">{api.getItalianName(pokemon.species.names)}</h2>
+          {RARITY[currentRarity].label && (
+            <p className={`text-xs font-black uppercase tracking-widest mt-1 ${RARITY[currentRarity].color}`}>
+              {RARITY[currentRarity].label}
+            </p>
+          )}
           <p className="font-bold opacity-70">Lv. {pokemon.level}</p>
         </div>
 
