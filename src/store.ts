@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
-import { GameState, Pokemon, ScreenName, Medal, Item, Move } from './types';
+import { GameState, Pokemon, ScreenName, Medal, Item, Move, DailyMission } from './types';
 import { api } from './api';
 import { BattleEngine } from './BattleEngine';
 
@@ -38,6 +38,52 @@ interface GameStore extends GameState {
   toggleFavorite: (id: string) => void;
   recordBattleWin: () => void;
   toggleExpShare: () => void;
+  checkDailyMissions: () => void;
+  claimMission: (id: string) => void;
+}
+
+const MISSION_POOL = [
+  { type: 'catch' as const, target: 2, description: 'Cattura 2 Pokémon', reward: { coins: 300 } },
+  { type: 'catch' as const, target: 5, description: 'Cattura 5 Pokémon', reward: { coins: 600, items: { pokeball: 3 } } },
+  { type: 'catch' as const, target: 3, description: 'Cattura 3 Pokémon', reward: { coins: 400, items: { potion: 2 } } },
+  { type: 'battleWin' as const, target: 3, description: 'Vinci 3 battaglie', reward: { coins: 400 } },
+  { type: 'battleWin' as const, target: 5, description: 'Vinci 5 battaglie', reward: { coins: 700, items: { superpotion: 1 } } },
+  { type: 'battleWin' as const, target: 1, description: 'Sconfiggi un Capopalestra', reward: { coins: 800, items: { rare_candy: 1 } } },
+  { type: 'useItem' as const, target: 1, description: 'Usa una pozione', reward: { coins: 200 } },
+  { type: 'useItem' as const, target: 3, description: 'Usa 3 oggetti curativi', reward: { coins: 350 } },
+  { type: 'catchShiny' as const, target: 1, description: 'Cattura uno Shiny ✨', reward: { coins: 2000, items: { rare_candy: 2 } } },
+];
+
+function generateDailyMissions(): { date: string; missions: DailyMission[] } {
+  const today = new Date().toISOString().split('T')[0];
+  const shuffled = [...MISSION_POOL].sort(() => Math.random() - 0.5);
+  return {
+    date: today,
+    missions: shuffled.slice(0, 3).map((m, i) => ({
+      ...m,
+      id: `mission_${i}`,
+      current: 0,
+      completed: false,
+      claimed: false,
+    }))
+  };
+}
+
+function updateMissionProgress(
+  state: GameState,
+  type: DailyMission['type']
+): Partial<GameState> {
+  if (!state.dailyMissions) return {};
+  const today = new Date().toISOString().split('T')[0];
+  if (state.dailyMissions.date !== today) return {};
+  const updated = state.dailyMissions.missions.map(m => {
+    if (m.type === type && !m.completed) {
+      const newCurrent = m.current + 1;
+      return { ...m, current: newCurrent, completed: newCurrent >= m.target };
+    }
+    return m;
+  });
+  return { dailyMissions: { ...state.dailyMissions, missions: updated } };
 }
 
 const INITIAL_MEDALS: Medal[] = Array.from({ length: 40 }, (_, i) => ({
@@ -70,6 +116,7 @@ export const useStore = create<GameStore>()(
       pendingNewMove: null,
       favorites: [],
       isFirstRun: true,
+      dailyMissions: null,
       currentScreen: 'START_SCREEN',
 
       setScreen: (screen) => set({ currentScreen: screen }),
@@ -278,9 +325,14 @@ export const useStore = create<GameStore>()(
       addItem: (itemId, amount) => set((state) => ({
         inventory: { ...state.inventory, [itemId]: (state.inventory[itemId] || 0) + amount }
       })),
-      useItem: (itemId) => set((state) => ({
-        inventory: { ...state.inventory, [itemId]: Math.max(0, (state.inventory[itemId] || 0) - 1) }
-      })),
+      useItem: (itemId) => set((state) => {
+        const isHeal = ['potion', 'superpotion', 'hyperpotion', 'full_heal'].includes(itemId);
+        const missionUpdate = isHeal ? updateMissionProgress(state, 'useItem') : {};
+        return {
+          inventory: { ...state.inventory, [itemId]: Math.max(0, (state.inventory[itemId] || 0) - 1) },
+          ...missionUpdate
+        };
+      }),
       unlockMedal: (id) => set((state) => ({
         medals: state.medals.map(m => m.id === id ? { ...m, isUnlocked: true } : m)
       })),
@@ -300,7 +352,17 @@ export const useStore = create<GameStore>()(
       updatePokedex: (id, status) => set((state) => ({
         pokedex: { ...state.pokedex, [id]: status === 'caught' ? 'caught' : (state.pokedex[id] === 'caught' ? 'caught' : 'seen') }
       })),
-      incrementStat: (key) => set((state) => ({ stats: { ...state.stats, [key]: state.stats[key] + 1 } })),
+      incrementStat: (key) => set((state) => {
+        const missionUpdate =
+          key === 'totalCaught' ? updateMissionProgress(state, 'catch') :
+          key === 'totalBattles' ? updateMissionProgress(state, 'battleWin') :
+          key === 'shiniesFound' ? updateMissionProgress(state, 'catchShiny') :
+          {};
+        return {
+          stats: { ...state.stats, [key]: state.stats[key] + 1 },
+          ...missionUpdate
+        };
+      }),
       gainExp: (id, amount) => set((state) => {
         const expTable: Record<string, (lvl: number) => number> = {
           'slow': (l) => Math.floor(5 * l ** 3 / 4),
@@ -439,6 +501,31 @@ export const useStore = create<GameStore>()(
           : [...state.favorites, id]
       })),
       toggleExpShare: () => set((state) => ({ expShareActive: !state.expShareActive })),
+      checkDailyMissions: () => set((state) => {
+        const today = new Date().toISOString().split('T')[0];
+        if (state.dailyMissions?.date === today) return {};
+        return { dailyMissions: generateDailyMissions() };
+      }),
+      claimMission: (id) => set((state) => {
+        if (!state.dailyMissions) return {};
+        const mission = state.dailyMissions.missions.find(m => m.id === id);
+        if (!mission || !mission.completed || mission.claimed) return {};
+        const { coins = 0, items = {} } = mission.reward;
+        const newInventory = { ...state.inventory };
+        for (const [itemId, amount] of Object.entries(items)) {
+          newInventory[itemId] = (newInventory[itemId] || 0) + amount;
+        }
+        return {
+          coins: state.coins + coins,
+          inventory: newInventory,
+          dailyMissions: {
+            ...state.dailyMissions,
+            missions: state.dailyMissions.missions.map(m =>
+              m.id === id ? { ...m, claimed: true } : m
+            )
+          }
+        };
+      }),
       recordBattleWin: () => set((state) => {
         let { battlesWon, nextIsBoss } = state.currentBattlePath;
         if (!nextIsBoss) {
@@ -475,6 +562,7 @@ export const useStore = create<GameStore>()(
         pokedex: {},
         stats: { totalCaught: 0, totalBattles: 0, shiniesFound: 0, pokemonReleased: 0 },
         isFirstRun: true,
+        dailyMissions: null,
         currentScreen: 'START_SCREEN',
         settings: { audio: true, notifications: true },
         expShareActive: false,

@@ -86,6 +86,17 @@ export interface Medal {
   isUnlocked: boolean;
 }
 
+export interface DailyMission {
+  id: string;
+  description: string;
+  type: 'catch' | 'battleWin' | 'useItem' | 'catchShiny';
+  target: number;
+  current: number;
+  completed: boolean;
+  claimed: boolean;
+  reward: { coins?: number; items?: Record<string, number> };
+}
+
 export interface GameState {
   player: {
     name: string;
@@ -132,6 +143,10 @@ export interface GameState {
   } | null;
   favorites: string[];
   isFirstRun: boolean;
+  dailyMissions: {
+    date: string;
+    missions: DailyMission[];
+  } | null;
   currentScreen: ScreenName;
 }
 

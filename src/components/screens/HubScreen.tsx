@@ -1,8 +1,8 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useStore } from '../../store';
 import { api } from '../../api';
-import { motion } from 'motion/react';
-import { Zap, Target, Sword, TreePine } from 'lucide-react';
+import { motion, AnimatePresence } from 'motion/react';
+import { Zap, Target, Sword, TreePine, X } from 'lucide-react';
 
 export default function HubScreen() {
   const { 
@@ -16,8 +16,13 @@ export default function HubScreen() {
     medals, 
     currentBattlePath,
     lastTickTimestamp, 
-    lastSafariTickTimestamp 
+    lastSafariTickTimestamp,
+    dailyMissions,
+    checkDailyMissions,
+    claimMission
   } = useStore();
+
+  const [showMissions, setShowMissions] = useState(false);
 
   const getTimeToNextTick = () => {
     if (charges >= 6) return 0;
@@ -32,6 +37,7 @@ export default function HubScreen() {
   };
 
   useEffect(() => {
+    checkDailyMissions();
     const fixMoves = async () => {
       for (const pokemon of team) {
         if (pokemon.moves.length === 0) {
@@ -91,10 +97,10 @@ export default function HubScreen() {
           <motion.div
             animate={{ scale: [1, 1.05, 1] }}
             transition={{ duration: 2, repeat: Infinity }}
-            className="text-5xl font-black text-white flex items-center justify-center gap-2"
+            className="text-4xl font-black text-white flex items-center justify-center gap-2"
           >
             {charges}<span className="text-[#e63946]">/6</span>
-            <Zap className="text-yellow-400 fill-yellow-400" size={28} />
+            <Zap className="text-yellow-400 fill-yellow-400" size={22} />
           </motion.div>
           <p className="text-white/50 font-mono mt-2 text-xs">
             {charges >= 6
@@ -178,6 +184,22 @@ export default function HubScreen() {
           </div>
         )}
 
+        <button
+          onClick={() => setShowMissions(true)}
+          className="w-full max-w-sm bg-[#1a1a2e]/60 border border-white/5 rounded-2xl px-4 py-3 flex items-center justify-between"
+        >
+          <div className="flex items-center gap-2">
+            <span>📋</span>
+            <span className="text-sm font-bold">Missioni giornaliere</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <span className="text-xs text-white/40">
+              {dailyMissions?.missions.filter(m => m.claimed).length ?? 0}/3
+            </span>
+            <span className="text-white/30 text-xs">→</span>
+          </div>
+        </button>
+
         <div className="flex flex-col gap-4 w-full max-w-xs">
           <motion.button
             whileHover={{ scale: 1.05 }}
@@ -228,6 +250,87 @@ export default function HubScreen() {
           </motion.button>
         </div>
       </div>
+
+      {/* Bottom-sheet Missioni */}
+      <AnimatePresence>
+        {showMissions && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex flex-col justify-end"
+            onClick={() => setShowMissions(false)}
+          >
+            <motion.div
+              initial={{ y: '100%' }}
+              animate={{ y: 0 }}
+              exit={{ y: '100%' }}
+              className="bg-[#1a1a2e] rounded-t-3xl p-6 space-y-4"
+              onClick={e => e.stopPropagation()}
+            >
+              <div className="flex items-center justify-between mb-2">
+                <h3 className="font-black text-lg">MISSIONI GIORNALIERE</h3>
+                <button onClick={() => setShowMissions(false)} className="p-2 bg-white/10 rounded-xl">
+                  <X size={18} />
+                </button>
+              </div>
+
+              {(dailyMissions?.missions ?? []).map(mission => (
+                <div
+                  key={mission.id}
+                  className={`bg-[#0f0f1a] rounded-2xl p-4 border transition-all ${
+                    mission.claimed
+                      ? 'border-white/5 opacity-50'
+                      : mission.completed
+                      ? 'border-yellow-500/40 bg-yellow-500/5'
+                      : 'border-white/5'
+                  }`}
+                >
+                  <div className="flex items-center justify-between mb-2">
+                    <span className="text-sm font-bold">{mission.description}</span>
+                    <span className="text-xs text-white/40">
+                      {Math.min(mission.current, mission.target)}/{mission.target}
+                    </span>
+                  </div>
+                  <div className="w-full bg-white/10 rounded-full h-1.5 mb-2">
+                    <div
+                      className={`h-1.5 rounded-full transition-all ${
+                        mission.completed ? 'bg-yellow-400' : 'bg-[#e63946]'
+                      }`}
+                      style={{ width: `${Math.min(100, (mission.current / mission.target) * 100)}%` }}
+                    />
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <p className="text-[10px] text-yellow-400">
+                      🎁 {mission.reward.coins ? `${mission.reward.coins}¢` : ''}
+                      {mission.reward.items
+                        ? ' + ' + Object.entries(mission.reward.items)
+                            .map(([k, v]) => `${v}x ${k}`)
+                            .join(', ')
+                        : ''}
+                    </p>
+                    {mission.completed && !mission.claimed && (
+                      <button
+                        onClick={() => claimMission(mission.id)}
+                        className="px-3 py-1 bg-yellow-500 text-black text-xs font-black rounded-xl"
+                      >
+                        RITIRA
+                      </button>
+                    )}
+                    {mission.claimed && (
+                      <span className="text-[10px] text-white/30 font-bold">✓ ritirato</span>
+                    )}
+                  </div>
+                </div>
+              ))}
+
+              <p className="text-[10px] text-white/30 text-center italic">
+                Le missioni si rinnovano ogni giorno
+              </p>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }

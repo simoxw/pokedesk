@@ -25,18 +25,29 @@ const SHOP_ITEMS = [
 export default function ShopScreen() {
   const { coins, inventory, setScreen, addCoins, addItem, medals } = useStore();
   const medalsCount = medals.filter(m => m.isUnlocked).length;
+  const [toast, setToast] = React.useState<string | null>(null);
+  const showToast = (msg: string) => {
+    setToast(msg);
+    setTimeout(() => setToast(null), 1000);
+  };
 
   const handleBuy = (item: any) => {
     if (coins >= item.cost) {
       addCoins(-item.cost);
       addItem(item.id, 1);
+      showToast(`+1 ${item.name}`);
     } else {
       alert("Monete insufficienti!");
     }
   };
 
   return (
-    <div className="h-full flex flex-col p-6 bg-[#0f0f1a]">
+    <div className="h-full flex flex-col p-6 bg-[#0f0f1a] relative">
+      {toast && (
+        <div className="absolute top-4 left-1/2 -translate-x-1/2 z-50 bg-green-500 text-black font-black text-sm px-4 py-2 rounded-2xl shadow-lg animate-pulse">
+          {toast}
+        </div>
+      )}
       <header className="flex items-center justify-between mb-8">
         <div className="flex items-center gap-4">
           <button onClick={() => setScreen('HUB_SCREEN')} className="p-2 bg-[#1a1a2e] rounded-xl">
