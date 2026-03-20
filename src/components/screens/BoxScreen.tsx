@@ -21,7 +21,8 @@ export default function BoxScreen() {
   const [selectedPkmn, setSelectedPkmn] = useState<any>(null); 
   const [showDetails, setShowDetails] = useState(false); 
   const [multiSelectMode, setMultiSelectMode] = useState(false); 
-  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set()); 
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid'); 
 
   const toggleSelect = (id: string) => { 
     setSelectedIds(prev => { 
@@ -58,7 +59,7 @@ export default function BoxScreen() {
       return a.pokemonId - b.pokemonId; // number 
     }); 
     return result; 
-  }, [box, search, filterType, sortBy]); 
+  }, [box, search, filterType, sortBy, showFavoritesOnly, favorites]); 
 
   const totalBoxes = Math.max(1, Math.ceil(filtered.length / BOX_SIZE)); 
   const currentBoxPkmn = filtered.slice(currentBox * BOX_SIZE, (currentBox + 1) * BOX_SIZE); 
@@ -79,7 +80,7 @@ export default function BoxScreen() {
           <button onClick={() => setScreen('HUB_SCREEN')} className="p-2 bg-[#1a1a2e] rounded-xl"> 
             <ArrowLeft size={20} /> 
           </button> 
-          <h2 className="text-xl font-black uppercase flex-1">PC di Bill</h2> 
+          <h2 className="text-xl font-black uppercase flex-1">PC</h2> 
           <span className="text-xs text-white/30 font-bold">{box.length} PKM</span> 
           <button 
             onClick={() => { 
@@ -95,6 +96,22 @@ export default function BoxScreen() {
           className={`p-2 rounded-xl border transition-all text-lg ${showFavoritesOnly ? 'bg-yellow-500/20 border-yellow-500/50 text-yellow-400' : 'bg-[#1a1a2e] border-white/10 text-white/40'}`}
         >
           ★
+        </button>
+        <button
+          onClick={() => setViewMode(v => v === 'grid' ? 'list' : 'grid')}
+          className={`p-2 rounded-xl border transition-all ${viewMode === 'list' ? 'bg-[#e63946] border-[#e63946]' : 'bg-[#1a1a2e] border-white/10'}`}
+        >
+          {viewMode === 'grid' ? (
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/>
+              <line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/>
+            </svg>
+          ) : (
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/>
+              <rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/>
+            </svg>
+          )}
         </button>
         <button 
           onClick={() => setShowFilters(!showFilters)} 
@@ -200,58 +217,112 @@ export default function BoxScreen() {
 
       {/* Griglia 5x6 */} 
       <div className="flex-1 overflow-y-auto px-3 py-3 no-scrollbar"> 
-        {box.length === 0 ? ( 
-          <div className="flex flex-col items-center justify-center h-full text-white/20 gap-3"> 
-            <span className="text-5xl">📦</span> 
-            <p className="font-bold text-sm">Il box è vuoto</p> 
-          </div> 
-        ) : ( 
-          <div className="grid grid-cols-5 gap-2"> 
-            {currentBoxPkmn.map(pkmn => ( 
-               <button 
-                 key={pkmn.id} 
-                 onClick={() => multiSelectMode ? toggleSelect(pkmn.id) : setSelectedPkmn(pkmn)} 
-                 className={`aspect-square bg-[#1a1a2e] rounded-xl border flex flex-col items-center justify-center relative overflow-hidden transition-all p-1 ${ 
-                   multiSelectMode && selectedIds.has(pkmn.id) 
-                     ? 'border-[#e63946] bg-[#e63946]/20' 
-                     : 'border-white/5 active:border-[#e63946]' 
-                 }`} 
-               > 
-                 {multiSelectMode && ( 
-                   <div className="absolute top-0.5 left-0.5 z-10"> 
-                     {selectedIds.has(pkmn.id) 
-                       ? <CheckSquare size={10} className="text-[#e63946]" /> 
-                       : <Square size={10} className="text-white/20" />} 
-                   </div> 
-                 )} 
-                 {pkmn.isShiny && ( 
-                   <span className="absolute top-0.5 right-0.5 text-yellow-400"> 
-                     <Sparkles size={8} /> 
-                   </span> 
-                 )} 
-                 {favorites.includes(pkmn.id) && (
-                   <span className="absolute top-0.5 left-0.5 text-yellow-400 text-[9px] leading-none">★</span>
-                 )}
-                 <span className="absolute top-0.5 left-1 text-[7px] font-mono text-white/20"> 
-                   {String(pkmn.pokemonId).padStart(3,'0')} 
-                 </span> 
-                 <img 
-                   src={`https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/${pkmn.isShiny ? 'shiny/' : ''}${pkmn.pokemonId}.png`} 
-                   className="w-full h-full object-contain" 
-                 /> 
-                 <span className="absolute bottom-0 left-0 right-0 text-center text-[8px] font-bold text-white/50 bg-black/30 pb-0.5"> 
-                   Lv.{pkmn.level} 
-                 </span> 
-               </button> 
-            ))} 
-            {/* Slot vuoti */} 
-            {Array.from({ length: emptySlots }).map((_, i) => ( 
-              <div 
-                key={`empty-${i}`} 
-                className="aspect-square bg-[#111122] rounded-xl border border-white/5 border-dashed opacity-30" 
-              /> 
-            ))} 
-          </div> 
+        {box.length === 0 ? (
+          <div className="flex flex-col items-center justify-center h-full text-white/20 gap-3">
+            <span className="text-5xl">📦</span>
+            <p className="font-bold text-sm">Il box è vuoto</p>
+          </div>
+        ) : viewMode === 'grid' ? (
+          <div className="grid grid-cols-5 gap-2">
+            {currentBoxPkmn.map(pkmn => (
+              <button
+                key={pkmn.id}
+                onClick={() => multiSelectMode ? toggleSelect(pkmn.id) : setSelectedPkmn(pkmn)}
+                className={`aspect-square bg-[#1a1a2e] rounded-xl border flex flex-col items-center justify-center relative overflow-hidden transition-all p-1 ${
+                  multiSelectMode && selectedIds.has(pkmn.id)
+                    ? 'border-[#e63946] bg-[#e63946]/20'
+                    : 'border-white/5 active:border-[#e63946]'
+                }`}
+              >
+                {multiSelectMode && (
+                  <div className="absolute top-0.5 left-0.5 z-10">
+                    {selectedIds.has(pkmn.id)
+                      ? <CheckSquare size={10} className="text-[#e63946]" />
+                      : <Square size={10} className="text-white/20" />}
+                  </div>
+                )}
+                {pkmn.isShiny && (
+                  <span className="absolute top-0.5 right-0.5 text-yellow-400">
+                    <Sparkles size={8} />
+                  </span>
+                )}
+                {favorites.includes(pkmn.id) && (
+                  <span className="absolute top-0.5 left-0.5 text-yellow-400 text-[9px] leading-none">★</span>
+                )}
+                <span className="absolute top-0.5 left-1 text-[7px] font-mono text-white/20">
+                  {String(pkmn.pokemonId).padStart(3,'0')}
+                </span>
+                <img
+                  src={`https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/${pkmn.isShiny ? 'shiny/' : ''}${pkmn.pokemonId}.png`}
+                  className="w-full h-full object-contain"
+                />
+                <span className="absolute bottom-0 left-0 right-0 text-center text-[8px] font-bold text-white/50 bg-black/30 pb-0.5">
+                  Lv.{pkmn.level}
+                </span>
+              </button>
+            ))}
+            {Array.from({ length: emptySlots }).map((_, i) => (
+              <div
+                key={`empty-${i}`}
+                className="aspect-square bg-[#111122] rounded-xl border border-white/5 border-dashed opacity-30"
+              />
+            ))}
+          </div>
+        ) : (
+          <div className="flex flex-col gap-2">
+            {currentBoxPkmn.map(pkmn => {
+              const ivTotal = pkmn.ivs.hp + pkmn.ivs.attack + pkmn.ivs.defense + pkmn.ivs.spAtk + pkmn.ivs.spDef + pkmn.ivs.speed;
+              return (
+                <button
+                  key={pkmn.id}
+                  onClick={() => multiSelectMode ? toggleSelect(pkmn.id) : setSelectedPkmn(pkmn)}
+                  className={`w-full bg-[#1a1a2e] rounded-xl border flex items-center gap-3 px-3 py-2 transition-all ${
+                    multiSelectMode && selectedIds.has(pkmn.id)
+                      ? 'border-[#e63946] bg-[#e63946]/10'
+                      : 'border-white/5 active:border-[#e63946]'
+                  }`}
+                >
+                  {multiSelectMode && (
+                    <div className="shrink-0">
+                      {selectedIds.has(pkmn.id)
+                        ? <CheckSquare size={14} className="text-[#e63946]" />
+                        : <Square size={14} className="text-white/20" />}
+                    </div>
+                  )}
+                  <div className="relative shrink-0">
+                    <img
+                      src={`https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/${pkmn.isShiny ? 'shiny/' : ''}${pkmn.pokemonId}.png`}
+                      className="w-12 h-12 object-contain"
+                    />
+                    {pkmn.isShiny && (
+                      <span className="absolute -top-1 -right-1 text-yellow-400">
+                        <Sparkles size={10} />
+                      </span>
+                    )}
+                  </div>
+                  <div className="flex-1 min-w-0 text-left">
+                    <div className="flex items-center gap-2">
+                      <span className="font-black text-sm uppercase truncate">{pkmn.name}</span>
+                      {favorites.includes(pkmn.id) && <span className="text-yellow-400 text-xs shrink-0">★</span>}
+                    </div>
+                    <div className="flex items-center gap-3 mt-0.5">
+                      <span className="text-[10px] text-white/40">#{String(pkmn.pokemonId).padStart(3,'0')}</span>
+                      <span className="text-[10px] text-[#e63946] font-bold">Lv.{pkmn.level}</span>
+                      <span className="text-[10px] text-white/30">{pkmn.nature}</span>
+                    </div>
+                  </div>
+                  <div className="shrink-0 text-right">
+                    <div className="text-[11px] font-black text-white/60">IV {ivTotal}/186</div>
+                    <div className="flex gap-1 mt-1 justify-end">
+                      {pkmn.types.map(t => (
+                        <span key={t} className="text-[8px] font-bold uppercase bg-white/10 px-1.5 py-0.5 rounded text-white/50">{t}</span>
+                      ))}
+                    </div>
+                  </div>
+                </button>
+              );
+            })}
+          </div>
         )} 
 
         {/* Paginazione box multipli */} 
