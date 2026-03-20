@@ -43,15 +43,20 @@ interface GameStore extends GameState {
 }
 
 const MISSION_POOL = [
-  { type: 'catch' as const, target: 2, description: 'Cattura 2 Pokémon', reward: { coins: 300 } },
-  { type: 'catch' as const, target: 5, description: 'Cattura 5 Pokémon', reward: { coins: 600, items: { pokeball: 3 } } },
-  { type: 'catch' as const, target: 3, description: 'Cattura 3 Pokémon', reward: { coins: 400, items: { potion: 2 } } },
-  { type: 'battleWin' as const, target: 3, description: 'Vinci 3 battaglie', reward: { coins: 400 } },
-  { type: 'battleWin' as const, target: 5, description: 'Vinci 5 battaglie', reward: { coins: 700, items: { superpotion: 1 } } },
-  { type: 'defeatGym' as const, target: 1, description: 'Sconfiggi un Capopalestra', reward: { coins: 800, items: { rare_candy: 1 } } },
-  { type: 'useItem' as const, target: 1, description: 'Usa una pozione', reward: { coins: 200 } },
-  { type: 'useItem' as const, target: 3, description: 'Usa 3 oggetti curativi', reward: { coins: 350 } },
+  { type: 'catch' as const, target: 2, description: 'Cattura 2 Pokémon', reward: { coins: 250 } },
+  { type: 'catch' as const, target: 5, description: 'Cattura 5 Pokémon', reward: { coins: 500, items: { pokeball: 3 } } },
+  { type: 'catch' as const, target: 3, description: 'Cattura 3 Pokémon', reward: { coins: 300, items: { potion: 2 } } },
+  { type: 'catch' as const, target: 1, description: 'Cattura 1 Pokémon', reward: { coins: 150 } },
+  { type: 'battleWin' as const, target: 3, description: 'Vinci 3 battaglie', reward: { coins: 350 } },
+  { type: 'battleWin' as const, target: 5, description: 'Vinci 5 battaglie', reward: { coins: 600, items: { superpotion: 1 } } },
+  { type: 'battleWin' as const, target: 1, description: 'Vinci 1 battaglia', reward: { coins: 150 } },
+  { type: 'battleWin' as const, target: 10, description: 'Vinci 10 battaglie', reward: { coins: 900, items: { megaball: 2 } } },
+  { type: 'defeatGym' as const, target: 1, description: 'Sconfiggi un Capopalestra', reward: { coins: 1000, items: { rare_candy: 1 } } },
+  { type: 'useItem' as const, target: 1, description: 'Usa una pozione', reward: { coins: 100 } },
+  { type: 'useItem' as const, target: 3, description: 'Usa 3 oggetti curativi', reward: { coins: 250, items: { potion: 1 } } },
+  { type: 'useItem' as const, target: 5, description: 'Usa 5 oggetti curativi', reward: { coins: 400, items: { superpotion: 1 } } },
   { type: 'catchShiny' as const, target: 1, description: 'Cattura uno Shiny ✨', reward: { coins: 2000, items: { rare_candy: 2 } } },
+  { type: 'catch' as const, target: 10, description: 'Cattura 10 Pokémon', reward: { coins: 800, items: { ultraball: 1 } } },
 ];
 
 function generateDailyMissions(): { date: string; missions: DailyMission[] } {
@@ -409,8 +414,10 @@ export const useStore = create<GameStore>()(
                 }
                 // Process accumulated moves
                 for (const move of newMovesToLearn) {
-                  if (p.moves.length < 4) {
-                    useStore.getState().updatePokemon(p.id, { moves: [...p.moves, move] });
+                  const freshPkmn = useStore.getState().team.find(t => t.id === p.id) ?? useStore.getState().box.find(t => t.id === p.id);
+                  const currentMoves = freshPkmn?.moves ?? p.moves;
+                  if (currentMoves.length < 4) {
+                    useStore.getState().updatePokemon(p.id, { moves: [...currentMoves, move] });
                   } else {
                     set({ pendingNewMove: { pokemonId: p.id, move: move } });
                     break; // Only present the first one as pending
@@ -581,6 +588,8 @@ export const useStore = create<GameStore>()(
         });
         state.team = state.team.map(clampHp);
         state.box = state.box.map(clampHp);
+        state.pendingEvolution = null;
+        state.pendingNewMove = null;
       }
     }
   )

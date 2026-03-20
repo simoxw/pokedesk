@@ -608,7 +608,7 @@ export default function BattleScreen() {
   }; 
 
   const addLog = (msg: string) => {
-    setLogs(prev => [msg, ...prev].slice(0, 5));
+    setLogs(prev => [msg, ...prev].slice(0, 20));
   };
 
   const applyPlayerMoveEffects = (move: any, currentEnemy: any, realDamage = 0): { newStatus?: any, message?: string } => { 
@@ -1258,21 +1258,27 @@ export default function BattleScreen() {
       <div className="bg-[#0f0f1a]/95 backdrop-blur-md border-t border-white/5 p-4 space-y-2 relative z-20 shrink-0">
         
         {/* Log */}
-        <div className="bg-[#1a1a2e] rounded-xl px-4 py-2 min-h-[44px] flex flex-col justify-center gap-0.5">
-          <p className={`text-sm font-bold leading-tight ${
-            logs[0]?.includes('superefficace') ? 'text-green-400' :
-            logs[0]?.includes('poco efficace') ? 'text-orange-400' :
-            logs[0]?.includes('Non ha effetto') ? 'text-purple-400' :
-            'text-white/80'
-          }`}>{logs[0]}</p>
-          {logs[1] && (
-            <p className={`text-xs leading-tight ${
-              logs[1]?.includes('superefficace') ? 'text-green-400' :
-              logs[1]?.includes('poco efficace') ? 'text-orange-400' :
-              logs[1]?.includes('Non ha effetto') ? 'text-purple-400' :
-              'text-white/40'
-            }`}>{logs[1]}</p>
-          )}
+        <div className="bg-[#1a1a2e] rounded-xl px-3 py-2 h-[72px] overflow-y-auto flex flex-col-reverse gap-0.5 no-scrollbar">
+          {logs.map((msg, i) => {
+            let icon = '▸';
+            let color = i === 0 ? 'text-white/80' : 'text-white/30';
+            if (msg.includes('superefficace') || msg.includes('Superefficace')) { icon = '⚡'; color = i === 0 ? 'text-green-400' : 'text-green-400/40'; }
+            else if (msg.includes('Non molto efficace') || msg.includes('poco efficace')) { icon = '🔻'; color = i === 0 ? 'text-orange-400' : 'text-orange-400/40'; }
+            else if (msg.includes('Non ha effetto')) { icon = '🚫'; color = i === 0 ? 'text-purple-400' : 'text-purple-400/40'; }
+            else if (msg.includes('esausto') || msg.includes('KO') || msg.includes('perso')) { icon = '💀'; color = i === 0 ? 'text-red-400' : 'text-red-400/40'; }
+            else if (msg.includes('Brutto colpo') || msg.includes('critico')) { icon = '💥'; color = i === 0 ? 'text-yellow-400' : 'text-yellow-400/40'; }
+            else if (msg.includes('mancato')) { icon = '❌'; color = i === 0 ? 'text-white/50' : 'text-white/20'; }
+            else if (msg.includes('ESP') || msg.includes('LIVELLO')) { icon = '⬆️'; color = i === 0 ? 'text-blue-400' : 'text-blue-400/40'; }
+            else if (msg.includes('avvelenato') || msg.includes('PSN') || msg.includes('scottato') || msg.includes('BRN') || msg.includes('paralizzato') || msg.includes('PAR') || msg.includes('addormentato') || msg.includes('SLP') || msg.includes('congelato') || msg.includes('FRZ')) { icon = '🌀'; color = i === 0 ? 'text-indigo-400' : 'text-indigo-400/40'; }
+            else if (msg.includes('guarito') || msg.includes('recupera') || msg.includes('assorbito')) { icon = '💚'; color = i === 0 ? 'text-emerald-400' : 'text-emerald-400/40'; }
+            else if (msg.includes('🏅') || msg.includes('Medaglia') || msg.includes('🎁')) { icon = '🏆'; color = i === 0 ? 'text-yellow-400' : 'text-yellow-400/40'; }
+            return (
+              <p key={i} className={`text-[11px] font-bold leading-tight flex items-start gap-1 ${color}`}>
+                <span className="shrink-0 text-[10px]">{icon}</span>
+                <span>{msg}</span>
+              </p>
+            );
+          })}
         </div>
 
         {isFinished ? (
