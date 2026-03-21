@@ -348,11 +348,14 @@ export const useStore = create<GameStore>()(
         }
         return { charges: Math.max(0, state.charges - 1) };
       }),
-      consumeSafariCharge: () => set((state) => ({
-        safariCharges: Math.max(0, state.safariCharges - 1)
-      })),
+      consumeSafariCharge: () => set((state) => {
+        if (state.safariCharges >= 8) {
+          return { safariCharges: 7, lastSafariTickTimestamp: Date.now() };
+        }
+        return { safariCharges: Math.max(0, state.safariCharges - 1) };
+      }),
       addSafariCharge: (amount) => set((state) => ({
-        safariCharges: Math.min(5, state.safariCharges + amount)
+        safariCharges: Math.min(8, state.safariCharges + amount)
       })),
       updatePokedex: (id, status) => set((state) => ({
         pokedex: { ...state.pokedex, [id]: status === 'caught' ? 'caught' : (state.pokedex[id] === 'caught' ? 'caught' : 'seen') }

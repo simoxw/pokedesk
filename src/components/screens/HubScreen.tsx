@@ -31,7 +31,7 @@ export default function HubScreen() {
   };
 
   const getTimeToNextSafariTick = () => {
-    if (safariCharges >= 5) return 0;
+    if (safariCharges >= 8) return 0;
     const elapsed = Date.now() - lastSafariTickTimestamp;
     return Math.max(0, 1800000 - (elapsed % 1800000));
   };
@@ -216,7 +216,7 @@ export default function HubScreen() {
           </motion.button>
 
           <div className="text-center text-xs text-white/50">
-            🌿 {safariCharges}/5{safariUnlocked ? ` • ${safariMinutes}:${safariSeconds.toString().padStart(2, '0')}` : ''}
+            🌿 {safariCharges}/8{safariUnlocked && safariCharges < 8 ? ` • ${safariMinutes}:${safariSeconds.toString().padStart(2, '0')}` : safariUnlocked && safariCharges >= 8 ? ' • MAX' : ''}
           </div>
 
           <motion.button

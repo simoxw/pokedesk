@@ -4,6 +4,7 @@ import { NotificationService } from './NotificationService';
 
 const TICK_INTERVAL = 300000; // 5 minutes in ms
 const SAFARI_TICK_INTERVAL = 1800000; // 30 minutes in ms
+const SAFARI_MAX_CHARGES = 8;
 
 export const useTickSystem = () => {
   const { charges, lastTickTimestamp, addCharge, consumeCharge, safariCharges, lastSafariTickTimestamp, addSafariCharge } = useStore();
@@ -35,13 +36,13 @@ export const useTickSystem = () => {
       const elapsed = now - lastSafariTickTimestamp;
       const newCharges = Math.floor(elapsed / SAFARI_TICK_INTERVAL);
 
-      if (newCharges > 0 && safariCharges < 5) {
-        const amountToAdd = Math.min(5 - safariCharges, newCharges);
+      if (newCharges > 0 && safariCharges < SAFARI_MAX_CHARGES) {
+        const amountToAdd = Math.min(SAFARI_MAX_CHARGES - safariCharges, newCharges);
         if (amountToAdd > 0) {
           addSafariCharge(amountToAdd);
           useStore.setState({ lastSafariTickTimestamp: lastSafariTickTimestamp + (amountToAdd * SAFARI_TICK_INTERVAL) });
-          if (safariCharges + amountToAdd === 5) {
-            NotificationService.sendNotification('La Zona Safari è pronta!');
+          if (safariCharges + amountToAdd === SAFARI_MAX_CHARGES) {
+            NotificationService.sendNotification('Le cariche Safari sono al massimo!');
           }
         }
       }
@@ -63,7 +64,7 @@ export const useTickSystem = () => {
   };
 
   const getTimeToNextSafariTick = () => {
-    if (safariCharges >= 5) return 0;
+    if (safariCharges >= SAFARI_MAX_CHARGES) return 0;
     const elapsed = Date.now() - lastSafariTickTimestamp;
     return Math.max(0, SAFARI_TICK_INTERVAL - (elapsed % SAFARI_TICK_INTERVAL));
   };
