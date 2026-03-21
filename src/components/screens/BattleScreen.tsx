@@ -525,6 +525,9 @@ export default function BattleScreen() {
       const nextAvailable = useStore.getState().team.findIndex((p, i) => p.currentHp > 0 && i !== activeIdx);
       if (nextAvailable === -1) {
         addLog('Hai perso la sfida...');
+        useStore.getState().team.forEach(p => {
+          updatePokemon(p.id, { currentHp: 1, moves: p.moves.map((m: any) => ({ ...m, pp: m.maxPp })) });
+        });
         setIsFinished(true);
       } else {
         setActiveIdx(nextAvailable);
@@ -1013,6 +1016,9 @@ export default function BattleScreen() {
       const nextAvailable = useStore.getState().team.findIndex((p, i) => p.currentHp > 0 && i !== activeIdx);
       if (nextAvailable === -1) {
         addLog('Hai perso la sfida...');
+        useStore.getState().team.forEach(p => {
+          updatePokemon(p.id, { currentHp: 1, moves: p.moves.map((m: any) => ({ ...m, pp: m.maxPp })) });
+        });
         setIsFinished(true);
       } else {
         setActiveIdx(nextAvailable);
