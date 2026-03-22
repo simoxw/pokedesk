@@ -1276,7 +1276,7 @@ export default function BattleScreen() {
             <motion.img
               animate={{ y: [0, -6, 0] }}
               transition={{ duration: 2, repeat: Infinity }}
-              src={enemy?.sprites?.front_default}
+              src={enemy?.sprites?.front_default ?? `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/${enemy?.pokemonId}.png`}
               className="w-48 h-48 object-contain drop-shadow-2xl"
             />
             {lastEnemyMove && (
