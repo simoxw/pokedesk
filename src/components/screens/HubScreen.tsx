@@ -59,6 +59,7 @@ export default function HubScreen() {
   const seconds = Math.floor((nextTick % 60000) / 1000);
 
   const safariUnlocked = medals.filter(m => m.isUnlocked).length >= 20;
+  const medalsCount = medals.filter(m => m.isUnlocked).length;
   const nextSafariTick = getTimeToNextSafariTick();
   const safariMinutes = Math.floor(nextSafariTick / 60000);
   const safariSeconds = Math.floor((nextSafariTick % 60000) / 1000);
@@ -97,12 +98,12 @@ export default function HubScreen() {
           <motion.div
             animate={{ scale: [1, 1.05, 1] }}
             transition={{ duration: 2, repeat: Infinity }}
-            className="text-4xl font-black text-white flex items-center justify-center gap-2"
+            className="text-3xl font-black text-white flex items-center justify-center gap-2"
           >
             {charges}<span className="text-[#e63946]">/6</span>
-            <Zap className="text-yellow-400 fill-yellow-400" size={22} />
+            <Zap className="text-yellow-400 fill-yellow-400" size={18} />
           </motion.div>
-          <p className="text-white/50 font-mono mt-2 text-xs">
+          <p className="text-white/50 font-mono mt-1 text-[11px]">
             {charges >= 6
               ? '⚡ CARICHE AL MASSIMO!'
               : `PROSSIMA CARICA IN ${minutes}:${seconds.toString().padStart(2, '0')}`}
@@ -200,7 +201,8 @@ export default function HubScreen() {
           </div>
         </button>
 
-        <div className="flex flex-col gap-4 w-full max-w-xs">
+        <div className="flex flex-col gap-3 w-full max-w-xs">
+          {/* CATTURA */}
           <motion.button
             whileHover={{ scale: 1.05 }}
             whileTap={{ scale: 0.95 }}
@@ -209,16 +211,16 @@ export default function HubScreen() {
               consumeCharge();
               setScreen('CATCH_SCREEN');
             }}
-            className="w-full bg-[#e63946] disabled:opacity-50 disabled:grayscale p-6 rounded-3xl flex items-center justify-center gap-4 shadow-2xl shadow-[#e63946]/30"
+            className="w-full bg-[#e63946] disabled:opacity-50 disabled:grayscale p-4 rounded-3xl flex items-center justify-center gap-3 shadow-2xl shadow-[#e63946]/30"
           >
-            <Target size={32} />
-            <span className="text-2xl font-black">CATTURA</span>
+            <Target size={26} />
+            <span className="text-xl font-black">CATTURA</span>
           </motion.button>
 
-          <div className="text-center text-xs text-white/50">
+          {/* SAFARI */}
+          <div className="text-center text-[11px] text-white/50">
             🌿 {safariCharges}/8{safariUnlocked && safariCharges < 8 ? ` • ${safariMinutes}:${safariSeconds.toString().padStart(2, '0')}` : safariUnlocked && safariCharges >= 8 ? ' • MAX' : ''}
           </div>
-
           <motion.button
             whileHover={{ scale: 1.05 }}
             whileTap={{ scale: 0.95 }}
@@ -227,14 +229,14 @@ export default function HubScreen() {
               consumeSafariCharge();
               setScreen('SAFARI_SCREEN');
             }}
-            className={`w-full p-4 rounded-3xl flex items-center justify-center gap-3 shadow-xl ${
+            className={`w-full p-3 rounded-2xl flex items-center justify-center gap-3 shadow-xl ${
               safariUnlocked
                 ? 'bg-[#1a3a1a] border border-green-800/40 text-white'
                 : 'bg-gray-800/60 border border-white/10 text-white/40'
             }`}
           >
-            {safariUnlocked ? <TreePine size={24} /> : <span className="text-xl">🔒</span>}
-            <span className="text-lg font-black">
+            {safariUnlocked ? <TreePine size={20} /> : <span className="text-lg">🔒</span>}
+            <span className="text-base font-black">
               {safariUnlocked ? 'ZONA SAFARI' : 'SAFARI'}
             </span>
             {!safariUnlocked && (
@@ -244,15 +246,41 @@ export default function HubScreen() {
             )}
           </motion.button>
 
-          <motion.button
-            whileHover={{ scale: 1.05 }}
-            whileTap={{ scale: 0.95 }}
-            onClick={() => setScreen('BATTLE_SCREEN')}
-            className="w-full bg-[#1a1a2e] border border-white/10 p-6 rounded-3xl flex items-center justify-center gap-4 shadow-xl"
-          >
-            <Sword size={32} />
-            <span className="text-2xl font-black">LOTTA</span>
-          </motion.button>
+          {/* LOTTA + LEGA affiancati */}
+          <div className="grid grid-cols-2 gap-3">
+            <motion.button
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
+              onClick={() => setScreen('BATTLE_SCREEN')}
+              className="bg-[#1a1a2e] border border-white/10 p-4 rounded-2xl flex flex-col items-center justify-center gap-2 shadow-xl"
+            >
+              <Sword size={24} />
+              <span className="text-sm font-black">LOTTA</span>
+            </motion.button>
+
+            <motion.button
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
+              disabled={medalsCount < 40}
+              onClick={() => medalsCount >= 40 && setScreen('LEAGUE_SELECT_SCREEN')}
+              className={`relative p-4 rounded-2xl flex flex-col items-center justify-center gap-2 shadow-xl transition-all ${
+                medalsCount >= 40
+                  ? 'bg-gradient-to-b from-yellow-600/30 to-yellow-900/30 border border-yellow-500/40 text-yellow-300'
+                  : 'bg-gray-800/60 border border-white/10 text-white/30'
+              }`}
+            >
+              {medalsCount >= 40 && (
+                <span className="absolute -top-1.5 -right-1.5 bg-yellow-400 text-black text-[8px] font-black px-1.5 py-0.5 rounded-full">
+                  NUOVO
+                </span>
+              )}
+              {medalsCount >= 40 ? <span className="text-xl">🏆</span> : <span className="text-xl">🔒</span>}
+              <span className="text-sm font-black">LEGA</span>
+              {medalsCount < 40 && (
+                <span className="text-[9px] text-white/30">{medalsCount}/40 med.</span>
+              )}
+            </motion.button>
+          </div>
         </div>
       </div>
 

@@ -42,6 +42,10 @@ interface GameStore extends GameState {
   toggleExpShare: () => void;
   checkDailyMissions: () => void;
   claimMission: (id: string) => void;
+  startLeagueRun: (regionId: string) => void;
+  advanceLeagueTrainer: (trainerIndex: number) => void;
+  completeLeagueRegion: (regionId: string, trophyLabel: string) => void;
+  abandonLeagueRun: () => void;
 }
 
 const MISSION_POOL = [
@@ -125,6 +129,12 @@ export const useStore = create<GameStore>()(
       friendBattleTeam: null,
       isFirstRun: true,
       dailyMissions: null,
+      leagueProgress: {
+        completedRuns: 0,
+        completedRegions: [],
+        trophies: [],
+        currentRun: null,
+      },
       currentScreen: 'START_SCREEN',
 
       setScreen: (screen) => set({ currentScreen: screen }),
@@ -540,6 +550,49 @@ export const useStore = create<GameStore>()(
           }
         };
       }),
+      startLeagueRun: (regionId: string) => set((state) => ({
+        leagueProgress: {
+          ...state.leagueProgress,
+          currentRun: { regionId, trainerIndex: 0, defeatedTrainers: [] },
+        }
+      })),
+      advanceLeagueTrainer: (trainerIndex: number) => set((state) => {
+        if (!state.leagueProgress.currentRun) return {};
+        return {
+          leagueProgress: {
+            ...state.leagueProgress,
+            currentRun: {
+              ...state.leagueProgress.currentRun,
+              trainerIndex: trainerIndex + 1,
+              defeatedTrainers: [...state.leagueProgress.currentRun.defeatedTrainers, trainerIndex],
+            }
+          }
+        };
+      }),
+      completeLeagueRegion: (regionId: string, trophyLabel: string) => set((state) => {
+        const alreadyCompleted = state.leagueProgress.completedRegions.includes(regionId);
+        const allRegions = ['kanto','johto','hoenn','sinnoh','unova','kalos','alola','galar'];
+        const newCompleted = alreadyCompleted
+          ? state.leagueProgress.completedRegions
+          : [...state.leagueProgress.completedRegions, regionId];
+        const allDone = allRegions.every(r => newCompleted.includes(r));
+        return {
+          leagueProgress: {
+            ...state.leagueProgress,
+            completedRegions: newCompleted,
+            trophies: alreadyCompleted
+              ? state.leagueProgress.trophies
+              : [...state.leagueProgress.trophies, trophyLabel],
+            completedRuns: allDone
+              ? state.leagueProgress.completedRuns + 1
+              : state.leagueProgress.completedRuns,
+            currentRun: null,
+          }
+        };
+      }),
+      abandonLeagueRun: () => set((state) => ({
+        leagueProgress: { ...state.leagueProgress, currentRun: null }
+      })),
       recordBattleWin: () => set((state) => {
         let { battlesWon, nextIsBoss } = state.currentBattlePath;
         if (!nextIsBoss) {
@@ -578,6 +631,12 @@ export const useStore = create<GameStore>()(
         stats: { totalCaught: 0, totalBattles: 0, shiniesFound: 0, pokemonReleased: 0 },
         isFirstRun: true,
         dailyMissions: null,
+        leagueProgress: {
+          completedRuns: 0,
+          completedRegions: [],
+          trophies: [],
+          currentRun: null,
+        },
         currentScreen: 'START_SCREEN',
         settings: { audio: true, notifications: true },
         expShareActive: false,

@@ -1,19 +1,21 @@
-export type ScreenName = 
-  | 'START_SCREEN' 
-  | 'STARTER_DRAFT' 
-  | 'HUB_SCREEN' 
-  | 'CATCH_SCREEN' 
-  | 'BATTLE_SCREEN' 
-  | 'SAFARI_SCREEN' 
-  | 'TEAM_SCREEN' 
-  | 'BOX_SCREEN' 
-  | 'BAG_SCREEN' 
-  | 'POKEDEX_SCREEN' 
-  | 'SHOP_SCREEN' 
-  | 'PROFILE_SCREEN' 
-  | 'TRADE_SCREEN' 
+export type ScreenName =
+  | 'START_SCREEN'
+  | 'STARTER_DRAFT'
+  | 'HUB_SCREEN'
+  | 'CATCH_SCREEN'
+  | 'BATTLE_SCREEN'
+  | 'SAFARI_SCREEN'
+  | 'TEAM_SCREEN'
+  | 'BOX_SCREEN'
+  | 'BAG_SCREEN'
+  | 'POKEDEX_SCREEN'
+  | 'SHOP_SCREEN'
+  | 'PROFILE_SCREEN'
+  | 'TRADE_SCREEN'
   | 'OPTIONS_SCREEN'
-  | 'FRIEND_BATTLE_SCREEN';
+  | 'FRIEND_BATTLE_SCREEN'
+  | 'LEAGUE_SELECT_SCREEN'
+  | 'LEAGUE_BATTLE_SCREEN';
 export type PokemonType = 
   | 'normal' | 'fire' | 'water' | 'electric' | 'grass' | 'ice' 
   | 'fighting' | 'poison' | 'ground' | 'flying' | 'psychic' 
@@ -148,6 +150,16 @@ export interface GameState {
     date: string;
     missions: DailyMission[];
   } | null;
+  leagueProgress: {
+    completedRuns: number;
+    completedRegions: string[];
+    trophies: string[];
+    currentRun: {
+      regionId: string;
+      trainerIndex: number;
+      defeatedTrainers: number[];
+    } | null;
+  };
   currentScreen: ScreenName;
 }
 
