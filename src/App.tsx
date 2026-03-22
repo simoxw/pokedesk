@@ -13,6 +13,7 @@ import PokedexScreen from './components/screens/PokedexScreen';
 import ShopScreen from './components/screens/ShopScreen';
 import ProfileScreen from './components/screens/ProfileScreen';
 import TradeScreen from './components/screens/TradeScreen';
+import FriendBattleScreen from './components/screens/FriendBattleScreen';
 import OptionsScreen from './components/screens/OptionsScreen';
 import BottomNav from './components/ui/BottomNav';
 import TypeBadge from './components/ui/TypeBadge';
@@ -81,6 +82,7 @@ export default function App() {
       case 'PROFILE_SCREEN': return <ProfileScreen />;
       case 'TRADE_SCREEN': return <TradeScreen />;
       case 'OPTIONS_SCREEN': return <OptionsScreen />;
+      case 'FRIEND_BATTLE_SCREEN': return <FriendBattleScreen />;
       default: return <StartScreen />;
     }
   };
@@ -90,7 +92,8 @@ export default function App() {
     'STARTER_DRAFT', 
     'CATCH_SCREEN', 
     'SAFARI_SCREEN',
-    'BATTLE_SCREEN'
+    'BATTLE_SCREEN',
+    'FRIEND_BATTLE_SCREEN'
   ].includes(currentScreen);
 
   return (

@@ -12,8 +12,8 @@ export type ScreenName =
   | 'SHOP_SCREEN' 
   | 'PROFILE_SCREEN' 
   | 'TRADE_SCREEN' 
-  | 'OPTIONS_SCREEN';
-
+  | 'OPTIONS_SCREEN'
+  | 'FRIEND_BATTLE_SCREEN';
 export type PokemonType = 
   | 'normal' | 'fire' | 'water' | 'electric' | 'grass' | 'ice' 
   | 'fighting' | 'poison' | 'ground' | 'flying' | 'psychic' 
@@ -142,6 +142,7 @@ export interface GameState {
     move: Move;
   } | null;
   favorites: string[];
+  friendBattleTeam: any[] | null;
   isFirstRun: boolean;
   dailyMissions: {
     date: string;

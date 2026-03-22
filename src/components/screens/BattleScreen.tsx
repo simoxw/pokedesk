@@ -10,7 +10,8 @@ import TypeBadge from '../ui/TypeBadge';
 import confetti from 'canvas-confetti';
 
 export default function BattleScreen() {
-  const { team, setScreen, incrementStat, addCoins, addItem, updatePokemon, inventory, useItem, gainExp, currentBattlePath, recordBattleWin, medals, expShareActive } = useStore();
+  const { team, setScreen, incrementStat, addCoins, addItem, updatePokemon, inventory, useItem, gainExp, currentBattlePath, recordBattleWin, medals, expShareActive, friendBattleTeam, clearFriendBattleTeam } = useStore();
+  const isFriendBattle = !!friendBattleTeam;
   const medalsCount = medals.filter((m: any) => m.isUnlocked).length;
   const [activeIdx, setActiveIdx] = useState(0);
   const [enemy, setEnemy] = useState<any>(null);
@@ -30,6 +31,7 @@ export default function BattleScreen() {
   const [enemyPhase, setEnemyPhase] = useState(1); 
   const [enemy2, setEnemy2] = useState<any>(null); 
   const [enemy3, setEnemy3] = useState<any>(null);
+  const [enemy4, setEnemy4] = useState<any>(null);
   const [activeMoveTooltip, setActiveMoveTooltip] = useState<any>(null);
   const [lastEnemyMove, setLastEnemyMove] = useState<{ name: string; type: string } | null>(null);
   const tooltipTimeout = React.useRef<any>(null);
@@ -39,7 +41,8 @@ export default function BattleScreen() {
   const [apiError, setApiError] = useState<string | null>(null);
 
   const playerPkmn = team[activeIdx];
-  const isBoss = currentBattlePath.nextIsBoss;
+  const isBoss = !isFriendBattle && currentBattlePath.nextIsBoss;
+  const friendTrainerName = friendBattleTeam?.[0]?.trainerName ?? 'Amico';
 
   const applyEvGain = (pokemon: any, enemyData: any) => { 
     if (!enemyData?.rawStats) return; 
@@ -84,6 +87,28 @@ export default function BattleScreen() {
       setLastEnemyMove(null);
       try {
         setLogs(['Inizia la battaglia!']);
+
+        // FRIEND BATTLE — usa il team dell'amico direttamente
+        if (isFriendBattle && friendBattleTeam && friendBattleTeam.length > 0) {
+          const toEnemy = (p: any) => ({
+            ...p,
+            name: p.name,
+            currentHp: p.stats.hp,
+            maxHp: p.stats.hp,
+            status: null,
+            rawStats: null,
+          });
+          const [f1, f2, f3, f4] = friendBattleTeam;
+          if (f2) setEnemy2(toEnemy(f2));
+          if (f3) setEnemy3(toEnemy(f3));
+          if (f4) setEnemy4(toEnemy(f4));
+          const firstEnemy = toEnemy(f1);
+          setEnemy(firstEnemy);
+          enemyRef.current = firstEnemy;
+          setLogs([`⚔️ Sfida con ${friendTrainerName}! Forza!`]);
+          setLoading(false);
+          return;
+        }
         // Gen sbloccate progressivamente con le medaglie 
         const getRandomPokemonId = (medals: number): number => {
           const ranges: Array<{min: number, max: number, weight: number}> = [
@@ -252,7 +277,20 @@ export default function BattleScreen() {
       setEnemyStages({ attack: 0, defense: 0, spAtk: 0, spDef: 0, speed: 0, accuracy: 0, evasion: 0 }); 
       setTurn('player'); 
       setIsAnimating(false); 
-      return true; // continue battle
+      return true;
+    }
+
+    if (isFriendBattle && enemyPhase === 1 && enemy2) {
+      addLog(`⚔️ ${friendTrainerName} lancia il secondo Pokémon!`);
+      setLastEnemyMove(null);
+      setEnemyPhase(2);
+      setEnemy(enemy2);
+      enemyRef.current = enemy2;
+      setPlayerStages({ attack: 0, defense: 0, spAtk: 0, spDef: 0, speed: 0, accuracy: 0, evasion: 0 });
+      setEnemyStages({ attack: 0, defense: 0, spAtk: 0, spDef: 0, speed: 0, accuracy: 0, evasion: 0 });
+      setTurn('player');
+      setIsAnimating(false);
+      return true;
     } 
 
     if (isBoss && enemyPhase === 2 && enemy3) {
@@ -266,6 +304,52 @@ export default function BattleScreen() {
       setTurn('player');
       setIsAnimating(false);
       return true;
+    }
+
+    if (isFriendBattle && enemyPhase === 2 && enemy3) {
+      addLog(`⚔️ ${friendTrainerName} lancia il terzo Pokémon!`);
+      setLastEnemyMove(null);
+      setEnemyPhase(3);
+      setEnemy(enemy3);
+      enemyRef.current = enemy3;
+      setPlayerStages({ attack:0, defense:0, spAtk:0, spDef:0, speed:0, accuracy:0, evasion:0 });
+      setEnemyStages({ attack:0, defense:0, spAtk:0, spDef:0, speed:0, accuracy:0, evasion:0 });
+      setTurn('player');
+      setIsAnimating(false);
+      return true;
+    }
+
+    if (isFriendBattle && enemyPhase === 3 && enemy4) {
+      addLog(`⚔️ ${friendTrainerName} lancia il quarto Pokémon!`);
+      setLastEnemyMove(null);
+      setEnemyPhase(4);
+      setEnemy(enemy4);
+      enemyRef.current = enemy4;
+      setPlayerStages({ attack:0, defense:0, spAtk:0, spDef:0, speed:0, accuracy:0, evasion:0 });
+      setEnemyStages({ attack:0, defense:0, spAtk:0, spDef:0, speed:0, accuracy:0, evasion:0 });
+      setTurn('player');
+      setIsAnimating(false);
+      return true;
+    }
+
+    if (isFriendBattle) {
+      addLog(`🏆 Hai sconfitto la squadra di ${friendTrainerName}!`);
+      addCoins(300);
+      addLog('🎁 +300 monete per la vittoria!');
+      incrementStat('totalBattles');
+      team.forEach(p => {
+        const recoveredHp = Math.min(p.stats.hp, p.currentHp + Math.floor(p.stats.hp * 0.1));
+        const recoveredMoves = p.moves.map((m: any) => ({ ...m, pp: m.maxPp }));
+        updatePokemon(p.id, { currentHp: recoveredHp, moves: recoveredMoves });
+      });
+      setPlayerStages({ attack: 0, defense: 0, spAtk: 0, spDef: 0, speed: 0, accuracy: 0, evasion: 0 });
+      setEnemyStages({ attack: 0, defense: 0, spAtk: 0, spDef: 0, speed: 0, accuracy: 0, evasion: 0 });
+      setEnemyFlinch(false);
+      setPlayerFlinch(false);
+      clearFriendBattleTeam();
+      setIsFinished(true);
+      setIsAnimating(false);
+      return false;
     }
 
     recordBattleWin(); 
@@ -1289,7 +1373,7 @@ export default function BattleScreen() {
 
         {isFinished ? (
           <button
-            onClick={() => setScreen('HUB_SCREEN')}
+            onClick={() => { clearFriendBattleTeam(); setScreen('HUB_SCREEN'); }}
             className="w-full bg-[#e63946] py-4 rounded-2xl font-black text-lg"
           >
             TORNA ALL'HUB
@@ -1374,7 +1458,7 @@ export default function BattleScreen() {
             <div className="flex gap-2">
               <button
                 disabled={isAnimating}
-                onClick={() => setScreen('HUB_SCREEN')}
+                onClick={() => { clearFriendBattleTeam(); setScreen('HUB_SCREEN'); }}
                 className="flex-1 bg-red-600/20 border border-red-500/30 py-3 rounded-xl flex items-center justify-center gap-1 text-[10px] font-black uppercase text-red-400"
               >
                 <ArrowLeft size={14} /> Fuga

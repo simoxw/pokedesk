@@ -6,6 +6,8 @@ import { BattleEngine } from './BattleEngine';
 
 interface GameStore extends GameState {
   setScreen: (screen: ScreenName) => void;
+  setFriendBattleTeam: (team: any[]) => void;
+  clearFriendBattleTeam: () => void;
   setPlayer: (name: string, gender: 'M' | 'F') => void;
   updatePlayer: (updates: Partial<GameState['player']>) => void;
   addPokemon: (pokemon: Pokemon) => void;
@@ -120,6 +122,7 @@ export const useStore = create<GameStore>()(
       pendingEvolution: null,
       pendingNewMove: null,
       favorites: [],
+      friendBattleTeam: null,
       isFirstRun: true,
       dailyMissions: null,
       currentScreen: 'START_SCREEN',
@@ -504,6 +507,8 @@ export const useStore = create<GameStore>()(
         };
       }),
       updateSettings: (updates) => set((state) => ({ settings: { ...state.settings, ...updates } })),
+      setFriendBattleTeam: (team) => set({ friendBattleTeam: team }),
+      clearFriendBattleTeam: () => set({ friendBattleTeam: null }),
       toggleFavorite: (id) => set((state) => ({
         favorites: state.favorites.includes(id)
           ? state.favorites.filter(f => f !== id)
@@ -578,7 +583,8 @@ export const useStore = create<GameStore>()(
         expShareActive: false,
         pendingEvolution: null,
         pendingNewMove: null,
-        favorites: []
+        favorites: [],
+        friendBattleTeam: null,
       }),
     }),
     {

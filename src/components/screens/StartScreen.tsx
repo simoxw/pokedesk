@@ -1,7 +1,7 @@
 import React from 'react';
 import { useStore } from '../../store';
 import { motion } from 'motion/react';
-import { Play, ShoppingBag, User, ArrowLeftRight, Settings } from 'lucide-react';
+import { Play, ShoppingBag, User, ArrowLeftRight, Settings, Sword } from 'lucide-react';
 
 export default function StartScreen() {
   const { setScreen, isFirstRun } = useStore();
@@ -40,6 +40,11 @@ export default function StartScreen() {
           icon={<ArrowLeftRight size={20} />} 
           label="SCAMBIA" 
           onClick={() => setScreen('TRADE_SCREEN')}
+        />
+        <MenuButton 
+          icon={<Sword size={20} />} 
+          label="SFIDA AMICI" 
+          onClick={() => setScreen('FRIEND_BATTLE_SCREEN')}
         />
         <MenuButton 
           icon={<Settings size={20} />} 
