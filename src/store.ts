@@ -542,7 +542,7 @@ export const useStore = create<GameStore>()(
           if (battlesWon % 15 === 0) {
             nextIsBoss = true;
           }
-          return { currentBattlePath: { battlesWon, nextIsBoss } };
+          return { currentBattlePath: { battlesWon, nextIsBoss }, ...updateMissionProgress(state, 'battleWin') };
         } else {
           const nextMedal = state.medals.find(m => !m.isUnlocked);
           let newMedals = state.medals;
