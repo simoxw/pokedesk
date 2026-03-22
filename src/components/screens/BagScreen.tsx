@@ -46,6 +46,7 @@ export default function BagScreen() {
         { id: 'thunder_stone', name: 'Pietra Tuono', icon: '⚡' },
         { id: 'leaf_stone', name: 'Pietra Foglia', icon: '🍃' },
         { id: 'moon_stone', name: 'Pietra Lunare', icon: '🌙' },
+        { id: 'dawn_stone', name: 'Pietra Alba', icon: '🌅' },
         // Caramelle specie dinamiche dai pokemon in squadra/box 
         ...[...team, ...box].reduce((acc: any[], p) => { 
           const key = `candy_${p.baseSpeciesId ?? p.pokemonId}`; 

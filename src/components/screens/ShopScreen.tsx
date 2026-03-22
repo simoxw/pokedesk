@@ -18,6 +18,7 @@ const SHOP_ITEMS = [
   { id: 'thunder_stone',name: 'Pietra Tuono',    cost: 2100, icon: '⚡', unlock: 3,  description: 'Evolve certi Pokémon' },
   { id: 'leaf_stone',   name: 'Pietra Foglia',   cost: 2100, icon: '🍃', unlock: 3,  description: 'Evolve certi Pokémon' },
   { id: 'moon_stone',   name: 'Pietra Lunare',   cost: 2100, icon: '🌙', unlock: 3,  description: 'Evolve certi Pokémon' }, 
+  { id: 'dawn_stone',   name: 'Pietra Alba',      cost: 2100, icon: '🌅', unlock: 3,  description: 'Evolve certi Pokémon' },
   { id: 'tm',           name: 'MT Casuale',       cost: 3500, icon: '💿', unlock: 4,  description: 'Insegna una mossa MT a un Pokémon' }, 
 ]; 
 

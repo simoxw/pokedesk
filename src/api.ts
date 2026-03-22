@@ -231,6 +231,8 @@ export const api = {
         // Evoluzione per Livello
         if (details.trigger.name === 'level-up') {
           if (details.min_level !== null && currentLevel >= details.min_level) return true;
+          // Amicizia e altri trigger level-up senza min_level → livello 30
+          if (details.min_level === null && currentLevel >= 30) return true;
         }
         
         // Evoluzione per Scambio (la trasformiamo in evoluzione per livello alto, es. 36)
