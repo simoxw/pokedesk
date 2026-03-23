@@ -808,6 +808,10 @@ export default function BattleScreen() {
       '235': 0.5,  // synthesis / Sintesi 
       '234': 0.5,  // morning-sun / Alba 
       '505': 0.5,  // heal-pulse / Pulsaguarigione 
+      '392': 0.25, // aqua-ring / Goccia Vitale
+      '588': 0.5,  // wish / Desiderio
+      '456': 0.5,  // healing-wish semplificato (Guarigionevoto)
+      '273': 0.5,  // wish alternativo
     }; 
     
     // Recupera i dati freschi del Pokémon per evitare bug di HP stale se il nemico ha attaccato prima 
@@ -822,8 +826,13 @@ export default function BattleScreen() {
       return {}; 
     } 
   
-    const healRatio = HEAL_MOVES[move.id]; 
-    if (healRatio || (move.category === 'status' && move.power === 0 && move.name.toLowerCase().includes('recup'))) { 
+    const HEAL_MOVES_BY_NAME: Record<string, number> = {
+      'goccia vitale': 0.25,
+      'desiderio': 0.5,
+      'rigenerazione': 0.5,
+    };
+    const healRatio = HEAL_MOVES[move.id] ?? HEAL_MOVES_BY_NAME[move.name.toLowerCase()];
+    if (healRatio || (move.category === 'status' && move.power === 0 && move.name.toLowerCase().includes('recup'))) {
       const ratio = healRatio ?? 0.5; 
       const healed = Math.floor(freshPkmn.stats.hp * ratio); 
       const newHp = Math.min(freshPkmn.stats.hp, freshPkmn.currentHp + healed); 

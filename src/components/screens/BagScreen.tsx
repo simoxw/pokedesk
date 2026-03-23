@@ -163,15 +163,15 @@ export default function BagScreen() {
                     setLoadingTm(true); 
                     try { 
                       const data = await api.getPokemon(p.pokemonId); 
-                      const BANNED_TM = new Set(['protect','detect','substitute','attract','swagger','taunt','encore','torment','disable','snatch','thief','trick','switcheroo','embargo','sleep-talk','rest','baton-pass','u-turn','volt-switch']); 
+                      const BANNED_TM = new Set(['protect','detect','substitute','attract','swagger','taunt','encore','torment','disable','snatch','thief','trick','switcheroo','embargo','sleep-talk','baton-pass','u-turn','volt-switch']); 
                       const machineMoves = data.moves 
                         .filter((m: any) => 
                           m.version_group_details.some((v: any) => v.move_learn_method.name === 'machine') && 
                           !BANNED_TM.has(m.move.name) 
                         ) 
-                        .slice(0, 20); 
+                        .slice(0, 30); 
                       const moveDetails = await Promise.all( 
-                        machineMoves.slice(0, 12).map((m: any) => api.getMove(m.move.name)) 
+                        machineMoves.slice(0, 20).map((m: any) => api.getMove(m.move.name)) 
                       ); 
                       const validMoves = moveDetails 
                         .filter((m: any) => m && m.power && m.power > 0 && m.damage_class?.name !== 'status') 
