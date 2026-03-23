@@ -15,7 +15,8 @@ const TYPE_LIST = [
 type SortKey = 'name' | 'level' | 'number' | 'type' | 'iv';
 
 export default function TradeScreen() {
-  const { box, team, setScreen, addPokemon, updatePokedex, addItem } = useStore();
+  const { box, team, setScreen, addPokemon, updatePokedex, addItem, favorites } = useStore();
+  const [showFavoritesOnly, setShowFavoritesOnly] = useState(false);
 
   // --- Tab ---
   const [mode, setMode] = useState<'export' | 'import'>('export');
@@ -39,6 +40,7 @@ export default function TradeScreen() {
   const allPkmn = source === 'box' ? box : team;
   const filtered = useMemo(() => {
     let result = [...allPkmn];
+    if (showFavoritesOnly) result = result.filter(p => favorites.includes(p.id));
     if (search) result = result.filter(p => p.name.toLowerCase().includes(search.toLowerCase()));
     if (filterType) result = result.filter(p => p.types.includes(filterType as any));
     result.sort((a, b) => {
@@ -53,7 +55,7 @@ export default function TradeScreen() {
       return a.pokemonId - b.pokemonId;
     });
     return result;
-  }, [allPkmn, search, filterType, sortBy]);
+  }, [allPkmn, search, filterType, sortBy, showFavoritesOnly, favorites]);
 
   const handleSelect = (pkmn: any) => {
     try {
@@ -166,8 +168,14 @@ export default function TradeScreen() {
                 <Users size={12} /> Squadra <span className="opacity-60">({team.length})</span>
               </button>
               <button
+                onClick={() => setShowFavoritesOnly(f => !f)}
+                className={`ml-auto p-2 rounded-xl border transition-all text-lg ${showFavoritesOnly ? 'bg-yellow-500/20 border-yellow-500/50 text-yellow-400' : 'bg-[#1a1a2e] border-white/10 text-white/40'}`}
+              >
+                ★
+              </button>
+              <button
                 onClick={() => setShowFilters(f => !f)}
-                className={`ml-auto p-2 rounded-xl border transition-all ${showFilters ? 'bg-[#e63946] border-[#e63946]' : 'bg-[#1a1a2e] border-white/10'}`}
+                className={`p-2 rounded-xl border transition-all ${showFilters ? 'bg-[#e63946] border-[#e63946]' : 'bg-[#1a1a2e] border-white/10'}`}
               >
                 <SlidersHorizontal size={16} />
               </button>
@@ -268,6 +276,9 @@ export default function TradeScreen() {
                     {pkmn.isShiny && (
                       <Sparkles size={10} className="absolute top-1.5 right-1.5 text-yellow-400" />
                     )}
+                    {favorites.includes(pkmn.id) && (
+                      <span className="absolute top-1.5 left-1.5 text-yellow-400 text-[9px] leading-none">★</span>
+                    )}
                     <span className="text-[8px] text-white/20 font-mono self-end">
                       #{pkmn.pokemonId.toString().padStart(3, '0')}
                     </span>
@@ -277,7 +288,7 @@ export default function TradeScreen() {
                       alt={pkmn.name}
                     />
                     <span className="text-[9px] font-black uppercase truncate w-full text-center leading-tight">
-                      {pkmn.name}
+                      {pkmn.customName || pkmn.name}
                     </span>
                     <span className="text-[8px] text-white/30 font-bold">Lv.{pkmn.level}</span>
                     <div className="flex gap-0.5 mt-1 flex-wrap justify-center">
