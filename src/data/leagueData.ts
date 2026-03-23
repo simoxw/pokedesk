@@ -42,7 +42,7 @@ export const LEAGUE_REGIONS: LeagueRegion[] = [
         name: 'Lorelei',
         title: 'Superquattro del Ghiaccio',
         type: 'ice',
-        spriteUrl: sprite('lorelei'),
+        spriteUrl: 'https://play.pokemonshowdown.com/sprites/trainers/lorelei-gen3.png',
         pokemon: [
           { id: 87,  level: 52 }, // Dewgong
           { id: 91,  level: 53 }, // Cloyster

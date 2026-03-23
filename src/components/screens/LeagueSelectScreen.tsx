@@ -40,7 +40,10 @@ export default function LeagueSelectScreen() {
 
   const handleSelectRegion = (regionId: string) => {
     if (!isRegionUnlocked(regionId)) return;
-    useStore.getState().startLeagueRun(regionId);
+    // Avvia nuova run solo se non c'è già una run in corso per questa regione
+    if (leagueProgress.currentRun?.regionId !== regionId) {
+      useStore.getState().startLeagueRun(regionId);
+    }
     setScreen('LEAGUE_BATTLE_SCREEN');
   };
 

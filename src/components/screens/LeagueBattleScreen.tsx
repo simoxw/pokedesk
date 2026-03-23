@@ -114,13 +114,6 @@ export default function LeagueBattleScreen() {
     buildTeam();
   }, [trainer.id]);
 
-  // Quando arriva in fase battle, inietta il team nel friendBattleTeam
-  useEffect(() => {
-    if (phase === 'battle' && builtTeam.length > 0) {
-      setLeagueBattleTeam(builtTeam);
-    }
-  }, [phase, builtTeam]);
-
   // Monitora la fine della battaglia leggendo friendBattleTeam
   // BattleScreen chiama clearFriendBattleTeam alla fine
   // Usiamo un listener sul fatto che friendBattleTeam diventa null
@@ -209,6 +202,7 @@ export default function LeagueBattleScreen() {
           variant="intro"
           onComplete={() => {
             setBattleStarted(false);
+            setLeagueBattleTeam(builtTeam); // inietta PRIMA del render di BattleScreen
             setPhase('battle');
           }}
         />
