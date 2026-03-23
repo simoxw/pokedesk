@@ -100,6 +100,39 @@ export interface DailyMission {
 }
 
 export interface GameState {
+  player: { name: string; gender: 'M' | 'F'; createdAt: number; playTime: number };
+  team: Pokemon[];
+  box: Pokemon[];
+  inventory: Record<string, number>;
+  coins: number;
+  medals: Medal[];
+  currentBattlePath: { battlesWon: number; nextIsBoss: boolean };
+  charges: number;
+  lastTickTimestamp: number;
+  safariCharges: number;
+  lastSafariTickTimestamp: number;
+  pokedex: Record<number, 'seen' | 'caught'>;
+  stats: { totalCaught: number; totalBattles: number; shiniesFound: number; pokemonReleased: number };
+  settings: { audio: boolean; notifications: boolean };
+  expShareActive: boolean;
+  pendingMedalUnlock: Medal | null;
+  pendingEvolution: { pokemonId: string; newPokemonId: number; newName: string; newTypes?: PokemonType[]; newBaseStats?: Stats } | null;
+  pendingNewMove: { pokemonId: string; move: Move } | null;
+  favorites: string[];
+  friendBattleTeam: any[] | null;
+  leagueBattleTeam: any[] | null;
+  isFirstRun: boolean;
+  dailyMissions: { date: string; missions: DailyMission[] } | null;
+  leagueProgress: {
+    completedRuns: number;
+    completedRegions: string[];
+    trophies: string[];
+    currentRun: { regionId: string; trainerIndex: number; defeatedTrainers: number[] } | null;
+  };
+  currentScreen: ScreenName;
+}
+
+export interface GameState {
   player: {
     name: string;
     gender: 'M' | 'F';

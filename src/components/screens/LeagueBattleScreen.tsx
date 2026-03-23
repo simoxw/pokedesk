@@ -27,9 +27,9 @@ export default function LeagueBattleScreen() {
     medals,
     team,
     updatePokemon,
-    friendBattleTeam,
-    setFriendBattleTeam,
-    clearFriendBattleTeam,
+    leagueBattleTeam,
+    setLeagueBattleTeam,
+    clearLeagueBattleTeam,
   } = useStore();
 
   const [phase, setPhase] = useState<Phase>('intro');
@@ -95,6 +95,7 @@ export default function LeagueBattleScreen() {
               evs: { hp:0, attack:0, defense:0, spAtk:0, spDef:0, speed:0 },
               nature: 'Quirky',
               moves,
+              rawStats: data.stats,
               types: data.types.map((t: any) => t.type.name),
               status: null,
               isShiny: false,
@@ -116,7 +117,7 @@ export default function LeagueBattleScreen() {
   // Quando arriva in fase battle, inietta il team nel friendBattleTeam
   useEffect(() => {
     if (phase === 'battle' && builtTeam.length > 0) {
-      setFriendBattleTeam(builtTeam);
+      setLeagueBattleTeam(builtTeam);
     }
   }, [phase, builtTeam]);
 
@@ -127,13 +128,11 @@ export default function LeagueBattleScreen() {
 
   useEffect(() => {
     if (phase !== 'battle') return;
-    if (!battleStarted && friendBattleTeam) {
+    if (!battleStarted && leagueBattleTeam) {
       setBattleStarted(true);
       return;
     }
-    // Battle finita: friendBattleTeam è tornato null
-    if (battleStarted && !friendBattleTeam) {
-      // Determina vittoria o sconfitta controllando HP team player
+    if (battleStarted && !leagueBattleTeam) {
       const playerAlive = useStore.getState().team.some(p => p.currentHp > 0);
       if (playerAlive) {
         handleBattleWin();
@@ -141,7 +140,7 @@ export default function LeagueBattleScreen() {
         handleBattleLose();
       }
     }
-  }, [friendBattleTeam, phase, battleStarted]);
+  }, [leagueBattleTeam, phase, battleStarted]);
 
   const handleBattleWin = () => {
     // Ricompensa trainer

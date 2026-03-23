@@ -10,7 +10,7 @@ import TypeBadge from '../ui/TypeBadge';
 import confetti from 'canvas-confetti';
 
 export default function BattleScreen() {
-  const { team, setScreen, incrementStat, addCoins, addItem, updatePokemon, inventory, useItem, gainExp, currentBattlePath, recordBattleWin, medals, expShareActive, friendBattleTeam, clearFriendBattleTeam } = useStore();
+  const { team, setScreen, incrementStat, addCoins, addItem, updatePokemon, inventory, useItem, gainExp, currentBattlePath, recordBattleWin, medals, expShareActive, friendBattleTeam, clearFriendBattleTeam, leagueBattleTeam, clearLeagueBattleTeam } = useStore();
   const isFriendBattle = !!friendBattleTeam;
   const medalsCount = medals.filter((m: any) => m.isUnlocked).length;
   const [activeIdx, setActiveIdx] = useState(0);
@@ -41,8 +41,10 @@ export default function BattleScreen() {
   const [apiError, setApiError] = useState<string | null>(null);
 
   const playerPkmn = team[activeIdx];
-  const isBoss = !isFriendBattle && currentBattlePath.nextIsBoss;
+  const isLeagueBattle = !!leagueBattleTeam;
+  const isBoss = !isFriendBattle && !isLeagueBattle && currentBattlePath.nextIsBoss;
   const friendTrainerName = friendBattleTeam?.[0]?.trainerName ?? 'Amico';
+  const leagueTrainerName = leagueBattleTeam?.[0]?.trainerName ?? 'Trainer';
 
   const applyEvGain = (pokemon: any, enemyData: any) => { 
     if (!enemyData?.rawStats) return; 
@@ -87,6 +89,26 @@ export default function BattleScreen() {
       setLastEnemyMove(null);
       try {
         setLogs(['Inizia la battaglia!']);
+
+        // LEAGUE BATTLE
+        if (isLeagueBattle && leagueBattleTeam && leagueBattleTeam.length > 0) {
+          const toEnemy = (p: any) => ({
+            ...p,
+            currentHp: p.stats.hp,
+            maxHp: p.stats.hp,
+            status: null,
+          });
+          const [l1, l2, l3, l4] = leagueBattleTeam;
+          if (l2) setEnemy2(toEnemy(l2));
+          if (l3) setEnemy3(toEnemy(l3));
+          if (l4) setEnemy4(toEnemy(l4));
+          const firstEnemy = toEnemy(l1);
+          setEnemy(firstEnemy);
+          enemyRef.current = firstEnemy;
+          setLogs([`⚔️ Battaglia contro ${leagueTrainerName}!`]);
+          setLoading(false);
+          return;
+        }
 
         // FRIEND BATTLE — usa il team dell'amico direttamente
         if (isFriendBattle && friendBattleTeam && friendBattleTeam.length > 0) {
@@ -330,6 +352,63 @@ export default function BattleScreen() {
       setTurn('player');
       setIsAnimating(false);
       return true;
+    }
+
+    if (isLeagueBattle && enemyPhase === 1 && enemy2) {
+      addLog(`⚔️ ${leagueTrainerName} lancia il secondo Pokémon!`);
+      setLastEnemyMove(null);
+      setEnemyPhase(2);
+      setEnemy(enemy2);
+      enemyRef.current = enemy2;
+      setPlayerStages({ attack:0, defense:0, spAtk:0, spDef:0, speed:0, accuracy:0, evasion:0 });
+      setEnemyStages({ attack:0, defense:0, spAtk:0, spDef:0, speed:0, accuracy:0, evasion:0 });
+      setTurn('player');
+      setIsAnimating(false);
+      return true;
+    }
+
+    if (isLeagueBattle && enemyPhase === 2 && enemy3) {
+      addLog(`⚔️ ${leagueTrainerName} lancia il terzo Pokémon!`);
+      setLastEnemyMove(null);
+      setEnemyPhase(3);
+      setEnemy(enemy3);
+      enemyRef.current = enemy3;
+      setPlayerStages({ attack:0, defense:0, spAtk:0, spDef:0, speed:0, accuracy:0, evasion:0 });
+      setEnemyStages({ attack:0, defense:0, spAtk:0, spDef:0, speed:0, accuracy:0, evasion:0 });
+      setTurn('player');
+      setIsAnimating(false);
+      return true;
+    }
+
+    if (isLeagueBattle && enemyPhase === 3 && enemy4) {
+      addLog(`⚔️ ${leagueTrainerName} lancia il quarto Pokémon!`);
+      setLastEnemyMove(null);
+      setEnemyPhase(4);
+      setEnemy(enemy4);
+      enemyRef.current = enemy4;
+      setPlayerStages({ attack:0, defense:0, spAtk:0, spDef:0, speed:0, accuracy:0, evasion:0 });
+      setEnemyStages({ attack:0, defense:0, spAtk:0, spDef:0, speed:0, accuracy:0, evasion:0 });
+      setTurn('player');
+      setIsAnimating(false);
+      return true;
+    }
+
+    if (isLeagueBattle) {
+      addLog(`🏆 Hai sconfitto ${leagueTrainerName}!`);
+      incrementStat('totalBattles');
+      team.forEach(p => {
+        const recoveredHp = Math.min(p.stats.hp, p.currentHp + Math.floor(p.stats.hp * 0.1));
+        const recoveredMoves = p.moves.map((m: any) => ({ ...m, pp: m.maxPp }));
+        updatePokemon(p.id, { currentHp: recoveredHp, moves: recoveredMoves });
+      });
+      setPlayerStages({ attack: 0, defense: 0, spAtk: 0, spDef: 0, speed: 0, accuracy: 0, evasion: 0 });
+      setEnemyStages({ attack: 0, defense: 0, spAtk: 0, spDef: 0, speed: 0, accuracy: 0, evasion: 0 });
+      setEnemyFlinch(false);
+      setPlayerFlinch(false);
+      clearLeagueBattleTeam();
+      setIsFinished(true);
+      setIsAnimating(false);
+      return false;
     }
 
     if (isFriendBattle) {
@@ -1373,7 +1452,7 @@ export default function BattleScreen() {
 
         {isFinished ? (
           <button
-            onClick={() => { clearFriendBattleTeam(); setScreen('HUB_SCREEN'); }}
+            onClick={() => { clearFriendBattleTeam(); clearLeagueBattleTeam(); setScreen('HUB_SCREEN'); }}
             className="w-full bg-[#e63946] py-4 rounded-2xl font-black text-lg"
           >
             TORNA ALL'HUB

@@ -1,10 +1,10 @@
 import React from 'react';
 import { useStore } from '../../store';
 import { motion } from 'motion/react';
-import { ArrowLeft, Trophy, Target, Sparkles, Trash2, Sword, Edit2, Check } from 'lucide-react';
+import { ArrowLeft, Trophy, Target, Sparkles, Trash2, Sword, Edit2, Check, Star } from 'lucide-react';
 
 export default function ProfileScreen() {
-  const { player, stats, medals, setScreen, updatePlayer } = useStore();
+  const { player, stats, medals, setScreen, updatePlayer, leagueProgress } = useStore();
   const medalsWon = medals.filter(m => m.isUnlocked).length;
   const [isEditingName, setIsEditingName] = React.useState(false);
   const [tempName, setTempName] = React.useState(player.name);
@@ -72,7 +72,7 @@ export default function ProfileScreen() {
       <h4 className="text-lg font-black mb-4 flex items-center gap-2">
         <Trophy size={20} className="text-yellow-500" /> BACHECA MEDAGLIE
       </h4>
-      <div className="grid grid-cols-8 gap-2">
+      <div className="grid grid-cols-8 gap-2 mb-8">
         {medals.map(medal => (
           <div 
             key={medal.id}
@@ -83,6 +83,49 @@ export default function ProfileScreen() {
             <Trophy size={16} className={medal.isUnlocked ? 'text-yellow-500' : 'text-white'} />
           </div>
         ))}
+      </div>
+
+      <h4 className="text-lg font-black mb-4 flex items-center gap-2">
+        <Star size={20} className="text-purple-400" /> TROFEI LEGA
+      </h4>
+      {leagueProgress.completedRuns > 0 && (
+        <div className="mb-3 bg-yellow-500/10 border border-yellow-500/30 rounded-xl px-4 py-2 text-center">
+          <p className="text-yellow-400 font-black text-xs uppercase tracking-widest">
+            🌟 GRAN MAESTRO — {leagueProgress.completedRuns}× tutte le leghe completate
+          </p>
+        </div>
+      )}
+      <div className="grid grid-cols-4 gap-2">
+        {[
+          { id: 'kanto',  label: 'Kanto',  flag: '🗾' },
+          { id: 'johto',  label: 'Johto',  flag: '🌸' },
+          { id: 'hoenn',  label: 'Hoenn',  flag: '🌊' },
+          { id: 'sinnoh', label: 'Sinnoh', flag: '❄️' },
+          { id: 'unova',  label: 'Unima',  flag: '🗽' },
+          { id: 'kalos',  label: 'Kalos',  flag: '🗼' },
+          { id: 'alola',  label: 'Alola',  flag: '🌺' },
+          { id: 'galar',  label: 'Galar',  flag: '⚔️' },
+        ].map(region => {
+          const completed = leagueProgress.completedRegions.includes(region.id);
+          return (
+            <div
+              key={region.id}
+              className={`rounded-xl p-2 flex flex-col items-center gap-1 border transition-all ${
+                completed
+                  ? 'bg-purple-500/20 border-purple-500/50'
+                  : 'bg-white/5 border-white/5 opacity-30'
+              }`}
+            >
+              <span className="text-xl">{completed ? region.flag : '🔒'}</span>
+              <span className={`text-[9px] font-black uppercase ${completed ? 'text-purple-300' : 'text-white/40'}`}>
+                {region.label}
+              </span>
+              {completed && (
+                <Trophy size={10} className="text-yellow-400" />
+              )}
+            </div>
+          );
+        })}
       </div>
     </div>
   );

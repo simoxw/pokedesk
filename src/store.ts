@@ -8,6 +8,8 @@ interface GameStore extends GameState {
   setScreen: (screen: ScreenName) => void;
   setFriendBattleTeam: (team: any[]) => void;
   clearFriendBattleTeam: () => void;
+  setLeagueBattleTeam: (team: any[]) => void;
+  clearLeagueBattleTeam: () => void;
   setPlayer: (name: string, gender: 'M' | 'F') => void;
   updatePlayer: (updates: Partial<GameState['player']>) => void;
   addPokemon: (pokemon: Pokemon) => void;
@@ -127,6 +129,7 @@ export const useStore = create<GameStore>()(
       pendingNewMove: null,
       favorites: [],
       friendBattleTeam: null,
+      leagueBattleTeam: null,
       isFirstRun: true,
       dailyMissions: null,
       leagueProgress: {
@@ -519,6 +522,8 @@ export const useStore = create<GameStore>()(
       updateSettings: (updates) => set((state) => ({ settings: { ...state.settings, ...updates } })),
       setFriendBattleTeam: (team) => set({ friendBattleTeam: team }),
       clearFriendBattleTeam: () => set({ friendBattleTeam: null }),
+      setLeagueBattleTeam: (team) => set({ leagueBattleTeam: team }),
+      clearLeagueBattleTeam: () => set({ leagueBattleTeam: null }),
       toggleFavorite: (id) => set((state) => ({
         favorites: state.favorites.includes(id)
           ? state.favorites.filter(f => f !== id)
@@ -644,6 +649,7 @@ export const useStore = create<GameStore>()(
         pendingNewMove: null,
         favorites: [],
         friendBattleTeam: null,
+        leagueBattleTeam: null,
       }),
     }),
     {
@@ -658,6 +664,7 @@ export const useStore = create<GameStore>()(
         state.box = state.box.map(clampHp);
         state.pendingEvolution = null;
         state.pendingNewMove = null;
+        state.leagueBattleTeam = null;
       }
     }
   )
