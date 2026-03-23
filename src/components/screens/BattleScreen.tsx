@@ -44,6 +44,7 @@ export default function BattleScreen() {
 
   const playerPkmn = team[activeIdx];
   const isLeagueBattle = !!leagueBattleTeam;
+  const wasLeagueBattle = React.useRef(isLeagueBattle);
   const isBoss = !isFriendBattle && !isLeagueBattle && currentBattlePath.nextIsBoss;
   const friendTrainerName = friendBattleTeam?.[0]?.trainerName ?? 'Amico';
   const leagueTrainerName = leagueBattleTeam?.[0]?.trainerName ?? 'Trainer';
@@ -697,7 +698,7 @@ export default function BattleScreen() {
         useStore.getState().team.forEach(p => {
           updatePokemon(p.id, { currentHp: 1, moves: p.moves.map((m: any) => ({ ...m, pp: m.maxPp })) });
         });
-        if (isLeagueBattle) setLeagueBattleResult('lose');
+        if (wasLeagueBattle.current) setLeagueBattleResult('lose');
         setIsFinished(true);
       } else {
         setActiveIdx(nextAvailable);
@@ -1208,7 +1209,7 @@ export default function BattleScreen() {
         useStore.getState().team.forEach(p => {
           updatePokemon(p.id, { currentHp: 1, moves: p.moves.map((m: any) => ({ ...m, pp: m.maxPp })) });
         });
-        if (isLeagueBattle) setLeagueBattleResult('lose');
+        if (wasLeagueBattle.current) setLeagueBattleResult('lose');
         setIsFinished(true);
       } else {
         setActiveIdx(nextAvailable);

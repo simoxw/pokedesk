@@ -669,6 +669,7 @@ export const useStore = create<GameStore>()(
         state.pendingEvolution = null;
         state.pendingNewMove = null;
         state.leagueBattleTeam = null;
+        state.leagueBattleResult = null;
       }
     }
   )

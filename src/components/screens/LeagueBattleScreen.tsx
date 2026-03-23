@@ -162,6 +162,7 @@ export default function LeagueBattleScreen() {
   };
 
   const handleBattleLose = () => {
+    clearLeagueBattleTeam();
     setPhase('lose');
   };
 
@@ -179,12 +180,14 @@ export default function LeagueBattleScreen() {
       );
       setPhase('region_complete');
     } else {
+      clearLeagueBattleTeam();
       advanceLeagueTrainer(trainerIndex);
       setScreen('HUB_SCREEN');
     }
   };
 
   const handleLoseDialogComplete = () => {
+    clearLeagueBattleTeam();
     abandonLeagueRun();
     setScreen('HUB_SCREEN');
   };
