@@ -91,17 +91,15 @@ export default function PokedexScreen() {
   const seen = Object.values(pokedex).length; // tutte le specie registrate (seen + caught)
  
   const filteredEntries = Object.entries(pokedex)
-    .filter(([, status]) => status === 'caught')
-    .map(([id]) => Number(id))
-    .filter(id => {
-      // Filtro Generazione
+    .map(([id, status]) => ({ id: Number(id), status }))
+    .filter(({ id }) => {
       if (filterGen) {
         const range = GEN_RANGES.find(g => g.id === filterGen)?.range;
         if (range && (id < range[0] || id > range[1])) return false;
       }
       return true;
     })
-    .sort((a, b) => a - b);
+    .sort((a, b) => a.id - b.id);
 
   return ( 
     <div className="h-full flex flex-col bg-[#0f0f1a]"> 
@@ -181,20 +179,24 @@ export default function PokedexScreen() {
           </div> 
         ) : ( 
           <div className="grid grid-cols-4 gap-3"> 
-            {filteredEntries.map((id) => { 
+            {filteredEntries.map(({ id, status }) => {
+                const isSeen = status === 'seen';
                 return ( 
                   <button 
                     key={id} 
-                    onClick={() => handleSelect(id)} 
-                    className="bg-[#1a1a2e] border border-white/10 rounded-2xl p-2 flex flex-col items-center gap-1 active:border-[#e63946] transition-all" 
+                    onClick={() => !isSeen ? handleSelect(id) : undefined}
+                    disabled={isSeen}
+                    className={`bg-[#1a1a2e] border border-white/10 rounded-2xl p-2 flex flex-col items-center gap-1 transition-all ${isSeen ? 'cursor-default' : 'active:border-[#e63946]'}`}
                   > 
                     <img 
                       src={`https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/${id}.png`} 
-                      className="w-16 h-16 object-contain" 
+                      className="w-16 h-16 object-contain"
+                      style={isSeen ? { filter: 'brightness(0) opacity(0.5)' } : undefined}
                     /> 
                     <span className="text-[10px] font-mono text-white/30"> 
                       #{id.toString().padStart(3, '0')} 
-                    </span> 
+                    </span>
+                    {isSeen && <span className="text-[8px] text-white/20 font-bold uppercase">Visto</span>}
                   </button> 
                 ); 
               })} 

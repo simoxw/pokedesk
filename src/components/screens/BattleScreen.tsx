@@ -281,7 +281,10 @@ export default function BattleScreen() {
     if (expShareActive) { 
       const halfExp = Math.max(1, Math.floor(exp / 2)); 
       useStore.getState().team.forEach((p: any) => { 
-        if (p.id !== currentPkm.id && p.currentHp > 0) gainExp(p.id, halfExp); 
+        if (p.id !== currentPkm.id && p.currentHp > 0) {
+          gainExp(p.id, halfExp);
+          applyEvGain(p, defeatedEnemy);
+        }
       }); 
     } 
     
@@ -549,6 +552,9 @@ export default function BattleScreen() {
 
     // Fallback assoluto
     if (!enemyMove) {
+      if (validMoves.length === 0) {
+        addLog(`${liveEnemy.name} non ha più PP! Usa Lotta!`);
+      }
       enemyMove = validMoves.length > 0
         ? validMoves[Math.floor(Math.random() * validMoves.length)]
         : { name: 'Lotta', type: 'normal', power: 40, category: 'physical', pp: 1, maxPp: 1, id: '0', accuracy: 100, priority: 0, description: '' };
