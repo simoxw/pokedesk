@@ -40,7 +40,16 @@ export default function LeagueSelectScreen() {
 
   const handleSelectRegion = (regionId: string) => {
     if (!isRegionUnlocked(regionId)) return;
-    // Avvia nuova run solo se non c'è già una run in corso per questa regione
+    if (
+      leagueProgress.currentRun &&
+      leagueProgress.currentRun.regionId !== regionId &&
+      leagueProgress.currentRun.trainerIndex > 0
+    ) {
+      const confirm = window.confirm(
+        `Hai una run in corso su ${leagueProgress.currentRun.regionId.toUpperCase()}. Abbandonarla e iniziare ${regionId.toUpperCase()}?`
+      );
+      if (!confirm) return;
+    }
     if (leagueProgress.currentRun?.regionId !== regionId) {
       useStore.getState().startLeagueRun(regionId);
     }

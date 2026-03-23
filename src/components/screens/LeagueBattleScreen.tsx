@@ -37,33 +37,44 @@ export default function LeagueBattleScreen() {
   const [builtTeam, setBuiltTeam] = useState<any[]>([]);
 
   const run = leagueProgress.currentRun;
-  if (!run) {
-    setScreen('LEAGUE_SELECT_SCREEN');
-    return null;
-  }
+  const region = run ? LEAGUE_REGIONS.find(r => r.id === run.regionId) : null;
 
-  const region = LEAGUE_REGIONS.find(r => r.id === run.regionId);
-  if (!region) {
-    setScreen('LEAGUE_SELECT_SCREEN');
-    return null;
-  }
+  useEffect(() => {
+    if (!run || !region) {
+      if (phase !== 'region_complete' && phase !== 'win' && phase !== 'lose') {
+        setScreen('LEAGUE_SELECT_SCREEN');
+      }
+    }
+  }, [run, region, phase]);
 
-  const trainerIndex = run.trainerIndex;
-  const isChampion = trainerIndex >= region.elite4.length;
-  const trainer: LeagueTrainer = isChampion
-    ? region.champion
-    : region.elite4[trainerIndex];
+  if (!run && phase !== 'region_complete' && phase !== 'win' && phase !== 'lose') return null;
+
+  const trainerIndex = run?.trainerIndex ?? 0;
+  const isChampion = region ? trainerIndex >= region.elite4.length : false;
+  const trainer: LeagueTrainer | null = region
+    ? (isChampion ? region.champion : region.elite4[trainerIndex])
+    : null;
+
+  // Salva trainer e region in ref al mount — sopravvivono a currentRun: null
+  const trainerRef = React.useRef(trainer);
+  const regionRef = React.useRef(region);
+  if (trainer && !trainerRef.current) trainerRef.current = trainer;
+  if (region && !regionRef.current) regionRef.current = region;
+
+  const activeTrainer = trainerRef.current;
+  const activeRegion = regionRef.current;
 
   const completedRuns = leagueProgress.completedRuns;
 
   // Costruisce il team del trainer fetchando i dati da PokeAPI
   useEffect(() => {
     const buildTeam = async () => {
+      if (!activeTrainer) return;
       setLoading(true);
       setPhase('intro');
       try {
         const built = await Promise.all(
-          trainer.pokemon.map(async entry => {
+          activeTrainer.pokemon.map(async entry => {
             const scaledLevel = scaleLeagueLevel(entry.level, completedRuns);
             const data = await api.getPokemon(entry.id);
             const species = await api.getSpecies(entry.id);
@@ -100,7 +111,7 @@ export default function LeagueBattleScreen() {
               status: null,
               isShiny: false,
               growthRate: species.growth_rate.name,
-              trainerName: trainer.name,
+              trainerName: activeTrainer!.name,
             };
           })
         );
@@ -112,7 +123,7 @@ export default function LeagueBattleScreen() {
       }
     };
     buildTeam();
-  }, [trainer.id]);
+  }, [activeTrainer?.id]);
 
   // Monitora la fine della battaglia leggendo friendBattleTeam
   // BattleScreen chiama clearFriendBattleTeam alla fine
@@ -136,9 +147,10 @@ export default function LeagueBattleScreen() {
   }, [leagueBattleTeam, phase, battleStarted]);
 
   const handleBattleWin = () => {
+    if (!activeTrainer) return;
     // Ricompensa trainer
-    addCoins(trainer.reward.coins);
-    Object.entries(trainer.reward.items).forEach(([id, qty]) => addItem(id, qty));
+    addCoins(activeTrainer.reward.coins);
+    Object.entries(activeTrainer.reward.items).forEach(([id, qty]) => addItem(id, qty));
     setPhase('win');
   };
 
@@ -147,14 +159,15 @@ export default function LeagueBattleScreen() {
   };
 
   const handleWinDialogComplete = () => {
+    if (!activeRegion) return;
     const nextIndex = trainerIndex + 1;
-    const totalTrainers = region.elite4.length + 1; // +1 campione
+    const totalTrainers = activeRegion.elite4.length + 1; // +1 campione
 
     if (nextIndex >= totalTrainers) {
       // Completata la regione
-      completeLeagueRegion(region.id, region.completionReward.trophyLabel);
-      addCoins(region.completionReward.coins);
-      Object.entries(region.completionReward.items).forEach(([id, qty]) =>
+      completeLeagueRegion(activeRegion.id, activeRegion.completionReward.trophyLabel);
+      addCoins(activeRegion.completionReward.coins);
+      Object.entries(activeRegion.completionReward.items).forEach(([id, qty]) =>
         addItem(id, qty)
       );
       setPhase('region_complete');
@@ -178,7 +191,7 @@ export default function LeagueBattleScreen() {
           className="w-10 h-10 border-2 border-yellow-400 border-t-transparent rounded-full"
         />
         <p className="text-white/50 font-bold text-sm">
-          Preparazione battaglia con {trainer.name}...
+          Preparazione battaglia con {activeTrainer?.name}...
         </p>
       </div>
     );
@@ -196,9 +209,9 @@ export default function LeagueBattleScreen() {
       {phase === 'intro' && (
         <GameboyDialog
           key="intro"
-          lines={trainer.intro}
-          trainerName={`${trainer.title} — ${trainer.name}`}
-          trainerSprite={trainer.spriteUrl}
+          lines={activeTrainer?.intro ?? []}
+          trainerName={`${activeTrainer?.title} — ${activeTrainer?.name}`}
+          trainerSprite={activeTrainer?.spriteUrl ?? ''}
           variant="intro"
           onComplete={() => {
             setBattleStarted(false);
@@ -212,9 +225,9 @@ export default function LeagueBattleScreen() {
       {phase === 'win' && (
         <GameboyDialog
           key="win"
-          lines={trainer.win}
-          trainerName={trainer.name}
-          trainerSprite={trainer.spriteUrl}
+          lines={activeTrainer?.win ?? []}
+          trainerName={activeTrainer?.name ?? ''}
+          trainerSprite={activeTrainer?.spriteUrl ?? ''}
           variant="win"
           onComplete={handleWinDialogComplete}
         />
@@ -224,9 +237,9 @@ export default function LeagueBattleScreen() {
       {phase === 'lose' && (
         <GameboyDialog
           key="lose"
-          lines={trainer.lose}
-          trainerName={trainer.name}
-          trainerSprite={trainer.spriteUrl}
+          lines={activeTrainer?.lose ?? []}
+          trainerName={activeTrainer?.name ?? ''}
+          trainerSprite={activeTrainer?.spriteUrl ?? ''}
           variant="lose"
           onComplete={handleLoseDialogComplete}
         />
@@ -251,10 +264,10 @@ export default function LeagueBattleScreen() {
 
           <div className="text-center">
             <h2 className="text-3xl font-black text-yellow-400 mb-2">
-              {region.completionReward.trophyLabel}
+              {activeRegion?.completionReward.trophyLabel}
             </h2>
             <p className="text-white/70 text-sm">
-              Hai conquistato la Lega di {region.name}!
+              Hai conquistato la Lega di {activeRegion?.name}!
             </p>
           </div>
 
@@ -264,8 +277,8 @@ export default function LeagueBattleScreen() {
               🎁 Ricompense
             </p>
             <div className="space-y-1 text-sm text-white/80">
-              <p>💰 +{region.completionReward.coins} monete</p>
-              {Object.entries(region.completionReward.items).map(([id, qty]) => (
+              <p>💰 +{activeRegion?.completionReward.coins} monete</p>
+              {Object.entries(activeRegion?.completionReward.items ?? {}).map(([id, qty]) => (
                 <p key={id}>✦ {qty}x {id.replace('_', ' ')}</p>
               ))}
             </div>

@@ -1480,7 +1480,15 @@ export default function BattleScreen() {
 
         {isFinished ? (
           <button
-            onClick={() => { clearFriendBattleTeam(); clearLeagueBattleTeam(); setScreen('HUB_SCREEN'); }}
+            onClick={() => { 
+              clearFriendBattleTeam(); 
+              if (isLeagueBattle) {
+                setScreen('LEAGUE_BATTLE_SCREEN');
+              } else {
+                clearLeagueBattleTeam();
+                setScreen('HUB_SCREEN'); 
+              }
+            }}
             className="w-full bg-[#e63946] py-4 rounded-2xl font-black text-lg"
           >
             TORNA ALL'HUB
