@@ -19,7 +19,8 @@ export default function HubScreen() {
     lastSafariTickTimestamp,
     dailyMissions,
     checkDailyMissions,
-    claimMission
+    claimMission,
+    leagueProgress,
   } = useStore();
 
   const [showMissions, setShowMissions] = useState(false);
@@ -269,7 +270,7 @@ export default function HubScreen() {
                   : 'bg-gray-800/60 border border-white/10 text-white/30'
               }`}
             >
-              {medalsCount >= 40 && (
+              {medalsCount >= 40 && leagueProgress.completedRegions.length === 0 && !leagueProgress.currentRun && (
                 <span className="absolute -top-1.5 -right-1.5 bg-yellow-400 text-black text-[8px] font-black px-1.5 py-0.5 rounded-full">
                   NUOVO
                 </span>

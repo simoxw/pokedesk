@@ -35,6 +35,7 @@ export default function LeagueBattleScreen() {
   const [phase, setPhase] = useState<Phase>('intro');
   const [loading, setLoading] = useState(true);
   const [builtTeam, setBuiltTeam] = useState<any[]>([]);
+  const [winRewardText, setWinRewardText] = useState('');
 
   const run = leagueProgress.currentRun;
   const region = run ? LEAGUE_REGIONS.find(r => r.id === run.regionId) : null;
@@ -151,6 +152,10 @@ export default function LeagueBattleScreen() {
     // Ricompensa trainer
     addCoins(activeTrainer.reward.coins);
     Object.entries(activeTrainer.reward.items).forEach(([id, qty]) => addItem(id, qty));
+    const itemList = Object.entries(activeTrainer.reward.items)
+      .map(([id, qty]) => `${qty}× ${id.replace(/_/g, ' ')}`)
+      .join(', ');
+    setWinRewardText(`+${activeTrainer.reward.coins}¢${itemList ? ' · ' + itemList : ''}`);
     setPhase('win');
   };
 
@@ -225,7 +230,10 @@ export default function LeagueBattleScreen() {
       {phase === 'win' && (
         <GameboyDialog
           key="win"
-          lines={activeTrainer?.win ?? []}
+          lines={[
+            ...(activeTrainer?.win ?? []),
+            ...(winRewardText ? [`🎁 ${winRewardText}`] : []),
+          ]}
           trainerName={activeTrainer?.name ?? ''}
           trainerSprite={activeTrainer?.spriteUrl ?? ''}
           variant="win"
