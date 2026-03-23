@@ -24,6 +24,7 @@ export default function BattleScreen() {
   const [showBagOverlay, setShowBagOverlay] = useState(false);
   const [attackAnim, setAttackAnim] = useState(false);
   const [enemyHitAnim, setEnemyHitAnim] = useState(false);
+  const [playerHitAnim, setPlayerHitAnim] = useState(false);
   const [statChanges, setStatChanges] = useState<{ label: string; positive: boolean } | null>(null);
   const [playerStages, setPlayerStages] = useState<Record<string, number>>({ attack: 0, defense: 0, spAtk: 0, spDef: 0, speed: 0, accuracy: 0, evasion: 0 }); 
   const [enemyStages, setEnemyStages] = useState<Record<string, number>>({ attack: 0, defense: 0, spAtk: 0, spDef: 0, speed: 0, accuracy: 0, evasion: 0 }); 
@@ -662,6 +663,10 @@ export default function BattleScreen() {
 
     const newPlayerHp = Math.max(0, currentPlayerPkmn.currentHp - enemyDamage);
     updatePokemon(currentPlayerPkmn.id, { currentHp: newPlayerHp });
+    if (enemyDamage > 0) {
+      setPlayerHitAnim(true);
+      setTimeout(() => setPlayerHitAnim(false), 400);
+    }
 
     // --- DRAIN: il nemico si cura in base al valore drain di PokeAPI ---
     const enemyMetaDrain = enemyMove.meta?.drain ?? 0;
@@ -1387,8 +1392,14 @@ export default function BattleScreen() {
         {/* Player Pokemon Area */}
         <div className="relative mt-auto pb-4 pl-2 pr-2 flex items-end gap-2 h-[38%]">
           <motion.img
-            animate={attackAnim ? { x: [0, 15, 0] } : { x: 0 }}
-            transition={{ duration: 0.3 }}
+            animate={
+              attackAnim 
+                ? { x: [0, 15, 0] }
+                : playerHitAnim
+                ? { x: [-4, 4, -4, 4, 0], opacity: [1, 0.3, 1, 0.3, 1] }
+                : { x: 0 }
+            }
+            transition={{ duration: 0.4 }}
             src={`https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/back/${playerPkmn?.isShiny ? 'shiny/' : ''}${playerPkmn?.pokemonId}.png`}
             className="w-44 h-44 object-contain drop-shadow-2xl shrink-0"
           />
