@@ -244,8 +244,9 @@ export default function BagScreen() {
                     const newHp = Math.min(p.stats.hp, p.currentHp + healed); 
                     updatePokemon(p.id, { currentHp: newHp }); 
                   } 
-                  useItem(pendingItem.id); 
-                  setPendingItem(null); 
+                  useItem(pendingItem.id);
+                  // Chiudi solo se esaurito
+                  if ((inventory[pendingItem.id] || 0) <= 1) setPendingItem(null); 
                 }; 
  
                 return ( 
