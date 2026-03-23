@@ -298,7 +298,6 @@ export default function BattleScreen() {
       setEnemyPhase(2); 
       setEnemy(enemy2); 
       enemyRef.current = enemy2; 
-      setPlayerStages({ attack: 0, defense: 0, spAtk: 0, spDef: 0, speed: 0, accuracy: 0, evasion: 0 }); 
       setEnemyStages({ attack: 0, defense: 0, spAtk: 0, spDef: 0, speed: 0, accuracy: 0, evasion: 0 }); 
       setTurn('player'); 
       setIsAnimating(false); 
@@ -311,7 +310,6 @@ export default function BattleScreen() {
       setEnemyPhase(2);
       setEnemy(enemy2);
       enemyRef.current = enemy2;
-      setPlayerStages({ attack: 0, defense: 0, spAtk: 0, spDef: 0, speed: 0, accuracy: 0, evasion: 0 });
       setEnemyStages({ attack: 0, defense: 0, spAtk: 0, spDef: 0, speed: 0, accuracy: 0, evasion: 0 });
       setTurn('player');
       setIsAnimating(false);
@@ -324,7 +322,6 @@ export default function BattleScreen() {
       setEnemyPhase(3);
       setEnemy(enemy3);
       enemyRef.current = enemy3;
-      setPlayerStages({ attack:0, defense:0, spAtk:0, spDef:0, speed:0, accuracy:0, evasion:0 });
       setEnemyStages({ attack:0, defense:0, spAtk:0, spDef:0, speed:0, accuracy:0, evasion:0 });
       setTurn('player');
       setIsAnimating(false);
@@ -337,7 +334,6 @@ export default function BattleScreen() {
       setEnemyPhase(3);
       setEnemy(enemy3);
       enemyRef.current = enemy3;
-      setPlayerStages({ attack:0, defense:0, spAtk:0, spDef:0, speed:0, accuracy:0, evasion:0 });
       setEnemyStages({ attack:0, defense:0, spAtk:0, spDef:0, speed:0, accuracy:0, evasion:0 });
       setTurn('player');
       setIsAnimating(false);
@@ -350,7 +346,6 @@ export default function BattleScreen() {
       setEnemyPhase(4);
       setEnemy(enemy4);
       enemyRef.current = enemy4;
-      setPlayerStages({ attack:0, defense:0, spAtk:0, spDef:0, speed:0, accuracy:0, evasion:0 });
       setEnemyStages({ attack:0, defense:0, spAtk:0, spDef:0, speed:0, accuracy:0, evasion:0 });
       setTurn('player');
       setIsAnimating(false);
@@ -363,7 +358,6 @@ export default function BattleScreen() {
       setEnemyPhase(2);
       setEnemy(enemy2);
       enemyRef.current = enemy2;
-      setPlayerStages({ attack:0, defense:0, spAtk:0, spDef:0, speed:0, accuracy:0, evasion:0 });
       setEnemyStages({ attack:0, defense:0, spAtk:0, spDef:0, speed:0, accuracy:0, evasion:0 });
       setTurn('player');
       setIsAnimating(false);
@@ -376,7 +370,6 @@ export default function BattleScreen() {
       setEnemyPhase(3);
       setEnemy(enemy3);
       enemyRef.current = enemy3;
-      setPlayerStages({ attack:0, defense:0, spAtk:0, spDef:0, speed:0, accuracy:0, evasion:0 });
       setEnemyStages({ attack:0, defense:0, spAtk:0, spDef:0, speed:0, accuracy:0, evasion:0 });
       setTurn('player');
       setIsAnimating(false);
@@ -389,7 +382,6 @@ export default function BattleScreen() {
       setEnemyPhase(4);
       setEnemy(enemy4);
       enemyRef.current = enemy4;
-      setPlayerStages({ attack:0, defense:0, spAtk:0, spDef:0, speed:0, accuracy:0, evasion:0 });
       setEnemyStages({ attack:0, defense:0, spAtk:0, spDef:0, speed:0, accuracy:0, evasion:0 });
       setTurn('player');
       setIsAnimating(false);
@@ -748,6 +740,7 @@ export default function BattleScreen() {
     setIsAnimating(true);
     addLog(`Vai ${team[idx].name}!`);
     setActiveIdx(idx);
+    setPlayerStages({ attack: 0, defense: 0, spAtk: 0, spDef: 0, speed: 0, accuracy: 0, evasion: 0 });
     // Dopo il cambio il nemico attacca 
     await new Promise(r => setTimeout(r, 600));
     const freshPlayerPkmn = useStore.getState().team.find((p: any) => p.id === team[idx].id) ?? team[idx];
