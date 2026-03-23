@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { useStore } from '../../store';
 import { api } from '../../api';
 import { motion, AnimatePresence } from 'motion/react';
@@ -24,7 +24,7 @@ export default function BagScreen() {
   const [tmPokemon, setTmPokemon] = useState<any>(null); 
   const [loadingTm, setLoadingTm] = useState(false);
 
-  const items = {
+  const items = useMemo(() => ({
     balls: [
       { id: 'pokeball', name: 'Pokéball', icon: '🔴' },
       { id: 'megaball', name: 'Megaball', icon: '🔵' },
@@ -56,7 +56,7 @@ export default function BagScreen() {
           return acc; 
         }, []), 
       ]
-  };
+  }), [inventory, team, box, expShareActive]);
 
   return (
     <div className="h-full flex flex-col p-6 bg-[#0f0f1a]">

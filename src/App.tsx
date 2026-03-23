@@ -141,18 +141,66 @@ export default function App() {
                   <span className="font-bold text-white">{pkmn.name}</span> vuole imparare <span className="font-bold text-emerald-400">{pendingNewMove.move.name}</span>! Ma conosce già 4 mosse. Quale vuole dimenticare?
                 </p>
                 
-                <div className="grid grid-cols-1 gap-3 mb-6">
+                {/* Card nuova mossa */}
+                <div className="bg-emerald-500/10 border border-emerald-500/30 rounded-2xl p-4 mb-4">
+                  <p className="text-[10px] font-black text-emerald-400 uppercase tracking-widest mb-2">
+                    Nuova mossa
+                  </p>
+                  <div className="flex items-center justify-between mb-1">
+                    <span className="font-black text-white text-sm uppercase">{pendingNewMove.move.name}</span>
+                    <TypeBadge type={pendingNewMove.move.type as any} small />
+                  </div>
+                  <div className="flex gap-3 text-[11px] font-bold">
+                    <span className={
+                      pendingNewMove.move.category === 'physical' ? 'text-orange-400' :
+                      pendingNewMove.move.category === 'special' ? 'text-purple-400' :
+                      'text-slate-400'
+                    }>
+                      {pendingNewMove.move.category === 'physical' ? '⚔️ Fisico' :
+                       pendingNewMove.move.category === 'special' ? '✨ Speciale' : '💫 Stato'}
+                    </span>
+                    <span className="text-white/50">POT: {pendingNewMove.move.power || '--'}</span>
+                    <span className="text-white/50">ACC: {pendingNewMove.move.accuracy || '--'}%</span>
+                    <span className="text-white/50">PP: {pendingNewMove.move.pp}</span>
+                  </div>
+                  {pendingNewMove.move.description && (
+                    <p className="text-[10px] text-white/40 mt-2 italic leading-relaxed">
+                      {pendingNewMove.move.description}
+                    </p>
+                  )}
+                </div>
+
+                <p className="text-[11px] text-slate-400 text-center mb-3">
+                  Scegli quale mossa dimenticare:
+                </p>
+
+                <div className="grid grid-cols-1 gap-2 mb-4">
                   {pkmn.moves.map(move => (
                     <button
                       key={move.id}
                       onClick={() => replaceMove(pkmn.id, move.id, pendingNewMove.move)}
-                      className="flex items-center justify-between rounded-xl bg-slate-800 p-4 hover:bg-slate-700 transition-colors border border-white/5"
+                      className="flex items-center justify-between rounded-xl bg-slate-800 p-3 hover:bg-slate-700 active:bg-slate-600 transition-colors border border-white/5"
                     >
-                      <div className="flex flex-col items-start">
-                        <span className="font-medium text-white">{move.name}</span>
-                        <span className="text-xs text-slate-400">Potenza: {move.power || '--'} | Precisione: {move.accuracy || '--'}</span>
+                      <div className="flex flex-col items-start gap-1 flex-1 min-w-0">
+                        <div className="flex items-center gap-2">
+                          <span className="font-black text-white text-xs uppercase">{move.name}</span>
+                          <TypeBadge type={move.type as any} small />
+                        </div>
+                        <div className="flex gap-3 text-[10px] font-bold">
+                          <span className={
+                            move.category === 'physical' ? 'text-orange-400' :
+                            move.category === 'special' ? 'text-purple-400' :
+                            'text-slate-400'
+                          }>
+                            {move.category === 'physical' ? '⚔️ Fis.' :
+                             move.category === 'special' ? '✨ Sp.' : '💫 Stato'}
+                          </span>
+                          <span className="text-white/40">POT: {move.power || '--'}</span>
+                          <span className="text-white/40">ACC: {move.accuracy || '--'}%</span>
+                          <span className="text-white/40">PP: {move.pp}/{move.maxPp}</span>
+                        </div>
                       </div>
-                      <TypeBadge type={move.type as any} small />
+                      <span className="text-[10px] text-red-400 font-black ml-2 shrink-0">DIMENTICA</span>
                     </button>
                   ))}
                 </div>

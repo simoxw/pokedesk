@@ -23,6 +23,7 @@ export default function BattleScreen() {
   const [showTeamOverlay, setShowTeamOverlay] = useState(false);
   const [showBagOverlay, setShowBagOverlay] = useState(false);
   const [attackAnim, setAttackAnim] = useState(false);
+  const [enemyHitAnim, setEnemyHitAnim] = useState(false);
   const [statChanges, setStatChanges] = useState<{ label: string; positive: boolean } | null>(null);
   const [playerStages, setPlayerStages] = useState<Record<string, number>>({ attack: 0, defense: 0, spAtk: 0, spDef: 0, speed: 0, accuracy: 0, evasion: 0 }); 
   const [enemyStages, setEnemyStages] = useState<Record<string, number>>({ attack: 0, defense: 0, spAtk: 0, spDef: 0, speed: 0, accuracy: 0, evasion: 0 }); 
@@ -1078,6 +1079,11 @@ export default function BattleScreen() {
         }
       }
 
+      if (damage > 0) {
+        setEnemyHitAnim(true);
+        setTimeout(() => setEnemyHitAnim(false), 400);
+      }
+
       setEnemy((prev: any) => {
         const next = { 
           ...prev, 
@@ -1137,6 +1143,11 @@ export default function BattleScreen() {
         } else {
           finalStatus = newStatus;
         }
+      }
+
+      if (damage > 0) {
+        setEnemyHitAnim(true);
+        setTimeout(() => setEnemyHitAnim(false), 400);
       }
 
       setEnemy((prev: any) => {
@@ -1353,8 +1364,14 @@ export default function BattleScreen() {
 
           <div className="relative">
             <motion.img
-              animate={{ y: [0, -6, 0] }}
-              transition={{ duration: 2, repeat: Infinity }}
+              animate={enemyHitAnim 
+                ? { x: [-4, 4, -4, 4, 0], opacity: [1, 0.3, 1, 0.3, 1] }
+                : { y: [0, -6, 0] }
+              }
+              transition={enemyHitAnim 
+                ? { duration: 0.4 }
+                : { duration: 2, repeat: Infinity }
+              }
               src={enemy?.sprites?.front_default ?? `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/${enemy?.pokemonId}.png`}
               className="w-48 h-48 object-contain drop-shadow-2xl"
             />
