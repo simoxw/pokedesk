@@ -30,6 +30,8 @@ export default function LeagueBattleScreen() {
     leagueBattleTeam,
     setLeagueBattleTeam,
     clearLeagueBattleTeam,
+    leagueBattleResult,
+    setLeagueBattleResult,
   } = useStore();
 
   const [phase, setPhase] = useState<Phase>('intro');
@@ -133,19 +135,19 @@ export default function LeagueBattleScreen() {
 
   useEffect(() => {
     if (phase !== 'battle') return;
+    if (leagueBattleResult === 'lose') {
+      setLeagueBattleResult(null);
+      handleBattleLose();
+      return;
+    }
     if (!battleStarted && leagueBattleTeam) {
       setBattleStarted(true);
       return;
     }
-    if (battleStarted && !leagueBattleTeam) {
-      const playerAlive = useStore.getState().team.some(p => p.currentHp > 0);
-      if (playerAlive) {
-        handleBattleWin();
-      } else {
-        handleBattleLose();
-      }
+    if (battleStarted && !leagueBattleTeam && leagueBattleResult !== 'lose') {
+      handleBattleWin();
     }
-  }, [leagueBattleTeam, phase, battleStarted]);
+  }, [leagueBattleTeam, phase, battleStarted, leagueBattleResult]);
 
   const handleBattleWin = () => {
     if (!activeTrainer) return;

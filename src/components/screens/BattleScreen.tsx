@@ -10,7 +10,7 @@ import TypeBadge from '../ui/TypeBadge';
 import confetti from 'canvas-confetti';
 
 export default function BattleScreen() {
-  const { team, setScreen, incrementStat, addCoins, addItem, updatePokemon, inventory, useItem, gainExp, currentBattlePath, recordBattleWin, medals, expShareActive, friendBattleTeam, clearFriendBattleTeam, leagueBattleTeam, clearLeagueBattleTeam } = useStore();
+  const { team, setScreen, incrementStat, addCoins, addItem, updatePokemon, inventory, useItem, gainExp, currentBattlePath, recordBattleWin, medals, expShareActive, friendBattleTeam, clearFriendBattleTeam, leagueBattleTeam, clearLeagueBattleTeam, setLeagueBattleResult } = useStore();
   const isFriendBattle = !!friendBattleTeam;
   const medalsCount = medals.filter((m: any) => m.isUnlocked).length;
   const [activeIdx, setActiveIdx] = useState(0);
@@ -697,6 +697,7 @@ export default function BattleScreen() {
         useStore.getState().team.forEach(p => {
           updatePokemon(p.id, { currentHp: 1, moves: p.moves.map((m: any) => ({ ...m, pp: m.maxPp })) });
         });
+        if (isLeagueBattle) setLeagueBattleResult('lose');
         setIsFinished(true);
       } else {
         setActiveIdx(nextAvailable);
@@ -1207,6 +1208,7 @@ export default function BattleScreen() {
         useStore.getState().team.forEach(p => {
           updatePokemon(p.id, { currentHp: 1, moves: p.moves.map((m: any) => ({ ...m, pp: m.maxPp })) });
         });
+        if (isLeagueBattle) setLeagueBattleResult('lose');
         setIsFinished(true);
       } else {
         setActiveIdx(nextAvailable);

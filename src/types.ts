@@ -121,6 +121,7 @@ export interface GameState {
   favorites: string[];
   friendBattleTeam: any[] | null;
   leagueBattleTeam: any[] | null;
+  leagueBattleResult: 'win' | 'lose' | null;
   isFirstRun: boolean;
   dailyMissions: { date: string; missions: DailyMission[] } | null;
   leagueProgress: {

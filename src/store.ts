@@ -10,6 +10,7 @@ interface GameStore extends GameState {
   clearFriendBattleTeam: () => void;
   setLeagueBattleTeam: (team: any[]) => void;
   clearLeagueBattleTeam: () => void;
+  setLeagueBattleResult: (result: 'win' | 'lose' | null) => void;
   setPlayer: (name: string, gender: 'M' | 'F') => void;
   updatePlayer: (updates: Partial<GameState['player']>) => void;
   addPokemon: (pokemon: Pokemon) => void;
@@ -138,6 +139,7 @@ export const useStore = create<GameStore>()(
         trophies: [],
         currentRun: null,
       },
+      leagueBattleResult: null,
       currentScreen: 'START_SCREEN',
 
       setScreen: (screen) => set({ currentScreen: screen }),
@@ -524,6 +526,7 @@ export const useStore = create<GameStore>()(
       clearFriendBattleTeam: () => set({ friendBattleTeam: null }),
       setLeagueBattleTeam: (team) => set({ leagueBattleTeam: team }),
       clearLeagueBattleTeam: () => set({ leagueBattleTeam: null }),
+      setLeagueBattleResult: (result: 'win' | 'lose' | null) => set({ leagueBattleResult: result }),
       toggleFavorite: (id) => set((state) => ({
         favorites: state.favorites.includes(id)
           ? state.favorites.filter(f => f !== id)
@@ -650,6 +653,7 @@ export const useStore = create<GameStore>()(
         favorites: [],
         friendBattleTeam: null,
         leagueBattleTeam: null,
+        leagueBattleResult: null,
       }),
     }),
     {
