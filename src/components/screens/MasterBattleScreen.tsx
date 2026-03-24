@@ -115,6 +115,7 @@ export default function MasterBattleScreen() {
   const handleBattleWin = () => {
     if (!selectedTrainer) return;
     addCoins(selectedTrainer.reward.coins);
+    useStore.getState().incrementMasterMission();
     Object.entries(selectedTrainer.reward.items).forEach(([id, qty]) => addItem(id, Number(qty)));
     const itemList = Object.entries(selectedTrainer.reward.items)
       .map(([id, qty]) => `${Number(qty)}× ${id.replace(/_/g, ' ')}`)

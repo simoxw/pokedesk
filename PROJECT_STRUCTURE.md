@@ -28,6 +28,7 @@ Codice sorgente dell'app.
 - **index.css**: Foglio di stile globale con Tailwind CSS per il design dell'interfaccia.
 - **main.tsx**: Punto di ingresso dell'app React, dove viene renderizzato il componente App nel DOM.
 - **NotificationService.ts**: Servizio per gestire notifiche push o in-app, probabilmente per eventi di gioco.
+- **rarityTable.ts**: Tabelle di configurazione per la rarità dei Pokémon negli incontri.
 - **store.ts**: Configurazione dello stato globale usando Zustand, per gestire dati come Pokémon, utente, ecc.
 - **TickSystem.ts**: Sistema che gestisce aggiornamenti periodici (tick), come rigenerazione HP o eventi temporizzati.
 - **types.ts**: Definizioni di tipi TypeScript per strutture dati come Pokémon, mosse, ecc.
@@ -41,7 +42,11 @@ Schermi principali dell'app, ciascuno rappresentante una vista o sezione.
 - **BattleScreen.tsx**: Interfaccia per combattimenti Pokémon, con animazioni e controlli.
 - **BoxScreen.tsx**: Schermo per il PC Box, dove archiviare Pokémon catturati.
 - **CatchScreen.tsx**: Schermo per tentare la cattura di Pokémon selvatici.
-- **HubScreen.tsx**: Schermo centrale (hub) per navigare tra sezioni principali.
+- **FriendBattleScreen.tsx**: Schermo dedicato alle lotte tra amici.
+- **HubScreen.tsx**: Schermo centrale (hub) per navigare tra sezioni principali. Include un ciclo giorno/notte dinamico per l'atmosfera.
+- **LeagueBattleScreen.tsx**: Interfaccia specifica per le battaglie di Lega.
+- **LeagueSelectScreen.tsx**: Schermo per la selezione delle Leghe disponibili.
+- **MasterBattleScreen.tsx**: Schermo dedicato alle battaglie di livello Master.
 - **OptionsScreen.tsx**: Schermo impostazioni per configurare l'app (es. audio, lingua).
 - **PokedexScreen.tsx**: Schermo Pokédex per visualizzare informazioni sui Pokémon.
 - **ProfileScreen.tsx**: Schermo profilo utente, con statistiche e progressi.
@@ -55,8 +60,12 @@ Schermi principali dell'app, ciascuno rappresentante una vista o sezione.
 #### ui/
 Componenti UI di base, riutilizzabili in più schermi.
 - **BottomNav.tsx**: Barra di navigazione inferiore per spostarsi tra schermi principali.
+- **GameboyDialog.tsx**: Componente per dialoghi in stile classico Gameboy.
 - **HPBar.tsx**: Componente per visualizzare la barra di HP di un Pokémon.
 - **PokemonCard.tsx**: Carta informativa per mostrare dettagli di un Pokémon (es. nome, tipo, stats).
 - **PokemonDetailsModal.tsx**: Modale popup con dettagli completi di un Pokémon.
-- **TypeBadge.tsx**: Badge per indicare il tipo di un Pokémon (es. Fuoco, Acqua).</content>
-<parameter name="filePath">E:\Documenti Simo\Progetti\pokedesk\PROJECT_STRUCTURE.md
+- **TypeBadge.tsx**: Badge per indicare il tipo di un Pokémon (es. Fuoco, Acqua).
+
+### data/
+Dati statici.
+- **leagueData.ts**: Configurazione dettagliata delle Leghe Pokémon disponibili.

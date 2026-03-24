@@ -53,6 +53,8 @@ interface GameStore extends GameState {
   advanceLeagueTrainer: (trainerIndex: number) => void;
   completeLeagueRegion: (regionId: string, trophyLabel: string) => void;
   abandonLeagueRun: () => void;
+  incrementLeagueMission: () => void;
+  incrementMasterMission: () => void;
 }
 
 const MISSION_POOL = [
@@ -70,11 +72,27 @@ const MISSION_POOL = [
   { type: 'useItem' as const, target: 5, description: 'Usa 5 oggetti curativi', reward: { coins: 400, items: { superpotion: 1 } } },
   { type: 'catchShiny' as const, target: 1, description: 'Cattura uno Shiny ✨', reward: { coins: 2000, items: { rare_candy: 2 } } },
   { type: 'catch' as const, target: 10, description: 'Cattura 10 Pokémon', reward: { coins: 800, items: { ultraball: 1 } } },
+  { type: 'defeatLeague' as const, target: 1, description: 'Sconfiggi un membro della Lega', reward: { coins: 1500, items: { rare_candy: 1 } } },
+  { type: 'defeatLeague' as const, target: 3, description: 'Sconfiggi 3 membri della Lega', reward: { coins: 3000, items: { rare_candy: 2, ultraball: 2 } } },
+  { type: 'defeatMaster' as const, target: 1, description: 'Sconfiggi un Master Trainer', reward: { coins: 2500, items: { rare_candy: 2, masterball: 1 } } },
 ];
 
-function generateDailyMissions(): { date: string; missions: DailyMission[] } {
+function generateDailyMissions(state: GameState): { date: string; missions: DailyMission[] } {
   const today = new Date().toISOString().split('T')[0];
-  const shuffled = [...MISSION_POOL].sort(() => Math.random() - 0.5);
+  const medalsCount = state.medals.filter(m => m.isUnlocked).length;
+  
+  let pool = [...MISSION_POOL];
+  
+  // Escludi missioni Lega se non sbloccata
+  if (medalsCount < 40) {
+    pool = pool.filter(m => m.type !== 'defeatLeague' && m.type !== 'defeatMaster');
+  }
+  // Escludi Master se non completata almeno una run
+  if (state.leagueProgress.completedRuns < 1) {
+    pool = pool.filter(m => m.type !== 'defeatMaster');
+  }
+  
+  const shuffled = pool.sort(() => Math.random() - 0.5);
   return {
     date: today,
     missions: shuffled.slice(0, 3).map((m, i) => ({
@@ -617,6 +635,12 @@ export const useStore = create<GameStore>()(
       }),
       abandonLeagueRun: () => set((state) => ({
         leagueProgress: { ...state.leagueProgress, currentRun: null }
+      })),
+      incrementLeagueMission: () => set((state) => ({
+        ...updateMissionProgress(state, 'defeatLeague')
+      })),
+      incrementMasterMission: () => set((state) => ({
+        ...updateMissionProgress(state, 'defeatMaster')
       })),
       recordBattleWin: () => set((state) => {
         let { battlesWon, nextIsBoss } = state.currentBattlePath;

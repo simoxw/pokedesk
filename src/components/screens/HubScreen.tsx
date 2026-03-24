@@ -68,31 +68,53 @@ export default function HubScreen() {
   return (
     <div className="h-full relative overflow-hidden flex flex-col items-center justify-center p-6">
       {/* Cosmic Background */}
-      <div className="absolute inset-0 bg-[#0f0f1a]">
-        <div className="absolute inset-0 bg-gradient-to-tr from-indigo-900/20 via-transparent to-rose-900/20" />
-        <div className="absolute inset-0 opacity-30">
-          {Array.from({ length: 20 }).map((_, i) => (
-            <motion.div
-              key={i}
-              animate={{
-                y: [0, -100, 0],
-                opacity: [0.2, 0.5, 0.2],
-                scale: [1, 1.2, 1],
-              }}
-              transition={{
-                duration: 5 + Math.random() * 5,
-                repeat: Infinity,
-                delay: Math.random() * 5,
-              }}
-              className="absolute w-1 h-1 bg-white rounded-full"
-              style={{
-                left: `${Math.random() * 100}%`,
-                top: `${Math.random() * 100}%`,
-              }}
-            />
-          ))}
-        </div>
-      </div>
+      {(() => {
+        const hour = new Date().getHours();
+        const timeOfDay =
+          hour >= 6 && hour < 12 ? 'morning' :
+          hour >= 12 && hour < 18 ? 'afternoon' :
+          hour >= 18 && hour < 21 ? 'evening' :
+          'night';
+
+        const skyGradients = {
+          morning:   'from-orange-950/80 via-indigo-900/60 to-[#0f0f1a]',
+          afternoon: 'from-blue-950/60 via-indigo-900/40 to-[#0f0f1a]',
+          evening:   'from-orange-900/70 via-purple-900/60 to-[#0f0f1a]',
+          night:     'from-[#0f0f1a] via-indigo-950/80 to-[#0f0f1a]',
+        };
+
+        const starOpacity = {
+          morning: 0.1, afternoon: 0.05, evening: 0.2, night: 0.5,
+        };
+
+        return (
+          <div className="absolute inset-0 bg-[#0f0f1a]">
+            <div className={`absolute inset-0 bg-gradient-to-tr ${skyGradients[timeOfDay]}`} />
+            <div className="absolute inset-0" style={{ opacity: starOpacity[timeOfDay] }}>
+              {Array.from({ length: 20 }).map((_, i) => (
+                <motion.div
+                  key={i}
+                  animate={{
+                    y: [0, -100, 0],
+                    opacity: [0.2, 0.5, 0.2],
+                    scale: [1, 1.2, 1],
+                  }}
+                  transition={{
+                    duration: 5 + Math.random() * 5,
+                    repeat: Infinity,
+                    delay: Math.random() * 5,
+                  }}
+                  className="absolute w-1 h-1 bg-white rounded-full"
+                  style={{
+                    left: `${Math.random() * 100}%`,
+                    top: `${Math.random() * 100}%`,
+                  }}
+                />
+              ))}
+            </div>
+          </div>
+        );
+      })()}
 
       <div className="relative z-10 flex flex-col items-center gap-4">
         <div className="text-center">

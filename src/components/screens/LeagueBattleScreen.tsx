@@ -153,6 +153,7 @@ export default function LeagueBattleScreen() {
     if (!activeTrainer) return;
     // Ricompensa trainer
     addCoins(activeTrainer.reward.coins);
+    useStore.getState().incrementLeagueMission();
     Object.entries(activeTrainer.reward.items).forEach(([id, qty]) => addItem(id, qty));
     const itemList = Object.entries(activeTrainer.reward.items)
       .map(([id, qty]) => `${qty}× ${id.replace(/_/g, ' ')}`)
