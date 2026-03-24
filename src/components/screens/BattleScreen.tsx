@@ -444,7 +444,7 @@ export default function BattleScreen() {
         updatePokemon(p.id, { currentHp: recoveredHp, moves: recoveredMoves });
       });
       setPlayerStages({ attack: 0, defense: 0, spAtk: 0, spDef: 0, speed: 0, accuracy: 0, evasion: 0 });
-      setEnemyStages({ attack: 0, defense: 0, spDef: 0, speed: 0, accuracy: 0, evasion: 0 });
+      setEnemyStages({ attack: 0, defense: 0, spAtk: 0, spDef: 0, speed: 0, accuracy: 0, evasion: 0 });
       setEnemyFlinch(false);
       setPlayerFlinch(false);
       clearMasterBattleTeam();
