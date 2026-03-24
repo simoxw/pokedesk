@@ -1307,9 +1307,9 @@ export default function BattleScreen() {
       {Array.from({ length: 15 }).map((_, i) => (
         <motion.div
           key={i}
-          className="absolute bg-white rounded-full"
-          animate={{ opacity: [0.2, 1, 0.2] }}
-          transition={{ duration: 2 + Math.random() * 3, repeat: Infinity, delay: Math.random() * 3 }}
+          className="absolute bg-white rounded-full pointer-events-none"
+          animate={{ opacity: [0.1, 0.9, 0.1], scale: [0.8, 1.2, 0.8] }}
+          transition={{ duration: 2 + Math.random() * 3, repeat: Infinity, repeatType: "loop", delay: Math.random() * 3, ease: "easeInOut" }}
           style={{
             width: Math.random() * 3 + 1, height: Math.random() * 3 + 1,
             top: `${Math.random() * 50}%`, left: `${Math.random() * 100}%`
@@ -1325,9 +1325,9 @@ export default function BattleScreen() {
       {Array.from({ length: 15 }).map((_, i) => (
         <motion.div
           key={i}
-          className="absolute bg-white rounded-full"
-          animate={{ opacity: [0.2, 1, 0.2] }}
-          transition={{ duration: 2 + Math.random() * 3, repeat: Infinity, delay: Math.random() * 3 }}
+          className="absolute bg-white rounded-full pointer-events-none"
+          animate={{ opacity: [0.1, 0.9, 0.1], scale: [0.8, 1.2, 0.8] }}
+          transition={{ duration: 2 + Math.random() * 3, repeat: Infinity, repeatType: "loop", delay: Math.random() * 3, ease: "easeInOut" }}
           style={{
             width: Math.random() * 3 + 1, height: Math.random() * 3 + 1,
             top: `${Math.random() * 50}%`, left: `${Math.random() * 100}%`
@@ -1345,13 +1345,14 @@ export default function BattleScreen() {
           {[1, 2, 3].map(i => (
             <motion.div
               key={i}
-              initial={{ x: -300 }}
-              animate={{ x: '110vw' }}
+              initial={{ x: '-320px' }}
+              animate={{ x: 'calc(100vw + 320px)' }}
               transition={{
                 duration: 18 + i * 6,
                 repeat: Infinity,
+                repeatType: "loop",
                 ease: 'linear',
-                delay: i * 3
+                delay: i === 1 ? 0 : i * 3
               }}
               className="absolute bg-white/80 rounded-full blur-sm"
               style={{
