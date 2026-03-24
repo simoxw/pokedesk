@@ -1303,7 +1303,7 @@ export default function BattleScreen() {
 
   {/* LEGA — cielo grigio pietra medio */}
   {wasLeagueBattle.current && !wasMasterBattle.current && (
-    <div className="absolute inset-0 bg-[#2a2a45]">
+    <div className="absolute inset-0 bg-[#34345a]">
       {Array.from({ length: 15 }).map((_, i) => (
         <motion.div
           key={i}
@@ -1321,7 +1321,7 @@ export default function BattleScreen() {
 
   {/* MASTER — cielo blu cosmico medio */}
   {wasMasterBattle.current && (
-    <div className="absolute inset-0 bg-[#151540]">
+    <div className="absolute inset-0 bg-[#20205a]">
       {Array.from({ length: 15 }).map((_, i) => (
         <motion.div
           key={i}
@@ -1435,21 +1435,26 @@ export default function BattleScreen() {
   {wasLeagueBattle.current && !wasMasterBattle.current && (
     <>
       <div className="absolute inset-0" style={{
-        background: 'linear-gradient(180deg, #2a2a40 0%, #1a1a2e 100%)',
+        background: 'linear-gradient(180deg, #38436b 0%, #232f55 45%, #1b2446 100%)',
       }} />
       {/* venature marmo */}
-      <div className="absolute inset-0 opacity-20" style={{
-        backgroundImage: 'radial-gradient(circle at 50% 50%, rgba(255,255,255,0.2) 0%, transparent 50%)',
+      <div className="absolute inset-0 opacity-14" style={{
+        backgroundImage: 'radial-gradient(circle at 50% 40%, rgba(255,255,255,0.22) 0%, rgba(255,255,255,0.08) 35%, transparent 72%)',
         backgroundSize: '100% 100%'
       }} />
-      {/* linea orizzonte blu neon */}
-      <div className="absolute top-0 left-0 right-0 h-[2px]" style={{
-        background: 'linear-gradient(90deg, transparent, rgba(100,200,255,0.6), transparent)',
+      {/* leggero grid per effetto arena */}
+      <div className="absolute inset-0 opacity-6" style={{
+        backgroundImage: 'linear-gradient(rgba(190,220,255,0.45) 1px, transparent 1px), linear-gradient(90deg, rgba(190,220,255,0.45) 1px, transparent 1px)',
+        backgroundSize: '36px 26px',
+      }} />
+      {/* linea orizzonte dorata */}
+      <div className="absolute top-0 left-0 right-0 h-[3px]" style={{
+        background: 'linear-gradient(90deg, transparent, rgba(255,210,120,0.82), transparent)',
       }} />
       {/* riflesso dal basso */}
       <div className="absolute bottom-0 left-0 right-0" style={{
-        height: '30%',
-        background: 'linear-gradient(0deg, rgba(60,100,255,0.2), transparent)',
+        height: '34%',
+        background: 'linear-gradient(0deg, rgba(130,180,255,0.22), rgba(90,130,220,0.08) 45%, transparent)',
       }} />
     </>
   )}
@@ -1458,16 +1463,20 @@ export default function BattleScreen() {
   {wasMasterBattle.current && (
     <>
       <div className="absolute inset-0" style={{
-        background: 'linear-gradient(180deg, #151540 0%, #0a0a2a 100%)',
+        background: 'linear-gradient(180deg, #313179 0%, #23245f 42%, #171847 100%)',
+      }} />
+      {/* bagliore cosmico centrale */}
+      <div className="absolute inset-0 opacity-16" style={{
+        background: 'radial-gradient(ellipse at 50% 35%, rgba(170,145,255,0.35) 0%, rgba(120,95,230,0.16) 35%, transparent 75%)',
       }} />
       {/* linea orizzonte viola intenso */}
-      <div className="absolute top-0 left-0 right-0 h-[2px]" style={{
-        background: 'linear-gradient(90deg, transparent, rgba(180,0,255,0.6), transparent)',
+      <div className="absolute top-0 left-0 right-0 h-[3px]" style={{
+        background: 'linear-gradient(90deg, transparent, rgba(210,120,255,0.74), transparent)',
       }} />
       {/* riflesso viola */}
       <div className="absolute bottom-0 left-0 right-0" style={{
-        height: '40%',
-        background: 'linear-gradient(0deg, rgba(120,0,255,0.25), transparent)',
+        height: '44%',
+        background: 'linear-gradient(0deg, rgba(170,100,255,0.26), rgba(120,70,220,0.12) 48%, transparent)',
       }} />
     </>
   )}
