@@ -15,7 +15,8 @@ export type ScreenName =
   | 'OPTIONS_SCREEN'
   | 'FRIEND_BATTLE_SCREEN'
   | 'LEAGUE_SELECT_SCREEN'
-  | 'LEAGUE_BATTLE_SCREEN';
+  | 'LEAGUE_BATTLE_SCREEN'
+  | 'MASTER_BATTLE_SCREEN';
 export type PokemonType = 
   | 'normal' | 'fire' | 'water' | 'electric' | 'grass' | 'ice' 
   | 'fighting' | 'poison' | 'ground' | 'flying' | 'psychic' 
@@ -130,6 +131,7 @@ export interface GameState {
     trophies: string[];
     currentRun: { regionId: string; trainerIndex: number; defeatedTrainers: number[] } | null;
   };
+  masterProgress: { defeatedIds: string[] };
   currentScreen: ScreenName;
 }
 
@@ -194,6 +196,11 @@ export interface GameState {
       defeatedTrainers: number[];
     } | null;
   };
+  masterProgress: { defeatedIds: string[] };
+  leagueBattleTeam: any[] | null;
+  leagueBattleResult: 'win' | 'lose' | null;
+  masterBattleTeam: any[] | null;
+  masterBattleResult: 'win' | 'lose' | null;
   currentScreen: ScreenName;
 }
 

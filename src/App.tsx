@@ -16,6 +16,7 @@ import TradeScreen from './components/screens/TradeScreen';
 import FriendBattleScreen from './components/screens/FriendBattleScreen';
 import LeagueSelectScreen from './components/screens/LeagueSelectScreen';
 import LeagueBattleScreen from './components/screens/LeagueBattleScreen';
+import MasterBattleScreen from './components/screens/MasterBattleScreen';
 import OptionsScreen from './components/screens/OptionsScreen';
 import BottomNav from './components/ui/BottomNav';
 import TypeBadge from './components/ui/TypeBadge';
@@ -87,6 +88,7 @@ export default function App() {
       case 'FRIEND_BATTLE_SCREEN': return <FriendBattleScreen />;
       case 'LEAGUE_SELECT_SCREEN': return <LeagueSelectScreen />;
       case 'LEAGUE_BATTLE_SCREEN': return <LeagueBattleScreen />;
+      case 'MASTER_BATTLE_SCREEN': return <MasterBattleScreen />;
       default: return <StartScreen />;
     }
   };
@@ -98,7 +100,8 @@ export default function App() {
     'SAFARI_SCREEN',
     'BATTLE_SCREEN',
     'FRIEND_BATTLE_SCREEN',
-    'LEAGUE_BATTLE_SCREEN'
+    'LEAGUE_BATTLE_SCREEN',
+    'MASTER_BATTLE_SCREEN'
   ].includes(currentScreen);
 
   return (

@@ -144,7 +144,7 @@ export default function LeagueBattleScreen() {
       setBattleStarted(true);
       return;
     }
-    if (battleStarted && !leagueBattleTeam && leagueBattleResult !== 'lose') {
+    if (battleStarted && !leagueBattleTeam && (leagueBattleResult === 'win' || leagueBattleResult === null)) {
       handleBattleWin();
     }
   }, [leagueBattleTeam, phase, battleStarted, leagueBattleResult]);

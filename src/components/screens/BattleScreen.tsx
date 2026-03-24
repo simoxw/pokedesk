@@ -10,7 +10,7 @@ import TypeBadge from '../ui/TypeBadge';
 import confetti from 'canvas-confetti';
 
 export default function BattleScreen() {
-  const { team, setScreen, incrementStat, addCoins, addItem, updatePokemon, inventory, useItem, gainExp, currentBattlePath, recordBattleWin, medals, expShareActive, friendBattleTeam, clearFriendBattleTeam, leagueBattleTeam, clearLeagueBattleTeam, setLeagueBattleResult } = useStore();
+  const { team, setScreen, incrementStat, addCoins, addItem, updatePokemon, inventory, useItem, gainExp, currentBattlePath, recordBattleWin, medals, expShareActive, friendBattleTeam, clearFriendBattleTeam, leagueBattleTeam, clearLeagueBattleTeam, setLeagueBattleResult, masterBattleTeam, clearMasterBattleTeam, setMasterBattleResult } = useStore();
   const isFriendBattle = !!friendBattleTeam;
   const medalsCount = medals.filter((m: any) => m.isUnlocked).length;
   const [activeIdx, setActiveIdx] = useState(0);
@@ -44,10 +44,13 @@ export default function BattleScreen() {
 
   const playerPkmn = team[activeIdx];
   const isLeagueBattle = !!leagueBattleTeam;
+  const isMasterBattle = !!masterBattleTeam;
   const wasLeagueBattle = React.useRef(isLeagueBattle);
-  const isBoss = !isFriendBattle && !isLeagueBattle && currentBattlePath.nextIsBoss;
+  const wasMasterBattle = React.useRef(isMasterBattle);
+  const isBoss = !isFriendBattle && !isLeagueBattle && !isMasterBattle && currentBattlePath.nextIsBoss;
   const friendTrainerName = friendBattleTeam?.[0]?.trainerName ?? 'Amico';
   const leagueTrainerName = leagueBattleTeam?.[0]?.trainerName ?? 'Trainer';
+  const masterTrainerName = masterBattleTeam?.[0]?.trainerName ?? 'Master Trainer';
 
   const applyEvGain = (pokemon: any, enemyData: any) => { 
     if (!enemyData?.rawStats) return; 
@@ -109,6 +112,26 @@ export default function BattleScreen() {
           setEnemy(firstEnemy);
           enemyRef.current = firstEnemy;
           setLogs([`⚔️ Battaglia contro ${leagueTrainerName}!`]);
+          setLoading(false);
+          return;
+        }
+
+        // MASTER BATTLE
+        if (isMasterBattle && masterBattleTeam && masterBattleTeam.length > 0) {
+          const toEnemy = (p: any) => ({
+            ...p,
+            currentHp: p.stats.hp,
+            maxHp: p.stats.hp,
+            status: null,
+          });
+          const [m1, m2, m3, m4] = masterBattleTeam;
+          if (m2) setEnemy2(toEnemy(m2));
+          if (m3) setEnemy3(toEnemy(m3));
+          if (m4) setEnemy4(toEnemy(m4));
+          const firstEnemy = toEnemy(m1);
+          setEnemy(firstEnemy);
+          enemyRef.current = firstEnemy;
+          setLogs([`⚔️ Sfida Master contro ${masterTrainerName}!`]);
           setLoading(false);
           return;
         }
@@ -355,8 +378,9 @@ export default function BattleScreen() {
       return true;
     }
 
-    if (isLeagueBattle && enemyPhase === 1 && enemy2) {
-      addLog(`⚔️ ${leagueTrainerName} lancia il secondo Pokémon!`);
+    if ((isLeagueBattle || isMasterBattle) && enemyPhase === 1 && enemy2) {
+      const trainerName = isLeagueBattle ? leagueTrainerName : masterTrainerName;
+      addLog(`⚔️ ${trainerName} lancia il secondo Pokémon!`);
       setLastEnemyMove(null);
       setEnemyPhase(2);
       setEnemy(enemy2);
@@ -367,8 +391,9 @@ export default function BattleScreen() {
       return true;
     }
 
-    if (isLeagueBattle && enemyPhase === 2 && enemy3) {
-      addLog(`⚔️ ${leagueTrainerName} lancia il terzo Pokémon!`);
+    if ((isLeagueBattle || isMasterBattle) && enemyPhase === 2 && enemy3) {
+      const trainerName = isLeagueBattle ? leagueTrainerName : masterTrainerName;
+      addLog(`⚔️ ${trainerName} lancia il terzo Pokémon!`);
       setLastEnemyMove(null);
       setEnemyPhase(3);
       setEnemy(enemy3);
@@ -379,8 +404,9 @@ export default function BattleScreen() {
       return true;
     }
 
-    if (isLeagueBattle && enemyPhase === 3 && enemy4) {
-      addLog(`⚔️ ${leagueTrainerName} lancia il quarto Pokémon!`);
+    if ((isLeagueBattle || isMasterBattle) && enemyPhase === 3 && enemy4) {
+      const trainerName = isLeagueBattle ? leagueTrainerName : masterTrainerName;
+      addLog(`⚔️ ${trainerName} lancia il quarto Pokémon!`);
       setLastEnemyMove(null);
       setEnemyPhase(4);
       setEnemy(enemy4);
@@ -404,6 +430,25 @@ export default function BattleScreen() {
       setEnemyFlinch(false);
       setPlayerFlinch(false);
       clearLeagueBattleTeam();
+      setIsFinished(true);
+      setIsAnimating(false);
+      return false;
+    }
+
+    if (isMasterBattle) {
+      addLog(`🏆 Hai sconfitto ${masterTrainerName}!`);
+      incrementStat('totalBattles');
+      team.forEach(p => {
+        const recoveredHp = Math.min(p.stats.hp, p.currentHp + Math.floor(p.stats.hp * 0.1));
+        const recoveredMoves = p.moves.map((m: any) => ({ ...m, pp: m.maxPp }));
+        updatePokemon(p.id, { currentHp: recoveredHp, moves: recoveredMoves });
+      });
+      setPlayerStages({ attack: 0, defense: 0, spAtk: 0, spDef: 0, speed: 0, accuracy: 0, evasion: 0 });
+      setEnemyStages({ attack: 0, defense: 0, spDef: 0, speed: 0, accuracy: 0, evasion: 0 });
+      setEnemyFlinch(false);
+      setPlayerFlinch(false);
+      clearMasterBattleTeam();
+      setMasterBattleResult('win');
       setIsFinished(true);
       setIsAnimating(false);
       return false;
@@ -696,6 +741,7 @@ export default function BattleScreen() {
         useStore.getState().team.forEach(p => {
           updatePokemon(p.id, { currentHp: 1, moves: p.moves.map((m: any) => ({ ...m, pp: m.maxPp })) });
         });
+        if (wasMasterBattle.current) setMasterBattleResult('lose');
         if (wasLeagueBattle.current) setLeagueBattleResult('lose');
         setIsFinished(true);
       } else {
@@ -1208,6 +1254,7 @@ export default function BattleScreen() {
         useStore.getState().team.forEach(p => {
           updatePokemon(p.id, { currentHp: 1, moves: p.moves.map((m: any) => ({ ...m, pp: m.maxPp })) });
         });
+        if (wasMasterBattle.current) setMasterBattleResult('lose');
         if (wasLeagueBattle.current) setLeagueBattleResult('lose');
         setIsFinished(true);
       } else {
@@ -1582,13 +1629,15 @@ export default function BattleScreen() {
 
             {/* Bottoni azione */}
             <div className="flex gap-2">
-              <button
-                disabled={isAnimating}
-                onClick={() => { clearFriendBattleTeam(); setScreen('HUB_SCREEN'); }}
-                className="flex-1 bg-red-600/20 border border-red-500/30 py-3 rounded-xl flex items-center justify-center gap-1 text-[10px] font-black uppercase text-red-400"
-              >
-                <ArrowLeft size={14} /> Fuga
-              </button>
+              {!isLeagueBattle && !isMasterBattle && (
+                <button
+                  disabled={isAnimating}
+                  onClick={() => { clearFriendBattleTeam(); setScreen('HUB_SCREEN'); }}
+                  className="flex-1 bg-red-600/20 border border-red-500/30 py-3 rounded-xl flex items-center justify-center gap-1 text-[10px] font-black uppercase text-red-400"
+                >
+                  <ArrowLeft size={14} /> Fuga
+                </button>
+              )}
               <button
                 disabled={isAnimating}
                 onClick={() => setShowTeamOverlay(true)}

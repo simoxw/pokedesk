@@ -1,8 +1,8 @@
 import React from 'react';
 import { useStore } from '../../store';
 import { motion } from 'motion/react';
-import { ArrowLeft, Trophy, Lock } from 'lucide-react';
-import { LEAGUE_REGIONS } from '../../data/leagueData';
+import { ArrowLeft, Lock, Star } from 'lucide-react';
+import { LEAGUE_REGIONS, scaleLeagueLevel } from '../../data/leagueData';
 
 const REGION_FLAGS: Record<string, string> = {
   kanto:  '🗾',
@@ -27,7 +27,7 @@ const REGION_COLORS: Record<string, string> = {
 };
 
 export default function LeagueSelectScreen() {
-  const { setScreen, leagueProgress, medals } = useStore();
+  const { setScreen, leagueProgress, medals, masterProgress } = useStore();
   const medalsCount = medals.filter(m => m.isUnlocked).length;
 
   const isRegionUnlocked = (regionId: string) => medalsCount >= 40;
@@ -75,11 +75,16 @@ export default function LeagueSelectScreen() {
             <h2 className="text-xl font-black uppercase">🏆 LEGA POKÉMON</h2>
             <p className="text-[11px] text-white/40">
               {leagueProgress.completedRegions.length}/8 regioni completate
-              {leagueProgress.completedRuns > 0 && (
-                <span className="ml-2 text-yellow-400 font-bold">
-                  • Run {leagueProgress.completedRuns + 1} (Lv.75-88)
-                </span>
-              )}
+              {leagueProgress.completedRuns > 0 && (() => {
+                const allPkmn = LEAGUE_REGIONS.flatMap(r => [...r.elite4.flatMap(t => t.pokemon), ...r.champion.pokemon]);
+                const globalMax = scaleLeagueLevel(Math.max(...allPkmn.map(p => p.level)), leagueProgress.completedRuns);
+                const globalMin = scaleLeagueLevel(Math.min(...allPkmn.map(p => p.level)), leagueProgress.completedRuns);
+                return (
+                  <span className="ml-2 text-yellow-400 font-bold">
+                    • Run {leagueProgress.completedRuns + 1} (Lv.{globalMin}–{globalMax})
+                  </span>
+                );
+              })()}
             </p>
           </div>
         </div>
@@ -112,8 +117,67 @@ export default function LeagueSelectScreen() {
         )}
       </div>
 
-      {/* Griglia regioni */}
+      {/* Griglia regioni + pulsante MASTER */}
       <div className="flex-1 overflow-y-auto px-4 pb-6 no-scrollbar">
+
+        {/* ── PULSANTE MASTER ── */}
+        {(() => {
+          const masterUnlocked = leagueProgress.completedRuns >= 1;
+          const masterDefeatedCount = masterProgress?.defeatedIds?.length ?? 0;
+          const MASTER_TOTAL = 15;
+          return (
+            <motion.button
+              whileTap={{ scale: masterUnlocked ? 0.97 : 1 }}
+              disabled={!masterUnlocked}
+              onClick={() => masterUnlocked && setScreen('MASTER_BATTLE_SCREEN')}
+              className={`w-full mb-4 relative rounded-2xl border p-4 flex items-center gap-4 transition-all ${
+                masterUnlocked
+                  ? 'bg-gradient-to-r from-purple-900/50 via-yellow-900/30 to-purple-900/50 border-yellow-500/50'
+                  : 'bg-gray-900/40 border-white/10 opacity-40'
+              }`}
+            >
+              {masterUnlocked && (
+                <motion.div
+                  animate={{ opacity: [0.3, 0.7, 0.3] }}
+                  transition={{ duration: 2, repeat: Infinity }}
+                  className="absolute inset-0 rounded-2xl bg-yellow-400/5 pointer-events-none"
+                />
+              )}
+              {!masterUnlocked ? (
+                <Lock size={28} className="text-white/30 shrink-0" />
+              ) : (
+                <motion.div
+                  animate={{ rotate: [0, 10, -10, 0] }}
+                  transition={{ duration: 3, repeat: Infinity }}
+                  className="text-4xl shrink-0"
+                >
+                  ⭐
+                </motion.div>
+              )}
+              <div className="flex-1 text-left">
+                <div className="flex items-center gap-2">
+                  <p className={`font-black text-lg uppercase tracking-wide ${masterUnlocked ? 'text-yellow-300' : 'text-white/30'}`}>
+                    MASTER
+                  </p>
+                  {masterUnlocked && masterDefeatedCount > 0 && (
+                    <span className="text-[9px] font-black bg-yellow-400/20 text-yellow-400 border border-yellow-500/40 px-2 py-0.5 rounded-full">
+                      {masterDefeatedCount}/{MASTER_TOTAL} ✓
+                    </span>
+                  )}
+                </div>
+                <p className={`text-[10px] font-bold ${masterUnlocked ? 'text-white/50' : 'text-white/20'}`}>
+                  {masterUnlocked
+                    ? `${MASTER_TOTAL} allenatori leggendari · Lv. 86–100`
+                    : 'Completa tutte le 8 Leghe per sbloccare'}
+                </p>
+              </div>
+              {masterUnlocked && (
+                <div className="text-yellow-400/60 text-xl shrink-0">→</div>
+              )}
+            </motion.button>
+          );
+        })()}
+
         <div className="grid grid-cols-2 gap-3">
           {LEAGUE_REGIONS.map((region, idx) => {
             const unlocked = isRegionUnlocked(region.id);
@@ -190,11 +254,18 @@ export default function LeagueSelectScreen() {
                 </p>
 
                 {/* Livelli */}
-                <p className="text-[9px] font-bold text-left" style={{
-                  color: leagueProgress.completedRuns > 0 ? '#facc15' : '#86efac'
-                }}>
-                  Lv. {leagueProgress.completedRuns > 0 ? '70-82' : '50-62'}
-                </p>
+                {(() => {
+                  const allPkmn = [...region.elite4.flatMap(t => t.pokemon), ...region.champion.pokemon];
+                  const minLv = scaleLeagueLevel(Math.min(...allPkmn.map(p => p.level)), leagueProgress.completedRuns);
+                  const maxLv = scaleLeagueLevel(Math.max(...allPkmn.map(p => p.level)), leagueProgress.completedRuns);
+                  return (
+                    <p className="text-[9px] font-bold text-left" style={{
+                      color: leagueProgress.completedRuns > 0 ? '#facc15' : '#86efac'
+                    }}>
+                      Lv. {minLv}–{maxLv}
+                    </p>
+                  );
+                })()}
               </motion.button>
             );
           })}

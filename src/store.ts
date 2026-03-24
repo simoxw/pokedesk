@@ -11,6 +11,10 @@ interface GameStore extends GameState {
   setLeagueBattleTeam: (team: any[]) => void;
   clearLeagueBattleTeam: () => void;
   setLeagueBattleResult: (result: 'win' | 'lose' | null) => void;
+  setMasterBattleTeam: (team: any[]) => void;
+  clearMasterBattleTeam: () => void;
+  setMasterBattleResult: (result: 'win' | 'lose' | null) => void;
+  recordMasterWin: (trainerId: string) => void;
   setPlayer: (name: string, gender: 'M' | 'F') => void;
   updatePlayer: (updates: Partial<GameState['player']>) => void;
   addPokemon: (pokemon: Pokemon) => void;
@@ -131,6 +135,9 @@ export const useStore = create<GameStore>()(
       favorites: [],
       friendBattleTeam: null,
       leagueBattleTeam: null,
+      leagueBattleResult: null,
+      masterBattleTeam: null,
+      masterBattleResult: null,
       isFirstRun: true,
       dailyMissions: null,
       leagueProgress: {
@@ -139,7 +146,7 @@ export const useStore = create<GameStore>()(
         trophies: [],
         currentRun: null,
       },
-      leagueBattleResult: null,
+      masterProgress: { defeatedIds: [] },
       currentScreen: 'START_SCREEN',
 
       setScreen: (screen) => set({ currentScreen: screen }),
@@ -527,6 +534,16 @@ export const useStore = create<GameStore>()(
       setLeagueBattleTeam: (team) => set({ leagueBattleTeam: team }),
       clearLeagueBattleTeam: () => set({ leagueBattleTeam: null }),
       setLeagueBattleResult: (result: 'win' | 'lose' | null) => set({ leagueBattleResult: result }),
+      setMasterBattleTeam: (team) => set({ masterBattleTeam: team }),
+      clearMasterBattleTeam: () => set({ masterBattleTeam: null }),
+      setMasterBattleResult: (result: 'win' | 'lose' | null) => set({ masterBattleResult: result }),
+      recordMasterWin: (trainerId) => set((state) => ({
+        masterProgress: {
+          defeatedIds: state.masterProgress.defeatedIds.includes(trainerId)
+            ? state.masterProgress.defeatedIds
+            : [...state.masterProgress.defeatedIds, trainerId],
+        },
+      })),
       toggleFavorite: (id) => set((state) => ({
         favorites: state.favorites.includes(id)
           ? state.favorites.filter(f => f !== id)
@@ -654,6 +671,9 @@ export const useStore = create<GameStore>()(
         friendBattleTeam: null,
         leagueBattleTeam: null,
         leagueBattleResult: null,
+        masterBattleTeam: null,
+        masterBattleResult: null,
+        masterProgress: { defeatedIds: [] },
       }),
     }),
     {
@@ -670,6 +690,9 @@ export const useStore = create<GameStore>()(
         state.pendingNewMove = null;
         state.leagueBattleTeam = null;
         state.leagueBattleResult = null;
+        state.masterBattleTeam = null;
+        state.masterBattleResult = null;
+        if (!state.masterProgress) state.masterProgress = { defeatedIds: [] };
       }
     }
   )

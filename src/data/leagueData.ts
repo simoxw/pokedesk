@@ -967,3 +967,212 @@ export function scaleLeagueLevel(
   // Seconda run+: +20 livelli, clampato a 88
   return Math.min(88, baseLevel + 20);
 }
+
+export interface MasterTrainer {
+  id: string;
+  name: string;
+  spriteFile: string;
+  pokemon: { id: number; level: number }[];
+  intro: string[];
+  win: string[];
+  lose: string[];
+  reward: { coins: number; items: Record<string, number> };
+}
+
+export const MASTER_TRAINERS: MasterTrainer[] = [
+  {
+    id: 'red',
+    name: 'Red',
+    spriteFile: 'red',
+    pokemon: [
+      { id: 150, level: 100 }, { id: 144, level: 98 },
+      { id: 145, level: 98 }, { id: 146, level: 95 },
+    ],
+    intro: ['...', '(Red ti fissa in silenzio. La sua determinazione è palpabile.)'],
+    win: ['...', '(Red annuisce lentamente, con rispetto negli occhi.)'],
+    lose: ['...'],
+    reward: { coins: 5000, items: { rare_candy: 3, masterball: 1 } },
+  },
+  {
+    id: 'blue',
+    name: 'Blue',
+    spriteFile: 'blue',
+    pokemon: [
+      { id: 384, level: 98 }, { id: 382, level: 96 },
+      { id: 383, level: 96 }, { id: 386, level: 92 },
+    ],
+    intro: ['Pfff! Un altro sfidante mediocre?', 'Dimmi almeno che ti sei allenato, perché io non ho tempo da perdere!'],
+    win: ['...Beh. Forse non sei così mediocre.', 'Non aspettarti di vincere la prossima volta.'],
+    lose: ['Come immaginavo! Nessuno può battermi!', 'Torna quando sarai davvero pronto!'],
+    reward: { coins: 5000, items: { rare_candy: 3, ultraball: 3 } },
+  },
+  {
+    id: 'ethan',
+    name: 'Ethan',
+    spriteFile: 'ethan',
+    pokemon: [
+      { id: 250, level: 98 }, { id: 249, level: 96 },
+      { id: 244, level: 94 }, { id: 243, level: 90 },
+    ],
+    intro: ['Sono il Campione di Johto! Non è cosa da poco affrontarmi.', 'Se sei arrivato qui, meriti rispetto. Ma vediamo cosa sai fare!'],
+    win: ['Incredibile... hai sconfitto anche Ho-Oh!', 'Sei davvero un allenatore leggendario.'],
+    lose: ['Le leggendarie di Johto sono imbattibili!', 'Nessuno supera il Campione di Johto!'],
+    reward: { coins: 5000, items: { rare_candy: 3, hyperpotion: 3 } },
+  },
+  {
+    id: 'lyra',
+    name: 'Lyra',
+    spriteFile: 'lyra',
+    pokemon: [
+      { id: 251, level: 95 }, { id: 245, level: 93 },
+      { id: 381, level: 91 }, { id: 380, level: 88 },
+    ],
+    intro: ['Ehiiii! Non pensavo arrivassi così lontano!', 'Ma non illuderti — i miei Pokémon sono davvero speciali!'],
+    win: ['Waaah! Hai davvero vinto! Sei fortissimo!', 'Devo allenarmi ancora di più...'],
+    lose: ['Yeeeah! Celebi e Suicune non si fermano!', "La forza dell'amicizia vince sempre!"],
+    reward: { coins: 5000, items: { rare_candy: 3, full_heal: 5 } },
+  },
+  {
+    id: 'steven',
+    name: 'Steven',
+    spriteFile: 'steven',
+    pokemon: [
+      { id: 483, level: 96 }, { id: 484, level: 96 },
+      { id: 487, level: 94 }, { id: 486, level: 92 },
+    ],
+    intro: ['Ho collezionato le pietre più rare al mondo.', 'Ma nessuna gemma brilla come un allenatore di valore. Dimostrami che sei tu.'],
+    win: ['...Magnifico. Come un cristallo perfetto.', 'Rarissimo trovare qualcuno così prezioso.'],
+    lose: ["L'acciaio è il materiale più raro e resistente.", 'Proprio come la mia squadra. Inattaccabile.'],
+    reward: { coins: 5000, items: { rare_candy: 3, dawn_stone: 2 } },
+  },
+  {
+    id: 'cynthia',
+    name: 'Cynthia',
+    spriteFile: 'cynthia',
+    pokemon: [
+      { id: 493, level: 100 }, { id: 491, level: 98 },
+      { id: 488, level: 96 }, { id: 492, level: 94 },
+    ],
+    intro: ['Sei davvero arrivato qui. I miti di Sinnoh ti avrebbero glorificato.', 'Ma ora affronti me — e io non sono un mito. Sono reale. Iniziamo!'],
+    win: ['...Straordinario. Hai battuto persino Arceus.', 'La storia di questo mondo ha il tuo nome ora.'],
+    lose: ['I miti di Sinnoh non si possono riscrivere.', 'Arceus governa tutto. E io sono con lui.'],
+    reward: { coins: 6000, items: { rare_candy: 4, masterball: 1 } },
+  },
+  {
+    id: 'alder',
+    name: 'Alder',
+    spriteFile: 'alder',
+    pokemon: [
+      { id: 643, level: 95 }, { id: 644, level: 95 },
+      { id: 646, level: 93 }, { id: 494, level: 90 },
+    ],
+    intro: ['La vita è un viaggio. Il tuo è arrivato fino a me.', 'Vediamo cosa hai imparato lungo la strada. Forza!'],
+    win: ['Sì! Questo è il significato della vita!', 'Hai trovato la tua risposta. Sono orgoglioso.'],
+    lose: ['Il viaggio non è ancora finito per te.', 'Torna quando avrai vissuto di più!'],
+    reward: { coins: 5000, items: { rare_candy: 3, thunder_stone: 2 } },
+  },
+  {
+    id: 'diantha',
+    name: 'Diantha',
+    spriteFile: 'diantha',
+    pokemon: [
+      { id: 716, level: 96 }, { id: 717, level: 96 },
+      { id: 718, level: 94 }, { id: 719, level: 90 },
+    ],
+    intro: ['Un protagonista degno di un film epico!', 'Ma ogni film ha il suo villain irresistibile. Eccomi!'],
+    win: ['Applausi! Questo è il finale perfetto!', 'Sei la star assoluta. Mi hai rubato la scena.'],
+    lose: ['La protagonista non perde nel suo film!', 'Taglio! Questa scena è mia!'],
+    reward: { coins: 5000, items: { rare_candy: 3, moon_stone: 2 } },
+  },
+  {
+    id: 'leon',
+    name: 'Leon',
+    spriteFile: 'leon',
+    pokemon: [
+      { id: 888, level: 100 }, { id: 889, level: 100 },
+      { id: 890, level: 98 }, { id: 898, level: 95 },
+    ],
+    intro: ['Oi! Non ho MAI perso nella mia vita.', 'E non inizierò oggi. Questa sarà la battaglia del secolo!'],
+    win: ['...Non ci posso credere. Per la prima volta...', 'Sei il vero Campione dei Campioni!'],
+    lose: ['AHAHAH! IL CAMPIONE IMBATTUTO TRIONFA!', 'Non esiste sfidante abbastanza forte per Leon!'],
+    reward: { coins: 6000, items: { rare_candy: 4, masterball: 1 } },
+  },
+  {
+    id: 'giovanni',
+    name: 'Giovanni',
+    spriteFile: 'giovanni',
+    pokemon: [
+      { id: 150, level: 96 }, { id: 383, level: 94 },
+      { id: 645, level: 92 }, { id: 377, level: 88 },
+    ],
+    intro: ['Ah... finalmente qualcuno degno di sfidare il Team Rocket.', 'Il potere assoluto appartiene a chi sa come ottenerlo. E io so.'],
+    win: ['...Impensabile. Sei davvero straordinario.', 'Forse meriti un posto nel Team Rocket.'],
+    lose: ['Il potere assoluto è mio! Sempre!', 'Il Team Rocket non cede mai!'],
+    reward: { coins: 5000, items: { rare_candy: 3, ultraball: 5 } },
+  },
+  {
+    id: 'lance',
+    name: 'Lance',
+    spriteFile: 'lance',
+    pokemon: [
+      { id: 384, level: 98 }, { id: 483, level: 96 },
+      { id: 484, level: 96 }, { id: 487, level: 92 },
+    ],
+    intro: ['I draghi sono le creature più potenti del mondo.', 'E io sono il loro padrone supremo. Nessuno ha mai vinto contro di me qui!'],
+    win: ['...I draghi ti riconoscono come pari. Incredibile.', 'Forse esistono forze oltre i draghi. Tu sei una di quelle.'],
+    lose: ['I draghi dominano tutto! Nemmeno tu puoi fermarli!', 'Il cielo e i draghi sono miei per sempre!'],
+    reward: { coins: 5000, items: { rare_candy: 3, ultraball: 3 } },
+  },
+  {
+    id: 'n',
+    name: 'N',
+    spriteFile: 'n',
+    pokemon: [
+      { id: 644, level: 95 }, { id: 643, level: 95 },
+      { id: 649, level: 92 }, { id: 647, level: 88 },
+    ],
+    intro: ['I Pokémon mi hanno parlato di te.', 'Vogliono sapere se sei davvero degno della loro fiducia. Affrontami.'],
+    win: ['I Pokémon hanno scelto. Sei il loro alleato.', 'Forse il mondo può cambiare grazie a persone come te.'],
+    lose: ['La verità è dalla mia parte.', 'I Pokémon meritano libertà — e io la difendo!'],
+    reward: { coins: 5000, items: { rare_candy: 3, full_heal: 5 } },
+  },
+  {
+    id: 'lusamine',
+    name: 'Lusamine',
+    spriteFile: 'lusamine',
+    pokemon: [
+      { id: 793, level: 94 }, { id: 794, level: 92 },
+      { id: 797, level: 90 }, { id: 800, level: 86 },
+    ],
+    intro: ['Sei bello... come un Pokémon perfetto da conservare.', 'Ma la bellezza si preserva sconfiggendola. Lasciati catturare dalla mia forza!'],
+    win: ['...Hai rotto la perfezione.', 'Forse la perfezione non era ciò che cercavo.'],
+    lose: ['La perfezione è mia! Solo mia!', 'Nessuno può avvicinarsi alla mia bellezza assoluta!'],
+    reward: { coins: 5000, items: { rare_candy: 3, ultraball: 3 } },
+  },
+  {
+    id: 'volo',
+    name: 'Volo',
+    spriteFile: 'volo',
+    pokemon: [
+      { id: 243, level: 92 }, { id: 642, level: 90 },
+      { id: 644, level: 90 }, { id: 894, level: 86 },
+    ],
+    intro: ['Tutto ciò che ho fatto è stato per questo momento.', 'La mia ambizione non conosce limiti. Ora paghi!'],
+    win: ['...Impossibile. Era tutto pianificato...', 'Come puoi aver vinto?!'],
+    lose: ['Hahaha! La mia ambizione è inarrestabile!', 'Nessuno ostacola il mio piano!'],
+    reward: { coins: 5000, items: { rare_candy: 3, thunder_stone: 3 } },
+  },
+  {
+    id: 'rival',
+    name: 'Rival',
+    spriteFile: 'blue-gen1',
+    pokemon: [
+      { id: 791, level: 95 }, { id: 792, level: 95 },
+      { id: 802, level: 93 }, { id: 807, level: 90 },
+    ],
+    intro: ['Non sei il solo ad essere cresciuto.', 'Ho viaggiato ogni regione. Ora ti mostro cosa ho imparato!'],
+    win: ['...Quindi sei davvero più forte di me ora.', 'Non me lo dimenticherò. La prossima volta vinco io.'],
+    lose: ['Come sempre, PERDI!', 'Sono il Rivale! Il Rivale vince sempre!'],
+    reward: { coins: 5000, items: { rare_candy: 3, megaball: 5 } },
+  },
+];
