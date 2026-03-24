@@ -82,7 +82,7 @@ export const LEAGUE_REGIONS: LeagueRegion[] = [
         name: 'Agatha',
         title: 'Superquattro dei Fantasma',
         type: 'ghost',
-        spriteUrl: sprite('agatha'),
+        spriteUrl: 'https://play.pokemonshowdown.com/sprites/trainers/agatha-gen1rb.png',
         pokemon: [
           { id: 94,  level: 54 }, // Gengar
           { id: 93,  level: 54 }, // Haunter

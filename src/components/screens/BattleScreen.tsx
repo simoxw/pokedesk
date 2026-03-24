@@ -1284,49 +1284,193 @@ export default function BattleScreen() {
           <button onClick={() => setApiError(null)} className="ml-3 underline text-xs">Chiudi</button>
         </div>
       )}
-      {/* SFONDO GLOBALE (Cielo Azzurro) */}
-      <div className="absolute inset-0 z-0" style={{ 
-        background: 'linear-gradient(180deg, #4fa8ff 0%, #87ceeb 40%, #b0e2ff 60%)' 
-      }} />
+      {/* SFONDO GLOBALE — condizionale per tipo battaglia */}
+      <div className="absolute inset-0 z-0">
 
-      {/* Nuvole animate (Globali) */} 
-      <div className="absolute inset-0 z-0 overflow-hidden pointer-events-none">
-        {[1, 2, 3].map(i => (
-          <motion.div
-            key={i}
-            initial={{ x: -200 }}
-            animate={{ x: '100vw' }}
-            transition={{ duration: 25 + i * 8, repeat: Infinity, ease: 'linear', delay: i * 5 }}
-            className="absolute bg-white/35 rounded-full blur-xl"
-            style={{ 
-              width: 150 + i * 60, 
-              height: 50 + i * 20, 
-              top: `${10 + i * 15}%`,
-              left: -200
-            }}
-          />
-        ))}
-      </div>
+        {/* NORMALE / AMICO — cielo azzurro */}
+        {!wasLeagueBattle.current && !wasMasterBattle.current && !isBoss && (
+          <div className="absolute inset-0" style={{
+            background: 'linear-gradient(180deg, #4fa8ff 0%, #87ceeb 40%, #b0e2ff 60%)'
+          }} />
+        )}
 
-      {/* TERRENO (PRATO VERDE) GLOBALE - SOTTO TUTTO */}
+        {/* BOSS — cielo temporalesco viola */}
+        {isBoss && (
+          <div className="absolute inset-0" style={{
+            background: 'linear-gradient(180deg, #1a0a2e 0%, #2d1a4a 40%, #4a2d6b 60%)'
+          }} />
+        )}
+
+  {/* LEGA — cielo grigio pietra medio */}
+  {wasLeagueBattle.current && !wasMasterBattle.current && (
+    <div className="absolute inset-0 bg-[#2a2a45]">
+      {Array.from({ length: 15 }).map((_, i) => (
+        <motion.div
+          key={i}
+          className="absolute bg-white rounded-full"
+          animate={{ opacity: [0.2, 1, 0.2] }}
+          transition={{ duration: 2 + Math.random() * 3, repeat: Infinity, delay: Math.random() * 3 }}
+          style={{
+            width: Math.random() * 3 + 1, height: Math.random() * 3 + 1,
+            top: `${Math.random() * 50}%`, left: `${Math.random() * 100}%`
+          }}
+        />
+      ))}
+    </div>
+  )}
+
+  {/* MASTER — cielo blu cosmico medio */}
+  {wasMasterBattle.current && (
+    <div className="absolute inset-0 bg-[#151540]">
+      {Array.from({ length: 15 }).map((_, i) => (
+        <motion.div
+          key={i}
+          className="absolute bg-white rounded-full"
+          animate={{ opacity: [0.2, 1, 0.2] }}
+          transition={{ duration: 2 + Math.random() * 3, repeat: Infinity, delay: Math.random() * 3 }}
+          style={{
+            width: Math.random() * 3 + 1, height: Math.random() * 3 + 1,
+            top: `${Math.random() * 50}%`, left: `${Math.random() * 100}%`
+          }}
+        />
+      ))}
+    </div>
+  )}
+
+</div>
+
+      {/* NUVOLE — solo normale e amico */}
+      {!wasLeagueBattle.current && !wasMasterBattle.current && !isBoss && (
+        <div className="absolute inset-x-0 top-0 z-0 pointer-events-none" style={{ height: '22%' }}>
+          {[1, 2, 3].map(i => (
+            <motion.div
+              key={i}
+              initial={{ x: -300 }}
+              animate={{ x: '110vw' }}
+              transition={{
+                duration: 18 + i * 6,
+                repeat: Infinity,
+                ease: 'linear',
+                delay: i * 3
+              }}
+              className="absolute bg-white/80 rounded-full blur-sm"
+              style={{
+                width: 120 + i * 50,
+                height: 35 + i * 12,
+                top: `${8 + i * 22}%`,
+                left: -300
+              }}
+            />
+          ))}
+        </div>
+      )}
+
+      {/* NUVOLE BOSS — viola scure, veloci */}
+      {isBoss && (
+        <div className="absolute inset-x-0 top-0 z-0 pointer-events-none" style={{ height: '22%' }}>
+          {[1, 2, 3].map(i => (
+            <motion.div
+              key={i}
+              initial={{ x: -300 }}
+              animate={{ x: '110vw' }}
+              transition={{
+                duration: 10 + i * 3,
+                repeat: Infinity,
+                ease: 'linear',
+                delay: i * 2
+              }}
+              className="absolute rounded-full blur-sm"
+              style={{
+                width: 120 + i * 50,
+                height: 35 + i * 12,
+                top: `${8 + i * 22}%`,
+                left: -300,
+                backgroundColor: 'rgba(90, 30, 120, 0.75)'
+              }}
+            />
+          ))}
+        </div>
+      )}
+
+      {/* TERRENO — condizionale per tipo battaglia */}
       <div className="absolute inset-x-0 bottom-0 z-0" style={{ height: '78%' }}>
-        {/* Prato verde scuro/naturale */} 
-        <div className="absolute inset-0" style={{ 
-          background: 'linear-gradient(180deg, #4d9a2a 0%, #3a7a25 100%)', 
-        }} /> 
-        {/* Griglia prato (molto sottile) */} 
-        <div className="absolute inset-0 opacity-10" style={{ 
-          backgroundImage: 'linear-gradient(rgba(255,255,255,0.1) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.1) 1px, transparent 1px)', 
-          backgroundSize: '40px 30px', 
-        }} /> 
-        {/* Sottile texture a spighe (erba) */} 
-        <div className="absolute inset-0 opacity-30" style={{
-          backgroundImage: 'repeating-linear-gradient(135deg, rgba(255,255,255,0.05) 0, rgba(255,255,255,0.05) 1px, transparent 1px, transparent 10px)'
-        }} />
-        {/* Linea Orizzonte (Sfumata) */}
-        <div className="absolute top-0 left-0 right-0 h-[4px]" style={{ 
-          background: 'linear-gradient(180deg, rgba(0,0,0,0.1), transparent)', 
-        }} />
+
+        {/* NORMALE / AMICO — prato chiaro */}
+        {!wasLeagueBattle.current && !wasMasterBattle.current && !isBoss && (
+          <>
+            <div className="absolute inset-0" style={{
+              background: 'linear-gradient(180deg, #5db533 0%, #4a9a20 100%)',
+            }} />
+            <div className="absolute inset-0 opacity-10" style={{
+              backgroundImage: 'linear-gradient(rgba(255,255,255,0.1) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.1) 1px, transparent 1px)',
+              backgroundSize: '40px 30px',
+            }} />
+            <div className="absolute inset-0 opacity-30" style={{
+              backgroundImage: 'repeating-linear-gradient(135deg, rgba(255,255,255,0.05) 0, rgba(255,255,255,0.05) 1px, transparent 1px, transparent 10px)'
+            }} />
+            <div className="absolute top-0 left-0 right-0 h-[4px]" style={{
+              background: 'linear-gradient(180deg, rgba(0,0,0,0.1), transparent)',
+            }} />
+          </>
+        )}
+
+        {/* BOSS — prato scuro riconoscibile */}
+        {isBoss && (
+          <>
+            <div className="absolute inset-0" style={{
+              background: 'linear-gradient(180deg, #2a4a10 0%, #1a3008 100%)',
+            }} />
+            <div className="absolute inset-0 opacity-15" style={{
+              backgroundImage: 'linear-gradient(rgba(255,255,255,0.05) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.05) 1px, transparent 1px)',
+              backgroundSize: '40px 30px',
+            }} />
+            <div className="absolute top-0 left-0 right-0 h-[4px]" style={{
+              background: 'linear-gradient(180deg, rgba(0,0,0,0.2), transparent)',
+            }} />
+          </>
+        )}
+
+  {/* LEGA — pavimento marmo scuro con riflessi */}
+  {wasLeagueBattle.current && !wasMasterBattle.current && (
+    <>
+      <div className="absolute inset-0" style={{
+        background: 'linear-gradient(180deg, #2a2a40 0%, #1a1a2e 100%)',
+      }} />
+      {/* venature marmo */}
+      <div className="absolute inset-0 opacity-20" style={{
+        backgroundImage: 'radial-gradient(circle at 50% 50%, rgba(255,255,255,0.2) 0%, transparent 50%)',
+        backgroundSize: '100% 100%'
+      }} />
+      {/* linea orizzonte blu neon */}
+      <div className="absolute top-0 left-0 right-0 h-[2px]" style={{
+        background: 'linear-gradient(90deg, transparent, rgba(100,200,255,0.6), transparent)',
+      }} />
+      {/* riflesso dal basso */}
+      <div className="absolute bottom-0 left-0 right-0" style={{
+        height: '30%',
+        background: 'linear-gradient(0deg, rgba(60,100,255,0.2), transparent)',
+      }} />
+    </>
+  )}
+
+  {/* MASTER — pavimento spazio profondo con costellazioni */}
+  {wasMasterBattle.current && (
+    <>
+      <div className="absolute inset-0" style={{
+        background: 'linear-gradient(180deg, #151540 0%, #0a0a2a 100%)',
+      }} />
+      {/* linea orizzonte viola intenso */}
+      <div className="absolute top-0 left-0 right-0 h-[2px]" style={{
+        background: 'linear-gradient(90deg, transparent, rgba(180,0,255,0.6), transparent)',
+      }} />
+      {/* riflesso viola */}
+      <div className="absolute bottom-0 left-0 right-0" style={{
+        height: '40%',
+        background: 'linear-gradient(0deg, rgba(120,0,255,0.25), transparent)',
+      }} />
+    </>
+  )}
+
       </div>
 
       {/* ARENA (Contiene i Pokémon) */} 
