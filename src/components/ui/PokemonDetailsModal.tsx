@@ -171,7 +171,7 @@ export default function PokemonDetailsModal({ pokemon, onClose }: PokemonDetails
                   </div>
                   <div className="w-8 text-right font-black text-sm">{pokemon.stats[stat]}</div>
                   <div className="flex gap-2 text-[10px] font-bold whitespace-nowrap"> 
-                    <span className="text-[#e63946]">IV:{pokemon.ivs[stat]}</span> 
+                    <span className={pokemon.ivs[stat] === 31 ? 'text-green-400' : 'text-[#e63946]'}>IV:{pokemon.ivs[stat]}</span> 
                     <span className="text-emerald-400">EV:{pokemon.evs[stat]}</span> 
                   </div> 
                 </div>

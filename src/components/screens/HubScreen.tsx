@@ -665,8 +665,25 @@ export default function HubScreen() {
                         >
                           <img src={`https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/${p.pokemonId}.png`} className="w-10 h-10 object-contain" />
                           <div className="text-left flex-1 min-w-0">
-                            <p className="font-black text-sm uppercase truncate">{p.name}</p>
-                            <p className="text-[10px] text-white/40">Lv.{p.level} · IV {Object.values(p.ivs).reduce((a,b)=>a+b,0)}/186{p.pokemonId === 132 ? ' · DITTO ⭐' : ''}</p>
+                            <div className="flex items-center gap-2">
+                              <p className="font-black text-sm uppercase truncate">{p.name}</p>
+                              {Object.values(p.ivs).some((v: any) => v === 31) && (
+                                <div className="w-1.5 h-1.5 rounded-full bg-green-400 shadow-[0_0_4px_#4ade80]" />
+                              )}
+                            </div>
+                            <div className="flex items-center gap-2 mt-0.5">
+                              <p className="text-[10px] text-[#e63946] font-bold">Lv.{p.level}</p>
+                              <div className="flex gap-1">
+                                {Object.entries(p.ivs).map(([stat, val]) => (
+                                  <span key={stat} className={`text-[9px] font-bold ${(val as number) === 31 ? 'text-green-400' : 'text-white/20'}`}>
+                                    {val as number}
+                                  </span>
+                                ))}
+                              </div>
+                              <p className="text-[10px] text-white/30 truncate">
+                                ({(Object.values(p.ivs) as number[]).reduce((a,b)=>a+b,0)}/186) {p.pokemonId === 132 ? 'DITTO ⭐' : ''}
+                              </p>
+                            </div>
                           </div>
                           {incubStep === 'pick2' && compatible && <span className="text-[9px] text-green-400 font-black shrink-0">✓</span>}
                         </button>
@@ -692,10 +709,14 @@ export default function HubScreen() {
                         />
                         <div>
                           <p className="font-black text-sm uppercase">{incubPreview.name} <span className="text-yellow-400">Lv.5</span></p>
-                          <p className="text-[10px] text-white/40">Natura random · IV combinati</p>
-                          <p className="text-[10px] text-white/40">
-                            IV: {Object.values(incubPreview.ivs).join('/')} ({(Object.values(incubPreview.ivs) as number[]).reduce((a: number, b: number) => a + b, 0)}/186)
-                          </p>
+                          <div className="mt-1 flex flex-wrap gap-x-1.5 gap-y-0.5">
+                            {Object.entries(incubPreview.ivs).map(([stat, val]) => (
+                              <span key={stat} className="text-[9px] uppercase font-bold">
+                                <span className={(val as number) === 31 ? 'text-green-400' : 'text-white/40'}>{val as number}</span>
+                              </span>
+                            ))}
+                            <span className="text-[9px] text-white/20 font-black ml-1">TOT: {(Object.values(incubPreview.ivs) as number[]).reduce((a: number, b: number) => a + b, 0)}/186</span>
+                          </div>
                         </div>
                       </div>
                       <div className="grid grid-cols-3 gap-1.5">

@@ -45,7 +45,20 @@ export default function BoxScreen() {
   const filtered = useMemo(() => { 
     let result = [...box]; 
     if (showFavoritesOnly) result = result.filter(p => favorites.includes(p.id));
-    if (search) result = result.filter(p => p.name.toLowerCase().includes(search.toLowerCase())); 
+    if (search) {
+      const query = search.toLowerCase().trim();
+      if (query === 'iv:31' || query === '31') {
+        result = result.filter(p => Object.values(p.ivs).some(v => v === 31));
+      } else if (query.startsWith('iv:')) {
+        const val = parseInt(query.replace('iv:', '')) || 0;
+        result = result.filter(p => {
+          const total = (Object.values(p.ivs) as number[]).reduce((a, b) => a + b, 0);
+          return total >= val;
+        });
+      } else {
+        result = result.filter(p => p.name.toLowerCase().includes(query));
+      }
+    }
     if (filterType) result = result.filter(p => p.types.includes(filterType as any)); 
     result.sort((a, b) => { 
       if (sortBy === 'name') return a.name.localeCompare(b.name); 
@@ -256,9 +269,14 @@ export default function BoxScreen() {
                   src={`https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/${pkmn.isShiny ? 'shiny/' : ''}${pkmn.pokemonId}.png`}
                   className="w-full h-full object-contain scale-110"
                 />
-                <span className="absolute bottom-0 left-0 right-0 text-center text-[10px] font-bold text-white/50 bg-black/30 pb-0.5">
-                  Lv.{pkmn.level}
-                </span>
+                <div className="absolute bottom-0 left-0 right-0 flex items-center justify-center gap-1 bg-black/40 pb-0.5">
+                  <span className="text-[8px] font-bold text-white/50">
+                    Lv.{pkmn.level}
+                  </span>
+                  {Object.values(pkmn.ivs).some((v: any) => v === 31) && (
+                    <div className="w-1 h-1 rounded-full bg-green-400 shadow-[0_0_4px_#4ade80]" />
+                  )}
+                </div>
               </button>
             ))}
             {Array.from({ length: emptySlots }).map((_, i) => (
@@ -312,7 +330,14 @@ export default function BoxScreen() {
                     </div>
                   </div>
                   <div className="shrink-0 text-right">
-                    <div className="text-[11px] font-black text-white/60">IV {ivTotal}/186</div>
+                    <div className="flex gap-0.5 justify-end">
+                      {Object.entries(pkmn.ivs).map(([stat, val]) => (
+                        <span key={stat} className={`text-[7px] font-bold ${(val as number) === 31 ? 'text-green-400' : 'text-white/20'}`}>
+                          {val as number}
+                        </span>
+                      ))}
+                    </div>
+                    <div className="text-[10px] font-black text-white/40">IV {ivTotal}</div>
                     <div className="flex gap-1 mt-1 justify-end">
                       {pkmn.types.map(t => (
                         <span key={t} className="text-[8px] font-bold uppercase bg-white/10 px-1.5 py-0.5 rounded text-white/50">{t}</span>
@@ -365,11 +390,14 @@ export default function BoxScreen() {
                 <div>
                   <h3 className="text-3xl font-black uppercase">{selectedPkmn.name}</h3>
                   <p className="text-[#e63946] font-bold">Livello {selectedPkmn.level}</p>
-                  <div className="mt-2 text-xs text-white/50">
-                    {(() => {
-                      const ivTotal = selectedPkmn.ivs.hp + selectedPkmn.ivs.attack + selectedPkmn.ivs.defense + selectedPkmn.ivs.spAtk + selectedPkmn.ivs.spDef + selectedPkmn.ivs.speed;
-                      return `IV: ${selectedPkmn.ivs.hp}/${selectedPkmn.ivs.attack}/${selectedPkmn.ivs.defense}/${selectedPkmn.ivs.spAtk}/${selectedPkmn.ivs.spDef}/${selectedPkmn.ivs.speed} (${ivTotal}/186)`;
-                    })()}
+                  <div className="mt-2 text-[10px] flex flex-wrap gap-x-2 gap-y-1">
+                    {Object.entries(selectedPkmn.ivs).map(([stat, val]) => (
+                      <span key={stat} className="uppercase font-bold">
+                        <span className="text-white/30">{stat}:</span>
+                        <span className={(val as number) === 31 ? 'text-green-400' : 'text-white/60'}> {val as number}</span>
+                      </span>
+                    ))}
+                    <div className="w-full text-white/20 font-black mt-1">TOTALE: {(Object.values(selectedPkmn.ivs) as number[]).reduce((a, b) => a + b, 0)}/186</div>
                   </div>
                 </div>
               </div>
