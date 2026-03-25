@@ -50,6 +50,19 @@ export interface Stats {
   speed: number;
 }
 
+export interface Egg {
+  id: string;
+  parent1Id: string;
+  parent2Id: string;
+  basePokemonId: number;
+  baseSpeciesId: number;
+  ivs: Stats;
+  nature: string;
+  isShiny: boolean;
+  createdAt: number;
+  hatchAt: number;
+}
+
 export interface Pokemon {
   id: string; // Unique instance ID
   pokemonId: number; // PokéAPI ID
@@ -119,6 +132,7 @@ export interface GameState {
   pendingMedalUnlock: Medal | null;
   pendingEvolution: { pokemonId: string; newPokemonId: number; newName: string; newTypes?: PokemonType[]; newBaseStats?: Stats } | null;
   pendingNewMove: { pokemonId: string; move: Move } | null;
+  eggs: Egg[];
   favorites: string[];
   friendBattleTeam: any[] | null;
   leagueBattleTeam: any[] | null;
@@ -179,6 +193,7 @@ export interface GameState {
     pokemonId: string;
     move: Move;
   } | null;
+  eggs: Egg[];
   favorites: string[];
   friendBattleTeam: any[] | null;
   isFirstRun: boolean;

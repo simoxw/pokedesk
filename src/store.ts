@@ -1,8 +1,9 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
-import { GameState, Pokemon, ScreenName, Medal, Item, Move, DailyMission } from './types';
+import { GameState, Pokemon, ScreenName, Medal, Item, Move, DailyMission, Egg } from './types';
 import { api } from './api';
 import { BattleEngine } from './BattleEngine';
+import { CatchEngine } from './CatchEngine';
 
 interface GameStore extends GameState {
   setScreen: (screen: ScreenName) => void;
@@ -44,6 +45,8 @@ interface GameStore extends GameState {
   dismissMedalUnlock: () => void;
   replaceMove: (pokemonId: string, oldMoveId: string, newMove: Move) => void;
   updateSettings: (settings: Partial<GameState['settings']>) => void;
+  startIncubation: (p1: Pokemon, p2: Pokemon) => void;
+  hatchEgg: (eggId: string) => void;
   toggleFavorite: (id: string) => void;
   recordBattleWin: () => void;
   toggleExpShare: () => void;
@@ -163,6 +166,7 @@ export const useStore = create<GameStore>()(
       pendingMedalUnlock: null,
       pendingEvolution: null,
       pendingNewMove: null,
+      eggs: [],
       favorites: [],
       friendBattleTeam: null,
       leagueBattleTeam: null,
@@ -575,6 +579,73 @@ export const useStore = create<GameStore>()(
             : [...state.masterProgress.defeatedIds, trainerId],
         },
       })),
+      startIncubation: (p1, p2) => set((state) => {
+        if (state.eggs.length >= 4) return {};
+        const isDitto = (p: Pokemon) => p.pokemonId === 132;
+        const compatible =
+          isDitto(p1) || isDitto(p2) ||
+          (p1.baseSpeciesId === p2.baseSpeciesId && p1.id !== p2.id);
+        if (!compatible) return {};
+        const nonDitto = isDitto(p1) ? p2 : p1;
+        const bestIvs = {
+          hp: Math.max(p1.ivs.hp, p2.ivs.hp),
+          attack: Math.max(p1.ivs.attack, p2.ivs.attack),
+          defense: Math.max(p1.ivs.defense, p2.ivs.defense),
+          spAtk: Math.max(p1.ivs.spAtk, p2.ivs.spAtk),
+          spDef: Math.max(p1.ivs.spDef, p2.ivs.spDef),
+          speed: Math.max(p1.ivs.speed, p2.ivs.speed),
+        };
+        const now = Date.now();
+        const egg: Egg = {
+          id: Math.random().toString(36).substr(2, 9),
+          parent1Id: p1.id,
+          parent2Id: p2.id,
+          basePokemonId: nonDitto.baseSpeciesId,
+          baseSpeciesId: nonDitto.baseSpeciesId,
+          ivs: bestIvs,
+          nature: CatchEngine.getNature(),
+          isShiny: CatchEngine.checkShiny(),
+          createdAt: now,
+          hatchAt: now + 72 * 60 * 60 * 1000,
+        };
+        return { eggs: [...state.eggs, egg] };
+      }),
+      hatchEgg: (eggId) => set((state) => {
+        const egg = state.eggs.find(e => e.id === eggId);
+        if (!egg) return {};
+        // Stats placeholder — fixMoves in HubScreen completerà nome/stat/mosse
+        const placeholder = { hp: 45, attack: 45, defense: 45, spAtk: 45, spDef: 45, speed: 45 };
+        const stats = BattleEngine.calculateStats(5, placeholder, egg.ivs,
+          { hp: 0, attack: 0, defense: 0, spAtk: 0, spDef: 0, speed: 0 }, egg.nature);
+        const newPokemon: Pokemon = {
+          id: Math.random().toString(36).substr(2, 9),
+          pokemonId: egg.basePokemonId,
+          name: `#${egg.basePokemonId}`,  // fixMoves sostituirà con il nome reale
+          level: 5,
+          exp: 125,
+          types: ['normal'],
+          baseStats: placeholder,
+          ivs: egg.ivs,
+          evs: { hp: 0, attack: 0, defense: 0, spAtk: 0, spDef: 0, speed: 0 },
+          stats,
+          nature: egg.nature,
+          moves: [],  // fixMoves popolerà
+          currentHp: stats.hp,
+          status: null,
+          isShiny: egg.isShiny,
+          caughtAt: Date.now(),
+          growthRate: 'medium',
+          baseSpeciesId: egg.baseSpeciesId,
+        };
+        const newTeam = state.team.length < 4 ? [...state.team, newPokemon] : state.team;
+        const newBox = state.team.length >= 4 ? [...state.box, newPokemon] : state.box;
+        return {
+          eggs: state.eggs.filter(e => e.id !== eggId),
+          team: newTeam,
+          box: newBox,
+          pokedex: { ...state.pokedex, [egg.basePokemonId]: 'caught' as const },
+        };
+      }),
       toggleFavorite: (id) => set((state) => ({
         favorites: state.favorites.includes(id)
           ? state.favorites.filter(f => f !== id)
@@ -704,6 +775,7 @@ export const useStore = create<GameStore>()(
         expShareActive: false,
         pendingEvolution: null,
         pendingNewMove: null,
+        eggs: [],
         favorites: [],
         friendBattleTeam: null,
         leagueBattleTeam: null,
@@ -725,6 +797,7 @@ export const useStore = create<GameStore>()(
         state.box = state.box.map(clampHp);
         state.pendingEvolution = null;
         state.pendingNewMove = null;
+        if (!state.eggs) state.eggs = [];
         state.leagueBattleTeam = null;
         state.leagueBattleResult = null;
         state.masterBattleTeam = null;
