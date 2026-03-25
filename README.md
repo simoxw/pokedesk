@@ -4,37 +4,43 @@ Un simulatore di battaglie e cattura Pokémon moderno, sviluppato come Progressi
 
 ## 🚀 Caratteristiche Principali
 
-- **Sistema di Battaglia**: Battaglie a turni con gestione tipi, stati alterati e modificatori di stadio.
-- **Cattura e Safari**: Meccaniche dedicate per catturare Pokémon, inclusa la Zona Safari (spawn Gen 6+).
-- **Progressione**: Livellamento, evoluzioni, medaglie e sfide contro Capopalestra.
-- **Gestione Squadra**: Team attivo, PC Box e strumenti.
-- **Sistema di Cariche**: Energia temporizzata per limitare le azioni (Cattura/Lotta/Safari).
-- **Ciclo Giorno/Notte**: Atmosfera dinamica nell'Hub che cambia in base all'ora reale.
-- **PWA Ready**: Installabile su dispositivi mobile, supporto offline e notifiche.
+- **Sistema di Battaglia**: Battaglie a turni avanzate con gestione tipi, stati alterati, modificatori di stadio e priorità delle mosse.
+- **Cattura e Safari**: Meccaniche di cattura dedicate, inclusa la **Zona Safari** con spawn di Pokémon di sesta generazione e oltre.
+- **Progressione e Sfide**: Livellamento, evoluzioni, medaglie e sfide contro **Capopalestra**, **Lega Pokémon** e **Master Trainers**.
+- **Missioni Giornaliere**: Sistema di obiettivi quotidiani con ricompense in monete e strumenti.
+- **Breeding e Uova**: Possibilità di far accoppiare Pokémon (incluso Ditto) per ottenere uova con IV ereditati.
+- **Gestione Squadra**: Team attivo (fino a 4 Pokémon), PC Box illimitato, strumenti curativi e caramelle rare.
+- **Sistema di Cariche**: Energia temporizzata rigenerativa per limitare le azioni di Cattura, Lotta e Safari.
+- **Ciclo Giorno/Notte**: Atmosfera dinamica nell'Hub che cambia visivamente in base all'ora reale.
+- **Localizzazione**: Supporto completo alla lingua **Italiana** per nomi, mosse e descrizioni.
+- **PWA Ready**: Installabile su dispositivi mobile, supporto offline e notifiche push.
 
 ## 🛠️ Tecnologie Utilizzate
 
-- **Framework**: React 18, Vite, TypeScript
-- **Styling**: Tailwind CSS
-- **Animazioni**: Motion (framer-motion)
-- **State Management**: Zustand
-- **API**: [PokeAPI](https://pokeapi.co/)
+- **Framework**: React 19, Vite, TypeScript
+- **Styling**: Tailwind CSS 4
+- **Animazioni**: Motion (framer-motion) & Canvas Confetti
+- **State Management**: Zustand con persistenza locale (`pokedesk-save`)
+- **AI Integration**: Google Generative AI (Gemini) per quiz e contenuti dinamici
+- **Drag & Drop**: @dnd-kit per la gestione della squadra e del box
+- **API**: [PokeAPI](https://pokeapi.co/) con sistema di cache LRU personalizzato
 
 ## 🎮 Come Giocare
 
-1. **Inizio**: Scegli lo starter e il nome.
-2. **Hub**: Gestisci le cariche (Cattura, Lotta, Safari).
-3. **Cattura**: Esplora l'erba per incontrare Pokémon.
-4. **Lotta**: Sfida allenatori e Capopalestra.
-5. **Crescita**: Fai evolvere il team e colleziona medaglie.
+1. **Inizio**: Scegli lo starter nel Draft iniziale e imposta il tuo profilo.
+2. **Hub**: Gestisci le tue cariche e controlla le **Missioni Giornaliere**.
+3. **Cattura**: Esplora l'erba alta o avventurati nel Safari per espandere il Pokédex.
+4. **Lotta**: Scala la gerarchia sconfiggendo Capopalestra per sbloccare la Lega e i Master Trainers.
+5. **Crescita**: Usa strumenti, Caramelle Rare e il Breeding per creare il team perfetto.
 
 ## 📂 Struttura (File principali)
 
-- `src/store.ts`: Stato dell'app.
-- `src/BattleEngine.ts`: Logica di lotta.
-- `src/CatchEngine.ts`: Logica di cattura.
-- `src/components/screens/`: Interfaccia utente divisa in schermate.
+- `src/store.ts`: Cuore pulsante dell'app, gestisce lo stato globale e la logica di gioco complessa.
+- `src/BattleEngine.ts`: Motore di calcolo per danni, statistiche e turni di lotta.
+- `src/CatchEngine.ts`: Algoritmi per probabilità di cattura, nature e shiny.
+- `src/api.ts`: Interfaccia verso PokeAPI con traduzioni in italiano e logica evolutiva integrata.
+- `src/components/screens/`: Interfaccia utente modulare divisa in schermate funzionali.
 
 ## 📝 Note Tecniche
 
-Il progetto utilizza `TickSystem.ts` per gestire gli aggiornamenti temporizzati dello stato (rigenerazione cariche, ecc.) e `api.ts` per l'interazione con le risorse esterne, includendo una cache LRU per ottimizzare il traffico dati.
+Il progetto implementa un `TickSystem.ts` robusto per la rigenerazione dello stato in background (cariche, schiusa uova) e utilizza un sistema di routing basato su stati in `App.tsx` per una transizione fluida tra le schermate stile app nativa.

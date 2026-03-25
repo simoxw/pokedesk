@@ -1,71 +1,52 @@
 # Struttura del Progetto Pokedesk
 
-Pokedesk è un'app web per browser che simula un'esperienza Pokémon, sviluppata con React, TypeScript e Vite. È configurata come PWA (Progressive Web App) per l'installazione su dispositivi mobili.
+Pokedesk è un'app web avanzata che simula l'esperienza Pokémon, sviluppata con **React 19**, **TypeScript** e **Vite**. È configurata come PWA (Progressive Web App) per un'esperienza nativa su dispositivi mobili.
 
 ## Cartella Radice
-- **index.html**: File HTML principale che serve come punto di ingresso dell'app. Include i meta tag per la PWA, il link al manifest e la registrazione del service worker.
-- **metadata.json**: File contenente metadati aggiuntivi dell'app, probabilmente per configurazioni o informazioni di build.
-- **package.json**: File di configurazione npm che definisce dipendenze, script (es. `dev`, `build`) e informazioni del progetto.
-- **README.md**: Documentazione generale del progetto, con istruzioni per installazione e utilizzo.
-- **tsconfig.json**: Configurazione TypeScript per la compilazione e controllo dei tipi.
-- **vite.config.ts**: Configurazione di Vite, il bundler, con impostazioni per il base path (GitHub Pages), plugin e build.
+- **index.html**: Punto di ingresso dell'app. Contiene i meta tag PWA, link al manifest e script di caricamento.
+- **metadata.json**: Informazioni di versione e configurazione della build.
+- **package.json**: Gestione dipendenze (Zustand, Tailwind 4, Motion, GenAI) e script npm.
+- **README.md**: Documentazione principale con feature e tech stack.
+- **tsconfig.json**: Configurazione del compilatore TypeScript.
+- **vite.config.ts**: Configurazione del bundler con plugin React e impostazioni PWA.
 
-## public/
-Cartella per risorse statiche servite direttamente.
-- **manifest.json**: Manifest della PWA che definisce nome, icone, start_url, display mode e altre proprietà per l'installabilità.
-- **sw.js**: Service Worker che gestisce il caching offline, permettendo all'app di funzionare senza connessione.
-- **icon-192.png**: Icona della PWA in formato PNG, dimensione 192x192 pixel, usata per installazione e notifiche.
-- **icon-512.png**: Icona della PWA in formato PNG, dimensione 512x512 pixel, usata per schermi ad alta risoluzione.
+## public/ (Asset Statici)
+- **manifest.json**: Configurazione per l'installabilità (icone, colori, orientamento).
+- **sw.js**: Service Worker per il caching offline e strategia "cache-first" per PokeAPI.
+- **ic_icons**: Icone dell'app in vari formati.
 
-## src/
-Codice sorgente dell'app.
+## src/ (Codice Sorgente)
 
-### File Principali
-- **api.ts**: Contiene funzioni per interagire con API esterne, come l'API di Gemini per funzionalità AI.
-- **App.tsx**: Componente React principale che gestisce il routing e il layout generale dell'app.
-- **BattleEngine.ts**: Logica di gioco per le battaglie Pokémon, inclusi calcoli di danno, turni e regole.
-- **CatchEngine.ts**: Logica per catturare Pokémon, con probabilità e meccaniche di cattura.
-- **index.css**: Foglio di stile globale con Tailwind CSS per il design dell'interfaccia.
-- **main.tsx**: Punto di ingresso dell'app React, dove viene renderizzato il componente App nel DOM.
-- **NotificationService.ts**: Servizio per gestire notifiche push o in-app, probabilmente per eventi di gioco.
-- **rarityTable.ts**: Tabelle di configurazione per la rarità dei Pokémon negli incontri.
-- **store.ts**: Configurazione dello stato globale usando Zustand, per gestire dati come Pokémon, utente, ecc.
-- **TickSystem.ts**: Sistema che gestisce aggiornamenti periodici (tick), come rigenerazione HP o eventi temporizzati.
-- **types.ts**: Definizioni di tipi TypeScript per strutture dati come Pokémon, mosse, ecc.
+### Logica Core
+- **api.ts**: Interfaccia di comunicazione con PokeAPI. Gestisce:
+    - Traduzioni automatiche in **Italiano** (nomi, mosse, descrizioni).
+    - Logica di **evoluzione** (per livello, strumenti o scambio simulato).
+    - Caching LRU per minimizzare il traffico dati.
+- **BattleEngine.ts**: Motore matematico per le battaglie. Calcola danni, priorità, modificatori di stato e crescita delle statistiche (IV/EV).
+- **CatchEngine.ts**: Gestisce le probabilità di cattura, generazione di Nature, Shiny rate e sistema di Breeding (ereditarietà IV).
+- **store.ts**: Stato globale centralizzato con **Zustand**. Include:
+    - Persistenza automatica sul `localStorage`.
+    - Sistema di **Missioni Giornaliere** rigenerate ogni 24h.
+    - Gestione energia (Cariche) e progressione (Leghe/Master).
+- **TickSystem.ts**: Loop temporizzato che gestisce la rigenerazione HP, cariche e timer schiusa uova in background.
 
-### components/
-Componenti React riutilizzabili.
+### Schermate (components/screens/)
+- **HubScreen.tsx**: Hub centrale dinamico con ciclo giorno/notte e accesso rapido a tutte le funzioni.
+- **BattleScreen.tsx**: Interfaccia di lotta turn-based con animazioni e feedback visivo.
+- **BagScreen.tsx / ShopScreen.tsx**: Gestione inventario e acquisto strumenti/Pokémon.
+- **BoxScreen.tsx / TeamScreen.tsx**: Organizzazione della propria collezione e squadra tramite Drag & Drop.
+- **CatchScreen.tsx / SafariScreen.tsx**: Diverse modalità di incontro e cattura Pokémon selvatici.
+- **LeagueSelectScreen.tsx / LeagueBattleScreen.tsx**: Sistema di sfide a catena basato sulle regioni classiche.
+- **MasterBattleScreen.tsx**: Sfide "end-game" contro allenatori d'élite.
+- **PokedexScreen.tsx**: Visualizzazione dettagliata dei Pokémon incontrati/catturati.
+- **StartScreen.tsx / StarterDraft.tsx**: Flusso iniziale di creazione profilo e scelta dello starter tramite draft.
 
-#### screens/
-Schermi principali dell'app, ciascuno rappresentante una vista o sezione.
-- **BagScreen.tsx**: Schermo per visualizzare e gestire l'inventario (zaino) dell'utente.
-- **BattleScreen.tsx**: Interfaccia per combattimenti Pokémon, con animazioni e controlli.
-- **BoxScreen.tsx**: Schermo per il PC Box, dove archiviare Pokémon catturati.
-- **CatchScreen.tsx**: Schermo per tentare la cattura di Pokémon selvatici.
-- **FriendBattleScreen.tsx**: Schermo dedicato alle lotte tra amici.
-- **HubScreen.tsx**: Schermo centrale (hub) per navigare tra sezioni principali. Include un ciclo giorno/notte dinamico per l'atmosfera.
-- **LeagueBattleScreen.tsx**: Interfaccia specifica per le battaglie di Lega.
-- **LeagueSelectScreen.tsx**: Schermo per la selezione delle Leghe disponibili.
-- **MasterBattleScreen.tsx**: Schermo dedicato alle battaglie di livello Master.
-- **OptionsScreen.tsx**: Schermo impostazioni per configurare l'app (es. audio, lingua).
-- **PokedexScreen.tsx**: Schermo Pokédex per visualizzare informazioni sui Pokémon.
-- **ProfileScreen.tsx**: Schermo profilo utente, con statistiche e progressi.
-- **SafariScreen.tsx**: Schermo Zona Safari per incontrare Pokémon speciali con cariche dedicate.
-- **ShopScreen.tsx**: Schermo negozio per acquistare oggetti o Pokémon.
-- **StarterDraft.tsx**: Schermo per selezionare il Pokémon iniziale all'inizio del gioco.
-- **StartScreen.tsx**: Schermo di avvio con menu principale e opzioni di gioco.
-- **TeamScreen.tsx**: Schermo per gestire la squadra attiva di Pokémon.
-- **TradeScreen.tsx**: Schermo per scambiare Pokémon con altri giocatori o NPC.
+### UI Components (components/ui/)
+- **PokemonCard.tsx / PokemonDetailsModal.tsx**: Visualizzazione schematica e dettagliata delle statistiche di un Pokémon.
+- **HPBar.tsx / TypeBadge.tsx**: Elementi grafici per visualizzare salute e tipi con colori tematici.
+- **GameboyDialog.tsx**: Sistema di messaggistica in stile retro-gaming.
+- **BottomNav.tsx**: Navigazione principale ottimizzata per il pollice (mobile-first).
 
-#### ui/
-Componenti UI di base, riutilizzabili in più schermi.
-- **BottomNav.tsx**: Barra di navigazione inferiore per spostarsi tra schermi principali.
-- **GameboyDialog.tsx**: Componente per dialoghi in stile classico Gameboy.
-- **HPBar.tsx**: Componente per visualizzare la barra di HP di un Pokémon.
-- **PokemonCard.tsx**: Carta informativa per mostrare dettagli di un Pokémon (es. nome, tipo, stats).
-- **PokemonDetailsModal.tsx**: Modale popup con dettagli completi di un Pokémon.
-- **TypeBadge.tsx**: Badge per indicare il tipo di un Pokémon (es. Fuoco, Acqua).
-
-### data/
-Dati statici.
-- **leagueData.ts**: Configurazione dettagliata delle Leghe Pokémon disponibili.
+### Data
+- **leagueData.ts**: Configurazione di tutte le squadre e regioni della Lega Pokémon.
+- **rarityTable.ts**: Definizioni dei tassi di spawn per area e tipo di incontro.

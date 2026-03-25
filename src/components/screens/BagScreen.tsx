@@ -5,7 +5,7 @@ import { motion, AnimatePresence } from 'motion/react';
 import { ArrowLeft, Package, Heart, Zap, Star, Loader, X } from 'lucide-react'; 
 
 export default function BagScreen() {
-  const { inventory, setScreen, useItem, addItem, addCoins, team, box, updatePokemon, expShareActive, toggleExpShare } = useStore();
+  const { inventory, setScreen, useItem, addItem, addCoins, team, box, updatePokemon, expShareActive, toggleExpShare, useRareCandy, useSpeciesCandy } = useStore();
   const [tab, setTab] = useState<'balls' | 'heal' | 'candy'>('balls');
 
   const SELL_PRICES: Record<string, number> = {
@@ -40,6 +40,7 @@ export default function BagScreen() {
     candy: [
         { id: 'exp_share', name: 'Condividi ESP', icon: '📡', description: expShareActive ? '✅ Attivo — tutta la squadra riceve ESP' : '❌ Disattivo — solo il Pokémon attivo', isToggle: true }, 
         { id: 'tm', name: 'MT Casuale', icon: '💿', description: 'Insegna una mossa MT' }, 
+        { id: 'heart_scale', name: 'Squama Cuore', icon: '❤️', description: 'Insegna una mossa potente o rara' },
         { id: 'rare_candy', name: 'Caramella Rara', icon: '🍬' },
         { id: 'fire_stone', name: 'Pietra Focaia', icon: '🔥' },
         { id: 'water_stone', name: 'Pietra Idrica', icon: '💧' },
@@ -157,29 +158,37 @@ export default function BagScreen() {
                 const handleUse = async () => { 
                   if (disabled || isProcessing) return; 
                   
-                  // Gestione MT 
-                  if (pendingItem.id === 'tm') { 
+                  // Gestione MT o Squama Cuore
+                  if (pendingItem.id === 'tm' || pendingItem.id === 'heart_scale') { 
                     setIsProcessing(true); 
                     setLoadingTm(true); 
                     try { 
                       const data = await api.getPokemon(p.pokemonId); 
-                      const BANNED_TM = new Set(['protect','detect','substitute','attract','swagger','taunt','encore','torment','disable','snatch','thief','trick','switcheroo','embargo','sleep-talk','baton-pass','u-turn','volt-switch']); 
-                      const machineMoves = data.moves 
-                        .filter((m: any) => 
+                      const BANNED_TM = new Set(['protect','detect','substitute','attract','swagger','taunt','encore','torment','disable','snatch','thief','trick','switcheroo','embargo','sleep-talk','baton-pass','u-turn','volt-switch', 'self-destruct', 'explosion', 'wide-guard', 'quick-guard']); 
+                      
+                      let candidateMoves = [];
+                      if (pendingItem.id === 'tm') {
+                        candidateMoves = data.moves.filter((m: any) => 
                           m.version_group_details.some((v: any) => v.move_learn_method.name === 'machine') && 
                           !BANNED_TM.has(m.move.name) 
-                        ) 
-                        .slice(0, 30); 
+                        ).slice(0, 30);
+                      } else {
+                        // Squama Cuore: tutte le mosse, ordinando per priorità (egg/tutor > machine/level-up) e potenza
+                        candidateMoves = data.moves.filter((m: any) => !BANNED_TM.has(m.move.name));
+                        // Mischia un po' per varietà ma favorisci le mosse forti
+                      }
+
                       const moveDetails = await Promise.all( 
-                        machineMoves.slice(0, 20).map((m: any) => api.getMove(m.move.name)) 
+                        candidateMoves.slice(0, 45).map((m: any) => api.getMove(m.move.name)) 
                       ); 
-                      const validMoves = moveDetails 
-                        .filter((m: any) => m && m.power && m.power > 0 && m.damage_class?.name !== 'status') 
+
+                      let validMoves = moveDetails 
+                        .filter((m: any) => m && m.power !== undefined && m.damage_class?.name !== 'status') 
                         .map((m: any) => ({ 
                           id: m.id.toString(), 
                           name: api.getItalianName(m.names), 
                           type: m.type.name, 
-                          power: m.power, 
+                          power: m.power || 0, 
                           accuracy: m.accuracy || 100, 
                           pp: m.pp, 
                           maxPp: m.pp, 
@@ -187,10 +196,18 @@ export default function BagScreen() {
                           category: m.damage_class.name, 
                           description: api.getItalianDescription(m.flavor_text_entries), 
                         })); 
+
+                      if (pendingItem.id === 'heart_scale') {
+                        // Ordina per potenza decrescente
+                        validMoves = validMoves.sort((a, b) => b.power - a.power).slice(0, 30);
+                      } else {
+                        validMoves = validMoves.slice(0, 20);
+                      }
+
                       setTmMoves(validMoves); 
                       setTmPokemon(p); 
                     } catch(e) { 
-                      alert('Errore nel caricare le mosse MT!'); 
+                      alert('Errore nel caricare le mosse!'); 
                     } finally { 
                       setLoadingTm(false); 
                       setIsProcessing(false); 
@@ -234,6 +251,27 @@ export default function BagScreen() {
                     return;
                   }
 
+                  // Gestione Caramelle Rari/Specie
+                  if (pendingItem.id === 'rare_candy') {
+                    if (p.level >= 100) { alert('Livello massimo!'); return; }
+                    useRareCandy(p.id);
+                    setPendingItem(null);
+                    return;
+                  }
+                  if (pendingItem.id.startsWith('candy_')) {
+                    const speciesId = parseInt(pendingItem.id.split('_')[1]);
+                    const owned = inventory[pendingItem.id] || 0;
+                    if (p.level >= 100) { alert('Livello massimo!'); return; }
+                    if ((p.pokemonId !== speciesId && p.baseSpeciesId !== speciesId)) { 
+                      alert(`Questa caramella è specifica per la specie di ${p.name}!`); 
+                      return; 
+                    }
+                    if (owned < 3) { alert(`Caramelle: ${owned}/3 — servono 3 caramelle!`); return; }
+                    useSpeciesCandy(p.id, speciesId);
+                    setPendingItem(null);
+                    return;
+                  }
+
                   if (isFullHeal) { 
                     updatePokemon(p.id, { status: null, sleepTurns: undefined }); 
                   } else { 
@@ -246,7 +284,9 @@ export default function BagScreen() {
                   } 
                   useItem(pendingItem.id);
                   // Chiudi solo se esaurito
-                  if ((inventory[pendingItem.id] || 0) <= 1) setPendingItem(null); 
+                  const remaining = (inventory[pendingItem.id] || 0) - 1;
+                  if (remaining <= 0) setPendingItem(null); 
+                  // Per le cure mediche non serve chiudere subito se ne hai altre
                 }; 
  
                 return ( 
@@ -419,7 +459,7 @@ export default function BagScreen() {
                       } else { 
                         useStore.setState({ pendingNewMove: { pokemonId: tmPokemon.id, move } }); 
                       } 
-                      useItem('tm'); 
+                      if (pendingItem) useItem(pendingItem.id); 
                       setTmMoves([]); 
                       setTmPokemon(null); 
                       setPendingItem(null); 

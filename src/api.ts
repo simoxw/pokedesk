@@ -107,6 +107,7 @@ export const api = {
       'frustration','return','beat-up',
       'leech-seed','ingrain','aqua-ring','curse','nightmare','telekinesis','magnet-rise',
       'autotomize','charge','recycle','belch','false-swipe','wish','struggle', 'teleport',
+      'self-destruct', 'explosion', 'wide-guard', 'quick-guard',
     ]);
 
     const levelUpMoves = pokemonData.moves

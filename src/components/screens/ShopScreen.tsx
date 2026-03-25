@@ -20,6 +20,7 @@ const SHOP_ITEMS = [
   { id: 'moon_stone',   name: 'Pietra Lunare',   cost: 2100, icon: '🌙', unlock: 3,  description: 'Evolve certi Pokémon' }, 
   { id: 'dawn_stone',   name: 'Pietra Alba',      cost: 2100, icon: '🌅', unlock: 3,  description: 'Evolve certi Pokémon' },
   { id: 'tm',           name: 'MT Casuale',       cost: 3500, icon: '💿', unlock: 4,  description: 'Insegna una mossa MT a un Pokémon' }, 
+  { id: 'heart_scale',  name: 'Squama Cuore',     cost: 6000, icon: '❤️',  unlock: 20, description: 'Insegna qualsiasi mossa (anche rare) a un Pokémon' },
 ]; 
 
 
