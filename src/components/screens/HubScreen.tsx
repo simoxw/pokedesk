@@ -244,7 +244,7 @@ export default function HubScreen() {
 
         <button
           onClick={() => setShowMissions(true)}
-          className="w-full max-w-sm bg-[#1a1a2e]/60 border border-white/5 rounded-2xl px-4 py-4 flex items-center justify-between"
+          className="w-full max-w-sm bg-[#1a1a2e]/60 border border-white/5 rounded-2xl px-4 py-5 flex items-center justify-between"
         >
           <div className="flex items-center gap-2">
             <span>📋</span>
@@ -276,7 +276,7 @@ export default function HubScreen() {
 
           {/* SAFARI */}
           <div className="text-center text-[11px] text-white/50">
-            🌿 {safariCharges}/8{safariUnlocked && safariCharges < 8 ? ` • ${safariMinutes}:${safariSeconds.toString().padStart(2, '0')}` : safariUnlocked && safariCharges >= 8 ? ' • MAX' : ''}
+            🌿 {safariCharges}/8{safariUnlocked && safariCharges < 8 ? ` • Prossima carica: ${safariMinutes}:${safariSeconds.toString().padStart(2, '0')}` : safariUnlocked && safariCharges >= 8 ? ' • MAX' : ''}
           </div>
           <motion.button
             whileHover={{ scale: 1.05 }}

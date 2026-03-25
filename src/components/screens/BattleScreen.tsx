@@ -1595,7 +1595,7 @@ export default function BattleScreen() {
                 : { duration: 2, repeat: Infinity }
               }
               src={enemy?.sprites?.front_default ?? `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/${enemy?.pokemonId}.png`}
-              className="w-48 h-48 object-contain drop-shadow-2xl"
+              className="w-56 h-56 object-contain drop-shadow-2xl"
             />
             {lastEnemyMove && (
               <div className="absolute top-full left-1/2 mt-1 -translate-x-1/2 flex items-center gap-1 bg-black/60 rounded-full px-2 py-0.5 whitespace-nowrap">
@@ -1618,7 +1618,7 @@ export default function BattleScreen() {
             }
             transition={{ duration: 0.4 }}
             src={`https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/back/${playerPkmn?.isShiny ? 'shiny/' : ''}${playerPkmn?.pokemonId}.png`}
-            className="w-44 h-44 object-contain drop-shadow-2xl shrink-0"
+            className="w-52 h-52 object-contain drop-shadow-2xl shrink-0"
           />
           <div className="flex-1 bg-black/40 backdrop-blur rounded-2xl p-3 mb-1 min-w-0 w-full">
             <div className="flex flex-col gap-0.5">
