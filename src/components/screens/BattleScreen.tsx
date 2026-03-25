@@ -77,8 +77,7 @@ export default function BattleScreen() {
   }; 
 
   const applyStage = (base: number, stage: number) => { 
-    const s = Math.max(-6, Math.min(6, stage)); 
-    return Math.floor(base * (s >= 0 ? (2 + s) / 2 : 2 / (2 - s))); 
+    return Math.floor(base * BattleEngine.getStageMultiplier(stage)); 
   }; 
 
   const isImmuneToStatus = (pokemonTypes: string[], status: string): boolean => { 
@@ -710,6 +709,53 @@ export default function BattleScreen() {
       }
     }
 
+    // --- EFFECT: Stat Changes per il Nemico ---
+    if (enemyMove.category === 'status' || (enemyMove.stat_changes && enemyMove.stat_changes.length > 0)) {
+      const statChangesData = enemyMove.stat_changes ?? enemyMove.meta?.stat_changes ?? [];
+      const STAT_MAP: Record<string, string> = {
+        attack: 'attack',
+        defense: 'defense',
+        'special-attack': 'spAtk',
+        'special-defense': 'spDef',
+        speed: 'speed',
+        accuracy: 'accuracy',
+        evasion: 'evasion',
+      };
+
+      let playerDebuffed = false;
+      let enemyBoosted = false;
+
+      for (const sc of statChangesData) {
+        const statKey = STAT_MAP[sc.stat.name];
+        if (!statKey) continue;
+
+        if (sc.change < 0) {
+          // Debuff al giocatore
+          setPlayerStages(prev => ({
+            ...prev,
+            [statKey]: Math.max(-6, (prev[statKey] ?? 0) + sc.change),
+          }));
+          playerDebuffed = true;
+        } else if (sc.change > 0) {
+          // Boost al nemico
+          setEnemyStages(prev => ({
+            ...prev,
+            [statKey]: Math.min(6, (prev[statKey] ?? 0) + sc.change),
+          }));
+          enemyBoosted = true;
+        }
+      }
+
+      if (playerDebuffed) {
+        setStatChanges({ label: '↓ STAT −', positive: false });
+        addLog(`Le statistiche di ${currentPlayerPkmn.name} sono diminuite!`);
+      }
+      if (enemyBoosted) {
+        setStatChanges({ label: '↑ STAT +', positive: true });
+        addLog(`Le statistiche di ${liveEnemy.name} sono aumentate!`);
+      }
+    }
+
     const newPlayerHp = Math.max(0, currentPlayerPkmn.currentHp - enemyDamage);
     updatePokemon(currentPlayerPkmn.id, { currentHp: newPlayerHp });
     if (enemyDamage > 0) {
@@ -901,9 +947,21 @@ export default function BattleScreen() {
         move.stat_changes ?? move.meta?.stat_changes ?? [];
       if (statChangesData.length === 0) {
         const lowerName = move.name?.toLowerCase() ?? '';
-        if (move.id === '112' || lowerName.includes('barriera') || lowerName.includes('barrier')) {
+        const id = move.id?.toString();
+        if (id === '45' || lowerName.includes('ruggito') || lowerName.includes('growl')) 
+          statChangesData = [{ change: -1, stat: { name: 'attack' } }];
+        else if (id === '39' || lowerName.includes('colpocoda') || lowerName.includes('tail whip')) 
+          statChangesData = [{ change: -1, stat: { name: 'defense' } }];
+        else if (id === '43' || lowerName.includes('fulmisguardo') || lowerName.includes('leer')) 
+          statChangesData = [{ change: -1, stat: { name: 'defense' } }];
+        else if (id === '81' || lowerName.includes('millebava') || lowerName.includes('string shot')) 
+          statChangesData = [{ change: -2, stat: { name: 'speed' } }];
+        else if (id === '112' || lowerName.includes('barriera') || lowerName.includes('barrier')) 
           statChangesData = [{ change: 2, stat: { name: 'defense' } }];
-        }
+        else if (id === '110' || lowerName.includes('ritirata') || lowerName.includes('withdraw')) 
+          statChangesData = [{ change: 1, stat: { name: 'defense' } }];
+        else if (id === '106' || lowerName.includes('rafforzamento') || lowerName.includes('harden')) 
+          statChangesData = [{ change: 1, stat: { name: 'defense' } }];
       }
       const STAT_MAP: Record<string, string> = {
         attack: 'attack',
@@ -1178,7 +1236,7 @@ export default function BattleScreen() {
       const freshPlayerPkmn = useStore.getState().team.find((p: any) => p.id === playerPkmn.id) ?? playerPkmn;
       if (freshPlayerPkmn.currentHp <= 0) {
         setPlayerStages({ attack: 0, defense: 0, spAtk: 0, spDef: 0, speed: 0, accuracy: 0, evasion: 0 });
-        setEnemyStages({ attack: 0, defense: 0, spAtk: 0, spDef: 0, speed: 0, accuracy: 0, evasion: 0 });
+        // NON resettare enemyStages qui: il debuff sul nemico deve restare anche se il player cambia 
         setEnemyFlinch(false);
         setPlayerFlinch(false);
         setIsAnimating(false);

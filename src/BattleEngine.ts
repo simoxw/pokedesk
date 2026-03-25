@@ -184,6 +184,15 @@ const NATURE_MODS: Record<string, { up: string; down: string }> = {
 };
 
 export const BattleEngine = {
+  getStageMultiplier(stage: number): number {
+    const s = Math.max(-6, Math.min(6, stage));
+    if (s >= 0) {
+      return (2 + s) / 2;
+    } else {
+      return 2 / (2 - s);
+    }
+  },
+
   calculateDamage(attacker: Pokemon, defender: Pokemon, move: Move, isCritical: boolean): number {
     if (move.category === 'status') return 0;
 
