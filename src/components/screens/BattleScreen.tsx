@@ -525,16 +525,17 @@ export default function BattleScreen() {
 
     const validMoves = liveEnemy.moves.filter((m: any) => m.pp > 0);
 
-    // Boss usa Superpozione se HP < 25% (30% probabilità)
-    if (isBoss && liveEnemy.currentHp / liveEnemy.maxHp < 0.25 && Math.random() < 0.30) {
-      const heal = Math.floor(liveEnemy.maxHp * 0.5);
+    // Boss/Lega/Master usano Iperpozione se HP < 30%
+    const isEliteBattle = isBoss || isLeagueBattle || isMasterBattle;
+    if (isEliteBattle && liveEnemy.currentHp / liveEnemy.maxHp < 0.30 && Math.random() < 0.30) {
+      const heal = Math.floor(liveEnemy.maxHp * 0.60);
       const newHp = Math.min(liveEnemy.maxHp, liveEnemy.currentHp + heal);
       setEnemy((prev: any) => {
         const next = { ...prev, currentHp: newHp };
         enemyRef.current = next;
         return next;
       });
-      addLog(`${liveEnemy.name} usa Superpozione! (+${heal} HP)`);
+      addLog(`${liveEnemy.name} usa Iperpozione! (+${heal} HP)`);
       setTurn('player');
       setIsAnimating(false);
       return;
@@ -579,7 +580,10 @@ export default function BattleScreen() {
 
       // Priorità 3: mossa di stato se player non ha status e nemico ha >50% HP
       const statusMoves = validMoves.filter((m: any) =>
-        m.category === 'status' && m.statusEffect && !currentPlayerPkmn.status
+        m.category === 'status' && 
+        m.statusEffect && 
+        !currentPlayerPkmn.status &&
+        !isImmuneToStatus(currentPlayerPkmn.types, m.statusEffect)
       );
 
       if (superEffective.length > 0 && Math.random() < 0.75) {
