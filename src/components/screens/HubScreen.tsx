@@ -100,7 +100,7 @@ export default function HubScreen() {
   const safariSeconds = Math.floor((nextSafariTick % 60000) / 1000);
 
   return (
-    <div className="h-full relative overflow-hidden flex flex-col items-center justify-center p-6">
+    <div className="h-full relative overflow-hidden flex flex-col items-center justify-evenly py-3 px-6">
       {/* Cosmic Background */}
       {(() => {
         const hour = new Date().getHours();
@@ -150,7 +150,7 @@ export default function HubScreen() {
         );
       })()}
 
-      <div className="relative z-10 flex flex-col items-center gap-4">
+      <div className="relative z-10 flex flex-col items-center gap-2 w-full max-w-sm overflow-y-auto">
         <div className="text-center">
           <motion.div
             animate={{ scale: [1, 1.05, 1] }}
@@ -204,7 +204,7 @@ export default function HubScreen() {
 
         {/* Team Preview */}
         {team.length > 0 && (
-          <div className="w-full max-w-sm bg-[#1a1a2e]/60 backdrop-blur-md rounded-2xl p-3 border border-white/5">
+          <div className="w-full max-w-sm bg-[#1a1a2e]/60 backdrop-blur-md rounded-2xl p-2 border border-white/5">
             <div className="flex justify-around gap-2">
               {team.map(pkmn => (
                 <div key={pkmn.id} className="flex flex-col items-center gap-1 flex-1 min-w-0">
