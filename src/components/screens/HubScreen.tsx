@@ -100,7 +100,7 @@ export default function HubScreen() {
   const safariSeconds = Math.floor((nextSafariTick % 60000) / 1000);
 
   return (
-    <div className="h-full relative overflow-hidden flex flex-col items-center justify-evenly py-3 px-6">
+    <div className="h-full relative overflow-hidden overflow-x-hidden flex flex-col items-center justify-evenly py-3 px-6">
       {/* Cosmic Background */}
       {(() => {
         const hour = new Date().getHours();
@@ -173,8 +173,8 @@ export default function HubScreen() {
             <motion.div 
               animate={{ scale: [1, 1.03, 1] }} 
               transition={{ duration: 1.5, repeat: Infinity }} 
-              className="bg-yellow-500/10 border border-yellow-500/40 rounded-2xl px-4 py-3 text-center" 
-            > 
+            className="bg-yellow-500/10 border border-yellow-500/40 rounded-2xl px-2 py-3 text-center max-w-[95%] mx-auto" 
+          > 
               <p className="text-yellow-400 font-black text-sm uppercase tracking-widest"> 
                 ⚔️ CAPOPALESTRA DISPONIBILE! 
               </p> 
@@ -204,7 +204,7 @@ export default function HubScreen() {
 
         {/* Team Preview */}
         {team.length > 0 && (
-          <div className="w-full max-w-sm bg-[#1a1a2e]/60 backdrop-blur-md rounded-2xl p-2 border border-white/5">
+          <div className="w-full max-w-sm bg-[#1a1a2e]/60 backdrop-blur-md rounded-2xl p-3 border border-white/5">
             <div className="flex justify-around gap-2">
               {team.map(pkmn => (
                 <div key={pkmn.id} className="flex flex-col items-center gap-1 flex-1 min-w-0">
@@ -212,7 +212,7 @@ export default function HubScreen() {
                     <img 
                       src={`https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/${pkmn.pokemonId}.png`} 
                       alt={pkmn.name}
-                      className="w-10 h-10 object-contain"
+                      className="w-12 h-12 object-contain"
                     />
                     {pkmn.status && (
                       <span className={`absolute -top-1 -right-1 text-[7px] font-black px-1 py-0.5 rounded shadow-sm ${
@@ -244,7 +244,7 @@ export default function HubScreen() {
 
         <button
           onClick={() => setShowMissions(true)}
-          className="w-full max-w-sm bg-[#1a1a2e]/60 border border-white/5 rounded-2xl px-4 py-3 flex items-center justify-between"
+          className="w-full max-w-sm bg-[#1a1a2e]/60 border border-white/5 rounded-2xl px-4 py-4 flex items-center justify-between"
         >
           <div className="flex items-center gap-2">
             <span>📋</span>
