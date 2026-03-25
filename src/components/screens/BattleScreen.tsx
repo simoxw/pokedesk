@@ -190,12 +190,12 @@ export default function BattleScreen() {
 
         if (isBoss) { 
           level = playerPkmn.level + 3; 
-          enemyName = "Capopalestra"; 
           addLog("⚔️ SFIDA CAPOPALESTRA! (2 Pokémon)"); 
    
           // Carica il secondo Pokémon del boss 
           const id2 = getRandomPokemonId(medalsCount); 
           const data2 = await api.getPokemon(id2); 
+          const species2 = await api.getSpecies(id2);
           const ivs2 = CatchEngine.generateIVs(); 
           const baseStats2 = { 
             hp: data2.stats[0].base_stat, attack: data2.stats[1].base_stat, 
@@ -207,7 +207,7 @@ export default function BattleScreen() {
           setEnemy2({ 
             ...data2, 
             rawStats: data2.stats,
-            name: "Capopalestra 2°", 
+            name: api.getItalianName(species2.names), 
             level, 
             currentHp: stats2.hp, 
             maxHp: stats2.hp, 
@@ -220,6 +220,7 @@ export default function BattleScreen() {
             addLog("⚔️ Capopalestra potente (3 Pokémon)!");
             const id3 = getRandomPokemonId(medalsCount);
             const data3 = await api.getPokemon(id3);
+            const species3 = await api.getSpecies(id3);
             const ivs3 = CatchEngine.generateIVs();
             const baseStats3 = {
               hp: data3.stats[0].base_stat,
@@ -238,7 +239,7 @@ export default function BattleScreen() {
             setEnemy3({
               ...data3,
               rawStats: data3.stats,
-              name: "Capopalestra 3°",
+              name: api.getItalianName(species3.names),
               level,
               currentHp: stats3.hp,
               maxHp: stats3.hp,

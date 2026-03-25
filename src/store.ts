@@ -635,7 +635,7 @@ export const useStore = create<GameStore>()(
         return {
           leagueProgress: {
             ...state.leagueProgress,
-            completedRegions: newCompleted,
+            completedRegions: allDone ? [] : newCompleted,
             trophies: alreadyCompleted
               ? state.leagueProgress.trophies
               : [...state.leagueProgress.trophies, trophyLabel],
