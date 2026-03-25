@@ -155,7 +155,7 @@ export default function HubScreen() {
           <motion.div
             animate={{ scale: [1, 1.05, 1] }}
             transition={{ duration: 2, repeat: Infinity }}
-            className="text-xl font-black text-white flex items-center justify-center gap-2"
+            className="text-2xl font-black text-white flex items-center justify-center gap-2"
           >
             {charges}<span className="text-[#e63946]">/6</span>
             <Zap className="text-yellow-400 fill-yellow-400" size={14} />
@@ -248,7 +248,7 @@ export default function HubScreen() {
         >
           <div className="flex items-center gap-2">
             <span>📋</span>
-            <span className="text-sm font-bold">Missioni giornaliere</span>
+            <span className="text-base font-bold">Missioni giornaliere</span>
           </div>
           <div className="flex items-center gap-2">
             <span className="text-xs text-white/40">
@@ -268,10 +268,10 @@ export default function HubScreen() {
               consumeCharge();
               setScreen('CATCH_SCREEN');
             }}
-            className="w-full bg-[#e63946] disabled:opacity-50 disabled:grayscale p-4 rounded-3xl flex items-center justify-center gap-3 shadow-2xl shadow-[#e63946]/30"
+            className="w-full bg-[#e63946] disabled:opacity-50 disabled:grayscale py-5 rounded-3xl flex items-center justify-center gap-3 shadow-2xl shadow-[#e63946]/30"
           >
             <Target size={26} />
-            <span className="text-xl font-black">CATTURA</span>
+            <span className="text-2xl font-black">CATTURA</span>
           </motion.button>
 
           {/* SAFARI */}
@@ -286,14 +286,14 @@ export default function HubScreen() {
               consumeSafariCharge();
               setScreen('SAFARI_SCREEN');
             }}
-            className={`w-full p-3 rounded-2xl flex items-center justify-center gap-3 shadow-xl ${
+            className={`w-full p-4 rounded-2xl flex items-center justify-center gap-3 shadow-xl ${
               safariUnlocked
                 ? 'bg-[#1a3a1a] border border-green-800/40 text-white'
                 : 'bg-gray-800/60 border border-white/10 text-white/40'
             }`}
           >
             {safariUnlocked ? <TreePine size={20} /> : <span className="text-lg">🔒</span>}
-            <span className="text-base font-black">
+            <span className="text-2xl font-black">
               {safariUnlocked ? 'ZONA SAFARI' : 'SAFARI'}
             </span>
             {!safariUnlocked && (
@@ -308,7 +308,7 @@ export default function HubScreen() {
             whileHover={{ scale: 1.05 }}
             whileTap={{ scale: 0.95 }}
             onClick={() => { setShowIncubator(true); setIncubStep('list'); setIncubPick1(null); }}
-            className="w-full bg-[#1a1a2e] border border-white/10 p-3 rounded-2xl flex items-center justify-between"
+            className="w-full bg-[#1a1a2e] border border-white/10 py-4 rounded-2xl flex items-center justify-between"
           >
             <div className="flex items-center gap-3">
               <span className="text-2xl">🥚</span>
@@ -328,10 +328,10 @@ export default function HubScreen() {
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}
               onClick={() => setScreen('BATTLE_SCREEN')}
-              className="bg-[#1a1a2e] border border-white/10 p-4 rounded-2xl flex flex-col items-center justify-center gap-2 shadow-xl"
+              className="bg-[#1a1a2e] border border-white/10 py-6 rounded-2xl flex flex-col items-center justify-center gap-2 shadow-xl"
             >
               <Sword size={24} />
-              <span className="text-sm font-black">LOTTA</span>
+              <span className="text-base font-black">LOTTA</span>
             </motion.button>
 
             <motion.button
@@ -339,7 +339,7 @@ export default function HubScreen() {
               whileTap={{ scale: 0.95 }}
               disabled={medalsCount < 40}
               onClick={() => medalsCount >= 40 && setScreen('LEAGUE_SELECT_SCREEN')}
-              className={`relative p-4 rounded-2xl flex flex-col items-center justify-center gap-2 shadow-xl transition-all ${
+              className={`relative py-6 rounded-2xl flex flex-col items-center justify-center gap-2 shadow-xl transition-all ${
                 medalsCount >= 40
                   ? 'bg-gradient-to-b from-yellow-600/30 to-yellow-900/30 border border-yellow-500/40 text-yellow-300'
                   : 'bg-gray-800/60 border border-white/10 text-white/30'
@@ -351,7 +351,7 @@ export default function HubScreen() {
                 </span>
               )}
               {medalsCount >= 40 ? <span className="text-xl">🏆</span> : <span className="text-xl">🔒</span>}
-              <span className="text-sm font-black">LEGA</span>
+              <span className="text-base font-black">LEGA</span>
               {medalsCount < 40 && (
                 <span className="text-[9px] text-white/30">{medalsCount}/40 med.</span>
               )}

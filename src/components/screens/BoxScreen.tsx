@@ -223,7 +223,7 @@ export default function BoxScreen() {
             <p className="font-bold text-sm">Il box è vuoto</p>
           </div>
         ) : viewMode === 'grid' ? (
-          <div className="grid grid-cols-5 gap-2">
+          <div className="grid grid-cols-5 gap-3">
             {currentBoxPkmn.map(pkmn => (
               <button
                 key={pkmn.id}
@@ -254,9 +254,9 @@ export default function BoxScreen() {
                 </span>
                 <img
                   src={`https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/${pkmn.isShiny ? 'shiny/' : ''}${pkmn.pokemonId}.png`}
-                  className="w-full h-full object-contain"
+                  className="w-full h-full object-contain scale-110"
                 />
-                <span className="absolute bottom-0 left-0 right-0 text-center text-[8px] font-bold text-white/50 bg-black/30 pb-0.5">
+                <span className="absolute bottom-0 left-0 right-0 text-center text-[10px] font-bold text-white/50 bg-black/30 pb-0.5">
                   Lv.{pkmn.level}
                 </span>
               </button>
