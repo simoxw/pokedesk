@@ -77,9 +77,22 @@ const MISSION_POOL = [
   { type: 'defeatMaster' as const, target: 1, description: 'Sconfiggi un Master Trainer', reward: { coins: 2500, items: { rare_candy: 2, masterball: 1 } } },
 ];
 
-function generateDailyMissions(state: GameState): { date: string; missions: DailyMission[] } {
+function generateDailyMissions(state: GameState | undefined): { date: string; missions: DailyMission[] } {
   const today = new Date().toISOString().split('T')[0];
-  const medalsCount = state.medals.filter(m => m.isUnlocked).length;
+  if (!state) {
+    return {
+      date: today,
+      missions: MISSION_POOL.slice(0, 3).map((m, i) => ({
+        ...m,
+        id: `mission_${i}`,
+        current: 0,
+        completed: false,
+        claimed: false,
+      }))
+    };
+  }
+
+  const medalsCount = (state.medals ?? []).filter(m => m.isUnlocked).length;
   
   let pool = [...MISSION_POOL];
   
@@ -88,7 +101,7 @@ function generateDailyMissions(state: GameState): { date: string; missions: Dail
     pool = pool.filter(m => m.type !== 'defeatLeague' && m.type !== 'defeatMaster');
   }
   // Escludi Master se non completata almeno una run
-  if (state.leagueProgress.completedRuns < 1) {
+  if ((state.leagueProgress?.completedRuns ?? 0) < 1) {
     pool = pool.filter(m => m.type !== 'defeatMaster');
   }
   
@@ -571,7 +584,7 @@ export const useStore = create<GameStore>()(
       checkDailyMissions: () => set((state) => {
         const today = new Date().toISOString().split('T')[0];
         if (state.dailyMissions?.date === today) return {};
-        return { dailyMissions: generateDailyMissions() };
+        return { dailyMissions: generateDailyMissions(state) };
       }),
       claimMission: (id) => set((state) => {
         if (!state.dailyMissions) return {};

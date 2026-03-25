@@ -5,32 +5,49 @@ import './index.css';
 
 // Registrazione del Service Worker solo in produzione, per non interferire con il dev server
 if (import.meta.env.PROD && 'serviceWorker' in navigator) {
-  window.addEventListener('load', () => {
-    // Il base URL è configurato in vite.config.ts (es. '/pokedesk/')
+  window.addEventListener('load', async () => {
     const swUrl = `${import.meta.env.BASE_URL}sw.js`;
 
-    navigator.serviceWorker.register(swUrl, { updateViaCache: 'none' })
-      .then((registration) => {
-        console.log('SW registrato con successo:', registration.scope);
+    try {
+      const expectedSwUrl = new URL(swUrl, window.location.href).href;
+      const registrations = await navigator.serviceWorker.getRegistrations();
 
-        // Se c'è un aggiornamento pronto, notifica l'app (non ricaricare automaticamente)
-        registration.onupdatefound = () => {
-          const installingWorker = registration.installing;
-          if (installingWorker) {
-            installingWorker.onstatechange = () => {
-              if (installingWorker.state === 'installed' && navigator.serviceWorker.controller) {
-                console.log('Nuovo contenuto disponibile: invio evento all’app');
-                window.dispatchEvent(new CustomEvent('swUpdate'));
-              }
-            };
+      for (const registration of registrations) {
+        if (registration.scriptURL && registration.scriptURL !== expectedSwUrl) {
+          await registration.unregister();
+          if (import.meta.env.DEV) {
+            console.info('SW obsoleto disinstallato:', registration.scriptURL);
+          }
+        }
+      }
+
+      const registration = await navigator.serviceWorker.register(swUrl, { updateViaCache: 'none' });
+      if (import.meta.env.DEV) {
+        console.log('SW registrato con successo:', registration.scope);
+      }
+
+      registration.onupdatefound = () => {
+        const installingWorker = registration.installing;
+        if (!installingWorker) return;
+
+        installingWorker.onstatechange = () => {
+          if (installingWorker.state === 'installed' && navigator.serviceWorker.controller) {
+            if (import.meta.env.DEV) {
+              console.log('Nuovo contenuto disponibile: invio evento all’app');
+            }
+            window.dispatchEvent(new CustomEvent('swUpdate'));
           }
         };
-      })
-      .catch((error) => {
+      };
+    } catch (error) {
+      if (import.meta.env.DEV) {
         console.error('Errore registrazione SW:', error);
-      });
+      }
+      // In produzione, falliamo silenziosamente, in modo che il gioco continui a funzionare.
+    }
   });
 }
+
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
