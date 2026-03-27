@@ -8,7 +8,7 @@ import { ArrowLeft, Search, ChevronLeft, ChevronRight, Sparkles, Users, Trash2, 
 const BOX_SIZE = 30; 
 const TYPE_LIST = ['fire','water','grass','electric','ice','fighting','poison','ground','flying','psychic','bug','rock','ghost','dragon','steel','dark','fairy','normal']; 
 
-type SortKey = 'name' | 'level' | 'number' | 'type' | 'iv'; 
+type SortKey = 'name' | 'level' | 'number' | 'type' | 'iv' | 'date'; 
 
 export default function BoxScreen() { 
   const { box, setScreen, addToTeam, releasePokemon, team, inventory, useSpeciesCandy, favorites } = useStore(); 
@@ -64,11 +64,12 @@ export default function BoxScreen() {
       if (sortBy === 'name') return a.name.localeCompare(b.name); 
       if (sortBy === 'level') return b.level - a.level; 
       if (sortBy === 'type') return a.types[0].localeCompare(b.types[0]); 
-      if (sortBy === 'iv') {
-        const ivA = a.ivs.hp + a.ivs.attack + a.ivs.defense + a.ivs.spAtk + a.ivs.spDef + a.ivs.speed;
-        const ivB = b.ivs.hp + b.ivs.attack + b.ivs.defense + b.ivs.spAtk + b.ivs.spDef + b.ivs.speed;
-        return ivB - ivA;
-      }
+      if (sortBy === 'iv') { 
+        const ivA = a.ivs.hp + a.ivs.attack + a.ivs.defense + a.ivs.spAtk + a.ivs.spDef + a.ivs.speed; 
+        const ivB = b.ivs.hp + b.ivs.attack + b.ivs.defense + b.ivs.spAtk + b.ivs.spDef + b.ivs.speed; 
+        return ivB - ivA; 
+      } 
+      if (sortBy === 'date') return (b.caughtAt ?? 0) - (a.caughtAt ?? 0); 
       return a.pokemonId - b.pokemonId; // number 
     }); 
     return result; 
@@ -161,16 +162,16 @@ export default function BoxScreen() {
               className="overflow-hidden" 
             > 
               {/* Ordina per */} 
-              <div className="flex gap-2 mb-2 pt-1"> 
-                {(['number','name','level','type','iv'] as SortKey[]).map(s => ( 
+              <div className="flex gap-2 mb-2 pt-1 overflow-x-auto no-scrollbar"> 
+                {(['number','name','level','type','iv','date'] as SortKey[]).map(s => ( 
                   <button 
                     key={s} 
                     onClick={() => setSortBy(s)} 
-                    className={`flex-1 py-1.5 rounded-lg text-[10px] font-black uppercase transition-all ${ 
+                    className={`flex-shrink-0 min-w-[52px] py-1.5 rounded-lg text-[10px] font-black uppercase transition-all ${ 
                       sortBy === s ? 'bg-[#e63946]' : 'bg-[#1a1a2e] text-white/40' 
                     }`} 
                   > 
-                    {s === 'number' ? '#' : s === 'name' ? 'Nome' : s === 'level' ? 'Lv.' : s === 'iv' ? 'IV' : 'Tipo'} 
+                    {s === 'number' ? '#' : s === 'name' ? 'Nome' : s === 'level' ? 'Lv.' : s === 'iv' ? 'IV' : s === 'date' ? '📅' : 'Tipo'} 
                   </button> 
                 ))} 
               </div> 

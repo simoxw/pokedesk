@@ -696,7 +696,7 @@ export default function BattleScreen() {
     addLog(`${liveEnemy.name} usa ${enemyMove.name}!${enemyDamage > 0 ? ` (${enemyDamage} danni)` : ''}`);
     const typeMultiplier = BattleEngine.getTypeEffectiveness(enemyMove.type, currentPlayerPkmn.types);
     const effLabel = BattleEngine.getTypeEffectivenessLabel(typeMultiplier);
-    if (effLabel && enemyDamage > 0) addLog(effLabel);
+    if (effLabel && (enemyDamage > 0 || typeMultiplier === 0)) addLog(effLabel);
 
     // Applica effetto di stato nemico 
     const statusChance = (!enemyMove.effectChance || enemyMove.effectChance === 0) ? 100 : enemyMove.effectChance;
@@ -1191,7 +1191,7 @@ export default function BattleScreen() {
       if (message) addLog(message);
 
       if (isCrit) addLog('Brutto colpo!');
-      if (effLabel && damage > 0) addLog(effLabel);
+      if (effLabel && (damage > 0 || typeMultiplier === 0)) addLog(effLabel);
 
       // Applica stato con immunità
       let finalStatus = liveEnemyAtStartOfMove.status;
@@ -1257,7 +1257,7 @@ export default function BattleScreen() {
       if (message) addLog(message);
 
       if (isCrit) addLog('Brutto colpo!');
-      if (effLabel && damage > 0) addLog(effLabel);
+      if (effLabel && (damage > 0 || typeMultiplier === 0)) addLog(effLabel);
 
       // Applica stato con immunità
       let finalStatus = currentEnemyAfterEnemyTurn.status;
