@@ -59,7 +59,7 @@ export default function HubScreen() {
     checkDailyMissions();
     eggs.filter(e => Date.now() >= e.hatchAt).forEach(e => hatchEgg(e.id));
     const fixMoves = async () => {
-      for (const pokemon of team) {
+      for (const pokemon of [...team, ...box]) {
         if (pokemon.moves.length === 0 || pokemon.name.startsWith('#')) {
           try {
             const data = await api.getPokemon(pokemon.pokemonId);
@@ -87,7 +87,7 @@ export default function HubScreen() {
       }
     };
     fixMoves();
-  }, [team, updatePokemon, eggs, hatchEgg]);
+  }, [team, box, updatePokemon, eggs, hatchEgg]);
   
   const nextTick = getTimeToNextTick();
   const minutes = Math.floor(nextTick / 60000);
