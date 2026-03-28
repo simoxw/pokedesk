@@ -13,7 +13,8 @@ type SortKey = 'name' | 'level' | 'number' | 'type' | 'iv' | 'date';
 export default function BoxScreen() { 
   const { box, setScreen, addToTeam, releasePokemon, team, inventory, useSpeciesCandy, favorites } = useStore(); 
   const [currentBox, setCurrentBox] = useState(0); 
-  const [showFavoritesOnly, setShowFavoritesOnly] = React.useState(false);
+  const [showFavoritesOnly, setShowFavoritesOnly] = React.useState(false); 
+  const [showShinyOnly, setShowShinyOnly] = useState(false);
   const [search, setSearch] = useState(''); 
   const [filterType, setFilterType] = useState<string | null>(null); 
   const [sortBy, setSortBy] = useState<SortKey>('number'); 
@@ -44,7 +45,8 @@ export default function BoxScreen() {
   // Filtra e ordina 
   const filtered = useMemo(() => { 
     let result = [...box]; 
-    if (showFavoritesOnly) result = result.filter(p => favorites.includes(p.id));
+    if (showFavoritesOnly) result = result.filter(p => favorites.includes(p.id)); 
+    if (showShinyOnly) result = result.filter(p => p.isShiny);
     if (search) {
       const query = search.toLowerCase().trim();
       if (query === 'iv:31' || query === '31') {
@@ -73,7 +75,7 @@ export default function BoxScreen() {
       return a.pokemonId - b.pokemonId; // number 
     }); 
     return result; 
-  }, [box, search, filterType, sortBy, showFavoritesOnly, favorites]); 
+  }, [box, search, filterType, sortBy, showFavoritesOnly, showShinyOnly, favorites]); 
 
   const totalBoxes = Math.max(1, Math.ceil(filtered.length / BOX_SIZE)); 
   const currentBoxPkmn = filtered.slice(currentBox * BOX_SIZE, (currentBox + 1) * BOX_SIZE); 
@@ -110,6 +112,12 @@ export default function BoxScreen() {
           className={`p-2 rounded-xl border transition-all text-lg ${showFavoritesOnly ? 'bg-yellow-500/20 border-yellow-500/50 text-yellow-400' : 'bg-[#1a1a2e] border-white/10 text-white/40'}`}
         >
           ★
+        </button>
+        <button 
+          onClick={() => setShowShinyOnly(f => !f)} 
+          className={`p-2 rounded-xl border transition-all text-sm font-black ${showShinyOnly ? 'bg-yellow-300/20 border-yellow-300/50 text-yellow-200' : 'bg-[#1a1a2e] border-white/10 text-white/40'}`} 
+        > 
+          ✨ 
         </button>
         <button
           onClick={() => setViewMode(v => v === 'grid' ? 'list' : 'grid')}
