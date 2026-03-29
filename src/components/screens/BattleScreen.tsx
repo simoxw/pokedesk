@@ -797,6 +797,7 @@ export default function BattleScreen() {
         setIsFinished(true);
       } else {
         setActiveIdx(nextAvailable);
+        setPlayerStages({ attack: 0, defense: 0, spAtk: 0, spDef: 0, speed: 0, accuracy: 0, evasion: 0 });
         addLog(`Vai ${team[nextAvailable].name}!`);
       }
     }
@@ -1322,6 +1323,7 @@ export default function BattleScreen() {
         setIsFinished(true);
       } else {
         setActiveIdx(nextAvailable);
+        setPlayerStages({ attack: 0, defense: 0, spAtk: 0, spDef: 0, speed: 0, accuracy: 0, evasion: 0 });
         addLog(`Vai ${team[nextAvailable].name}!`);
       }
     }
@@ -1352,16 +1354,31 @@ export default function BattleScreen() {
 
         {/* NORMALE / AMICO — cielo azzurro */}
         {!wasLeagueBattle.current && !wasMasterBattle.current && !isBoss && (
-          <div className="absolute inset-0" style={{
-            background: 'linear-gradient(180deg, #4fa8ff 0%, #87ceeb 40%, #b0e2ff 60%)'
-          }} />
+          <> 
+            <div className="absolute inset-0" style={{ 
+              background: 'linear-gradient(180deg, #1562b8 0%, #3a9ae8 30%, #72c1f2 55%, #b0dcf5 78%, #c8efc0 100%)' 
+            }} /> 
+            <div className="absolute pointer-events-none" style={{ 
+              top: '6%', right: '16%', width: 52, height: 52, borderRadius: '50%', 
+              background: '#ffe54d', 
+              boxShadow: '0 0 0 8px rgba(255,220,60,0.16), 0 0 0 20px rgba(255,200,40,0.08), 0 0 50px 20px rgba(255,180,30,0.18)', 
+            }} /> 
+          </> 
         )}
 
         {/* BOSS — cielo temporalesco viola */}
         {isBoss && (
-          <div className="absolute inset-0" style={{
-            background: 'linear-gradient(180deg, #1a0a2e 0%, #2d1a4a 40%, #4a2d6b 60%)'
-          }} />
+          <> 
+            <div className="absolute inset-0" style={{ 
+              background: 'linear-gradient(180deg, #2d1a4a 0%, #3d1f5e 35%, #5d3a8e 60%, #7a4da8 85%)' 
+            }} /> 
+            <motion.div 
+              animate={{ opacity: [0, 0, 0.9, 0, 0, 0, 0.6, 0] }} 
+              transition={{ duration: 5, repeat: Infinity, repeatDelay: 2 }} 
+              className="absolute inset-0 pointer-events-none" 
+              style={{ background: 'linear-gradient(118deg, rgba(200,150,255,0.28) 0%, rgba(255,255,255,0.1) 38%, transparent 58%)' }} 
+            /> 
+          </> 
         )}
 
   {/* LEGA — cielo grigio pietra medio */}
@@ -1482,7 +1499,7 @@ export default function BattleScreen() {
         {isBoss && (
           <>
             <div className="absolute inset-0" style={{
-              background: 'linear-gradient(180deg, #2a4a10 0%, #1a3008 100%)',
+              background: 'linear-gradient(180deg, #3d6a1b 0%, #2d4a10 100%)',
             }} />
             <div className="absolute inset-0 opacity-15" style={{
               backgroundImage: 'linear-gradient(rgba(255,255,255,0.05) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.05) 1px, transparent 1px)',
