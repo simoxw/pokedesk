@@ -218,13 +218,9 @@ export const BattleEngine = {
       damage = Math.floor(damage * 1.5);
     }
 
-    // Random (0.85 - 1.0)
-    const random = 0.85 + Math.random() * 0.15;
+    // Random Gen 5: intero 85-100 / 100
+    const random = (Math.floor(Math.random() * 16) + 85) / 100;
     damage = Math.floor(damage * random);
-
-    // Variazione minima di precisione per simulare i giochi ufficiali (95-100%)
-    const variance = 0.95 + Math.random() * 0.05;
-    damage = Math.floor(damage * variance);
 
     // BRN: -50% attacco fisico 
     if (attacker.status === 'BRN' && move.category === 'physical') {

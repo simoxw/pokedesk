@@ -8,6 +8,8 @@ Un simulatore di battaglie e cattura Pokémon moderno, sviluppato come Progressi
 - **Cattura e Safari**: Meccaniche di cattura dedicate, inclusa la **Zona Safari** con spawn di Pokémon di sesta generazione e oltre.
 - **Progressione e Sfide**: Livellamento, evoluzioni, medaglie e sfide contro **Capopalestra**, **Lega Pokémon** e **Master Trainers**.
 - **Missioni Giornaliere**: Sistema di obiettivi quotidiani con ricompense in monete e strumenti.
+- **Toast di missione**: Notifica visiva al completamento missione e auto-dismiss a 3 secondi.
+- **Isole Leggendarie**: Nuova modalità giornaliera per catturare un leggendario (sbloccata dopo una run Lega).
 - **Breeding e Uova**: Possibilità di far accoppiare Pokémon (incluso Ditto) per ottenere uova con IV ereditati.
 - **Gestione Squadra**: Team attivo (fino a 4 Pokémon), PC Box illimitato, strumenti curativi e caramelle rare.
 - **Sistema di Cariche**: Energia temporizzata rigenerativa per limitare le azioni di Cattura, Lotta e Safari.

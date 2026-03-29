@@ -38,6 +38,7 @@ Pokedesk è un'app web avanzata che simula l'esperienza Pokémon, sviluppata con
 - **CatchScreen.tsx / SafariScreen.tsx**: Diverse modalità di incontro e cattura Pokémon selvatici.
 - **LeagueSelectScreen.tsx / LeagueBattleScreen.tsx**: Sistema di sfide a catena basato sulle regioni classiche.
 - **MasterBattleScreen.tsx**: Sfide "end-game" contro allenatori d'élite.
+- **IslandScreen.tsx**: Evento giornaliero con un leggendario speciale (sbloccato dopo una run Lega).
 - **PokedexScreen.tsx**: Visualizzazione dettagliata dei Pokémon incontrati/catturati.
 - **StartScreen.tsx / StarterDraft.tsx**: Flusso iniziale di creazione profilo e scelta dello starter tramite draft.
 

@@ -17,6 +17,7 @@ import FriendBattleScreen from './components/screens/FriendBattleScreen';
 import LeagueSelectScreen from './components/screens/LeagueSelectScreen';
 import LeagueBattleScreen from './components/screens/LeagueBattleScreen';
 import MasterBattleScreen from './components/screens/MasterBattleScreen';
+import IslandScreen from './components/screens/IslandScreen';
 import OptionsScreen from './components/screens/OptionsScreen';
 import BottomNav from './components/ui/BottomNav';
 import TypeBadge from './components/ui/TypeBadge';
@@ -39,7 +40,9 @@ export default function App() {
     dismissEvolution, 
     dismissNewMove, 
     dismissMedalUnlock,
-    replaceMove 
+    replaceMove,
+    pendingMissionToast,
+    dismissMissionToast,
   } = useStore();
   const { getTimeToNextTick } = useTickSystem();
   const [updateAvailable, setUpdateAvailable] = useState(false);
@@ -69,6 +72,12 @@ export default function App() {
     });
   }, [pendingMedalUnlock]);
 
+  useEffect(() => {
+    if (!pendingMissionToast) return;
+    const t = setTimeout(() => dismissMissionToast(), 3000);
+    return () => clearTimeout(t);
+  }, [pendingMissionToast]);
+
   const renderScreen = () => {
     switch (currentScreen) {
       case 'START_SCREEN': return <StartScreen />;
@@ -89,6 +98,7 @@ export default function App() {
       case 'LEAGUE_SELECT_SCREEN': return <LeagueSelectScreen />;
       case 'LEAGUE_BATTLE_SCREEN': return <LeagueBattleScreen />;
       case 'MASTER_BATTLE_SCREEN': return <MasterBattleScreen />;
+      case 'ISLAND_SCREEN': return <IslandScreen />;
       default: return <StartScreen />;
     }
   };
@@ -121,6 +131,25 @@ export default function App() {
         </AnimatePresence>
       </main>
       {showNav && <BottomNav />}
+
+      {/* Toast missione completata */}
+      <AnimatePresence>
+        {pendingMissionToast && (
+          <motion.div
+            initial={{ opacity: 0, y: -40 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -40 }}
+            className="fixed top-4 left-4 right-4 z-[200] flex items-center gap-3 bg-yellow-500/90 backdrop-blur-sm text-black px-4 py-3 rounded-2xl shadow-2xl"
+          >
+            <span className="text-xl">✅</span>
+            <div className="flex-1 min-w-0">
+              <p className="font-black text-sm">Missione completata!</p>
+              <p className="text-[11px] font-bold opacity-70 truncate">{pendingMissionToast}</p>
+            </div>
+            <button onClick={dismissMissionToast} className="text-black/50 font-black text-lg leading-none">✕</button>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       {/* Modale Nuova Mossa */}
       <AnimatePresence>

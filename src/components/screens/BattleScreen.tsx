@@ -1661,13 +1661,15 @@ export default function BattleScreen() {
 
           <div className="relative">
             <motion.img
+              key={enemyPhase}
+              initial={{ x: -50, opacity: 0 }}
               animate={enemyHitAnim 
                 ? { x: [-4, 4, -4, 4, 0], opacity: [1, 0.3, 1, 0.3, 1] }
-                : { y: [0, -6, 0] }
+                : { x: 0, y: 0, opacity: 1 }
               }
               transition={enemyHitAnim 
                 ? { duration: 0.4 }
-                : { duration: 2, repeat: Infinity }
+                : { duration: 0.5 }
               }
               src={enemy?.sprites?.front_default ?? `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/${enemy?.pokemonId}.png`}
               className="w-56 h-56 object-contain drop-shadow-2xl"
@@ -1684,12 +1686,14 @@ export default function BattleScreen() {
         {/* Player Pokemon Area */}
         <div className="relative mt-auto pb-4 pl-2 pr-2 flex items-end gap-2 h-[38%]">
           <motion.img
+            key={activeIdx}
+            initial={{ x: 60, opacity: 0 }}
             animate={
               attackAnim 
-                ? { x: [0, 15, 0] }
+                ? { x: [0, 15, 0], opacity: 1 }
                 : playerHitAnim
                 ? { x: [-4, 4, -4, 4, 0], opacity: [1, 0.3, 1, 0.3, 1] }
-                : { x: 0 }
+                : { x: 0, opacity: 1 }
             }
             transition={{ duration: 0.4 }}
             src={`https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/back/${playerPkmn?.isShiny ? 'shiny/' : ''}${playerPkmn?.pokemonId}.png`}

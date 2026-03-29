@@ -16,7 +16,8 @@ export type ScreenName =
   | 'FRIEND_BATTLE_SCREEN'
   | 'LEAGUE_SELECT_SCREEN'
   | 'LEAGUE_BATTLE_SCREEN'
-  | 'MASTER_BATTLE_SCREEN';
+  | 'MASTER_BATTLE_SCREEN'
+  | 'ISLAND_SCREEN';
 export type PokemonType = 
   | 'normal' | 'fire' | 'water' | 'electric' | 'grass' | 'ice' 
   | 'fighting' | 'poison' | 'ground' | 'flying' | 'psychic' 
@@ -139,6 +140,8 @@ export interface GameState {
   leagueBattleResult: 'win' | 'lose' | null;
   isFirstRun: boolean;
   dailyMissions: { date: string; missions: DailyMission[] } | null;
+  islandLastCatch: string | null;
+  pendingMissionToast: string | null;
   leagueProgress: {
     completedRuns: number;
     completedRegions: string[];
@@ -201,6 +204,8 @@ export interface GameState {
     date: string;
     missions: DailyMission[];
   } | null;
+  islandLastCatch: string | null;
+  pendingMissionToast: string | null;
   leagueProgress: {
     completedRuns: number;
     completedRegions: string[];

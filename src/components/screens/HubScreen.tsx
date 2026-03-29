@@ -27,6 +27,7 @@ export default function HubScreen() {
     hatchEgg,
     box,
     favorites,
+    islandLastCatch,
   } = useStore();
 
   const [showMissions, setShowMissions] = useState(false);
@@ -99,6 +100,18 @@ export default function HubScreen() {
   const safariMinutes = Math.floor(nextSafariTick / 60000);
   const safariSeconds = Math.floor((nextSafariTick % 60000) / 1000);
 
+  const today = new Date().toISOString().split('T')[0];
+  const islandAvailable = leagueProgress.completedRuns >= 1 && islandLastCatch !== today;
+  const islandUnlocked = leagueProgress.completedRuns >= 1;
+  const msToMidnight = (() => {
+    const now = new Date();
+    const midnight = new Date(now);
+    midnight.setHours(24, 0, 0, 0);
+    return midnight.getTime() - now.getTime();
+  })();
+  const islandHours = Math.floor(msToMidnight / 3600000);
+  const islandMins = Math.floor((msToMidnight % 3600000) / 60000);
+
   return (
     <div className="h-full relative overflow-hidden overflow-x-hidden flex flex-col items-center justify-evenly py-3 px-6">
       {/* Cosmic Background */}
@@ -151,23 +164,7 @@ export default function HubScreen() {
       })()}
 
       <div className="relative z-10 flex flex-col items-center gap-2 w-full max-w-sm overflow-y-auto">
-        <div className="text-center">
-          <motion.div
-            animate={{ scale: [1, 1.05, 1] }}
-            transition={{ duration: 2, repeat: Infinity }}
-            className="text-2xl font-black text-white flex items-center justify-center gap-2"
-          >
-            {charges}<span className="text-[#e63946]">/6</span>
-            <Zap className="text-yellow-400 fill-yellow-400" size={14} />
-          </motion.div>
-          <p className="text-white/50 font-mono mt-0.5 text-[10px]">
-            {charges >= 6
-              ? '⚡ CARICHE AL MASSIMO!'
-              : `PROSSIMA CARICA IN ${minutes}:${seconds.toString().padStart(2, '0')}`}
-          </p>
-        </div>
-
-        {/* Progresso verso Capopalestra */} 
+        {/* Progresso verso Capopalestra */}
         <div className="w-full max-w-sm"> 
           {currentBattlePath.nextIsBoss ? ( 
             <motion.div 
@@ -264,41 +261,40 @@ export default function HubScreen() {
             whileHover={{ scale: 1.05 }}
             whileTap={{ scale: 0.95 }}
             disabled={charges === 0}
-            onClick={() => {
-              consumeCharge();
-              setScreen('CATCH_SCREEN');
-            }}
-            className="w-full bg-[#e63946] disabled:opacity-50 disabled:grayscale py-5 rounded-3xl flex items-center justify-center gap-3 shadow-2xl shadow-[#e63946]/30"
+            onClick={() => { consumeCharge(); setScreen('CATCH_SCREEN'); }}
+            className="w-full bg-[#e63946] disabled:opacity-50 disabled:grayscale py-4 rounded-3xl flex flex-col items-center justify-center shadow-2xl shadow-[#e63946]/30 gap-0.5"
           >
-            <Target size={26} />
-            <span className="text-2xl font-black">CATTURA</span>
+            <div className="flex items-center gap-3">
+              <Target size={22} />
+              <span className="text-2xl font-black">CATTURA</span>
+            </div>
+            <span className="text-[10px] font-bold text-white/70">
+              {charges >= 6 ? `⚡ 6/6 — CARICHE AL MASSIMO` : `⚡ ${charges}/6 — prossima: ${minutes}:${seconds.toString().padStart(2, '0')}`}
+            </span>
           </motion.button>
 
           {/* SAFARI */}
-          <div className="text-center text-[11px] text-white/50">
-            🌿 {safariCharges}/8{safariUnlocked && safariCharges < 8 ? ` • Prossima carica: ${safariMinutes}:${safariSeconds.toString().padStart(2, '0')}` : safariUnlocked && safariCharges >= 8 ? ' • MAX' : ''}
-          </div>
           <motion.button
             whileHover={{ scale: 1.05 }}
             whileTap={{ scale: 0.95 }}
             disabled={safariCharges === 0 || !safariUnlocked}
-            onClick={() => {
-              consumeSafariCharge();
-              setScreen('SAFARI_SCREEN');
-            }}
-            className={`w-full p-4 rounded-2xl flex items-center justify-center gap-3 shadow-xl ${
+            onClick={() => { consumeSafariCharge(); setScreen('SAFARI_SCREEN'); }}
+            className={`w-full py-4 rounded-2xl flex flex-col items-center justify-center gap-0.5 shadow-xl ${
               safariUnlocked
                 ? 'bg-[#1a3a1a] border border-green-800/40 text-white'
                 : 'bg-gray-800/60 border border-white/10 text-white/40'
             }`}
           >
-            {safariUnlocked ? <TreePine size={20} /> : <span className="text-lg">🔒</span>}
-            <span className="text-2xl font-black">
-              {safariUnlocked ? 'ZONA SAFARI' : 'SAFARI'}
-            </span>
-            {!safariUnlocked && (
-              <span className="text-[10px] font-bold text-white/40 ml-1">
-                (20 medaglie)
+            <div className="flex items-center gap-3">
+              {safariUnlocked ? <TreePine size={20} /> : <span className="text-lg">🔒</span>}
+              <span className="text-2xl font-black">
+                {safariUnlocked ? 'ZONA SAFARI' : 'SAFARI'}
+              </span>
+              {!safariUnlocked && <span className="text-[10px] font-bold text-white/40">(20 medaglie)</span>}
+            </div>
+            {safariUnlocked && (
+              <span className="text-[10px] font-bold text-white/50">
+                {safariCharges >= 8 ? '🌿 8/8 — MAX' : `🌿 ${safariCharges}/8 — prossima: ${safariMinutes}:${safariSeconds.toString().padStart(2, '0')}`}
               </span>
             )}
           </motion.button>
@@ -357,6 +353,34 @@ export default function HubScreen() {
               )}
             </motion.button>
           </div>
+
+          {/* ISOLE */}
+          <motion.button
+            whileHover={{ scale: islandUnlocked ? 1.02 : 1 }}
+            whileTap={{ scale: islandUnlocked && islandAvailable ? 0.97 : 1 }}
+            disabled={!islandAvailable}
+            onClick={() => islandAvailable && setScreen('ISLAND_SCREEN')}
+            className={`w-full py-4 rounded-2xl flex flex-col items-center justify-center gap-0.5 shadow-xl transition-all ${
+              !islandUnlocked
+                ? 'bg-gray-800/60 border border-white/10 text-white/30'
+                : islandAvailable
+                ? 'bg-gradient-to-r from-[#0d2a3a] to-[#1a3d4a] border border-cyan-500/30 text-white'
+                : 'bg-[#0d1f2a] border border-white/10 text-white/40'
+            }`}
+          >
+            <div className="flex items-center gap-3">
+              {!islandUnlocked ? <span className="text-xl">🔒</span> : <span className="text-xl">🏝️</span>}
+              <span className="text-2xl font-black">ISOLE</span>
+            </div>
+            <span className="text-[10px] font-bold" style={{ color: !islandUnlocked ? 'rgba(255,255,255,0.25)' : islandAvailable ? 'rgba(100,210,255,0.8)' : 'rgba(255,255,255,0.35)' }}>
+              {!islandUnlocked
+                ? 'Completa la Lega una volta per sbloccare'
+                : islandAvailable
+                ? '⭐ Leggendario disponibile oggi!'
+                : `⏳ Prossimo tra ${islandHours}h ${islandMins}m`}
+            </span>
+          </motion.button>
+
         </div>
       </div>
 

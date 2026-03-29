@@ -58,6 +58,8 @@ interface GameStore extends GameState {
   abandonLeagueRun: () => void;
   incrementLeagueMission: () => void;
   incrementMasterMission: () => void;
+  setIslandLastCatch: (date: string) => void;
+  dismissMissionToast: () => void;
 }
 
 const MISSION_POOL = [
@@ -135,7 +137,11 @@ function updateMissionProgress(
     }
     return m;
   });
-  return { dailyMissions: { ...state.dailyMissions, missions: updated } };
+  const justCompleted = updated.find((m, i) => m.completed && !state.dailyMissions!.missions[i].completed);
+  return {
+    dailyMissions: { ...state.dailyMissions, missions: updated },
+    ...(justCompleted ? { pendingMissionToast: justCompleted.description } : {}),
+  };
 }
 
 const INITIAL_MEDALS: Medal[] = Array.from({ length: 40 }, (_, i) => ({
@@ -182,6 +188,8 @@ export const useStore = create<GameStore>()(
         currentRun: null,
       },
       masterProgress: { defeatedIds: [] },
+      islandLastCatch: null,
+      pendingMissionToast: null,
       currentScreen: 'START_SCREEN',
 
       setScreen: (screen) => set({ currentScreen: screen }),
@@ -726,6 +734,8 @@ export const useStore = create<GameStore>()(
       incrementMasterMission: () => set((state) => ({
         ...updateMissionProgress(state, 'defeatMaster')
       })),
+      setIslandLastCatch: (date) => set({ islandLastCatch: date }),
+      dismissMissionToast: () => set({ pendingMissionToast: null }),
       recordBattleWin: () => set((state) => {
         let { battlesWon, nextIsBoss } = state.currentBattlePath;
         if (!nextIsBoss) {
@@ -783,6 +793,8 @@ export const useStore = create<GameStore>()(
         masterBattleTeam: null,
         masterBattleResult: null,
         masterProgress: { defeatedIds: [] },
+        islandLastCatch: null,
+        pendingMissionToast: null,
       }),
     }),
     {
