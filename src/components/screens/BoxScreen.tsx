@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react'; 
+import React, { useState, useMemo, useEffect } from 'react'; 
 import { useStore } from '../../store'; 
 import { motion, AnimatePresence } from 'motion/react'; 
 import PokemonDetailsModal from '../ui/PokemonDetailsModal'; 
@@ -23,7 +23,10 @@ export default function BoxScreen() {
   const [showDetails, setShowDetails] = useState(false); 
   const [multiSelectMode, setMultiSelectMode] = useState(false); 
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
-  const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid'); 
+  const [showCompareModal, setShowCompareModal] = useState(false);
+  const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
+
+  const selectedForCompare = useMemo(() => box.filter(p => selectedIds.has(p.id)), [box, selectedIds]); 
 
   const toggleSelect = (id: string) => { 
     setSelectedIds(prev => { 
@@ -40,6 +43,7 @@ export default function BoxScreen() {
     selectedIds.forEach(id => releasePokemon(id)); 
     setSelectedIds(new Set()); 
     setMultiSelectMode(false); 
+    setShowCompareModal(false);
   }; 
 
   // Filtra e ordina 
@@ -80,7 +84,49 @@ export default function BoxScreen() {
   const totalBoxes = Math.max(1, Math.ceil(filtered.length / BOX_SIZE)); 
   const currentBoxPkmn = filtered.slice(currentBox * BOX_SIZE, (currentBox + 1) * BOX_SIZE); 
   // Slots vuoti per riempire la griglia 5x6=30 
-  const emptySlots = BOX_SIZE - currentBoxPkmn.length; 
+  const emptySlots = BOX_SIZE - currentBoxPkmn.length;
+
+  useEffect(() => {
+    if (selectedForCompare.length !== 2) setShowCompareModal(false);
+  }, [selectedForCompare]);
+
+  const statsToShow = [
+    { label: 'IV HP', key: 'ivs.hp', isIv: true },
+    { label: 'IV ATT', key: 'ivs.attack', isIv: true },
+    { label: 'IV DIF', key: 'ivs.defense', isIv: true },
+    { label: 'IV ATT.SP', key: 'ivs.spAtk', isIv: true },
+    { label: 'IV DIF.SP', key: 'ivs.spDef', isIv: true },
+    { label: 'IV VEL', key: 'ivs.speed', isIv: true },
+    { label: 'IV Tot', key: 'ivTotal', isIv: true },
+    { label: '', key: '', separator: true },
+    { label: 'HP', key: 'stats.hp' },
+    { label: 'ATT', key: 'stats.attack' },
+    { label: 'DIF', key: 'stats.defense' },
+    { label: 'ATT.SP', key: 'stats.spAtk' },
+    { label: 'DIF.SP', key: 'stats.spDef' },
+    { label: 'VEL', key: 'stats.speed' },
+  ];
+
+  const getStatValue = (pkmn: any, statKey: string) => {
+    if (statKey === 'ivTotal') {
+      return Object.values(pkmn.ivs).reduce((a: number, b: number) => a + b, 0);
+    }
+    if (statKey.startsWith('ivs.')) {
+      const prop = statKey.split('.')[1] as keyof typeof pkmn.ivs;
+      return pkmn.ivs[prop] ?? 0;
+    }
+    if (statKey.startsWith('stats.')) {
+      const prop = statKey.split('.')[1] as keyof typeof pkmn.stats;
+      return pkmn.stats[prop] ?? 0;
+    }
+    return 0;
+  };
+
+  const getColor = (a: number, b: number) => {
+    if (a > b) return 'text-emerald-400';
+    if (a < b) return 'text-rose-400';
+    return 'text-white/70';
+  }; 
 
   const handleAddToTeam = (pkmn: any) => { 
     if (team.length < 4) { addToTeam(pkmn, team.length); setSelectedPkmn(null); } 
@@ -480,6 +526,13 @@ export default function BoxScreen() {
             Annulla 
           </button> 
           <button 
+            onClick={() => setShowCompareModal(true)} 
+            disabled={selectedIds.size !== 2} 
+            className="px-4 py-2 rounded-xl bg-[#3b82f6] text-sm font-black disabled:opacity-30" 
+          > 
+            Confronta 
+          </button>
+          <button 
             onClick={handleMultiRelease} 
             disabled={selectedIds.size === 0} 
             className="px-4 py-2 rounded-xl bg-[#e63946] text-sm font-black disabled:opacity-30" 
@@ -487,7 +540,62 @@ export default function BoxScreen() {
             Libera ({selectedIds.size}) 
           </button> 
         </div> 
-      )} 
+      )}
+
+      <AnimatePresence>
+        {showCompareModal && selectedForCompare.length === 2 && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4"
+            onClick={() => setShowCompareModal(false)}
+          >
+            <motion.div
+              initial={{ scale: 0.9, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.9, opacity: 0 }}
+              className="w-full max-w-3xl bg-[#0f172a] border border-white/10 rounded-2xl p-4"
+              onClick={e => e.stopPropagation()}
+            >
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-lg font-black">Confronta Pokémon</h3>
+                <button onClick={() => setShowCompareModal(false)} className="text-white/50 hover:text-white">✕</button>
+              </div>
+              <div className="grid grid-cols-2 gap-4 mb-4">
+                {selectedForCompare.map(p => (
+                  <div key={p.id} className="bg-[#1a1a2e] rounded-xl p-3">
+                    <img
+                      src={`https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/${p.isShiny ? 'shiny/' : ''}${p.pokemonId}.png`}
+                      alt={p.name}
+                      className="w-24 h-24 mx-auto"
+                    />
+                    <p className="text-center font-black text-white uppercase mt-2">{p.name}</p>
+                    <p className="text-center text-xs text-white/40">Lv. {p.level}</p>
+                  </div>
+                ))}
+              </div>
+
+              <div className="space-y-1">
+                {statsToShow.map((stat) => {
+                  if (stat.separator) {
+                    return <div key="separator" className="h-2" />;
+                  }
+                  const a = getStatValue(selectedForCompare[0], stat.key);
+                  const b = getStatValue(selectedForCompare[1], stat.key);
+                  return (
+                    <div key={stat.key} className="grid grid-cols-3 items-center gap-2 px-2 py-1 text-xs">
+                      <span className="text-white/60">{stat.label}</span>
+                      <span className={`text-right font-bold ${getColor(a, b)}`}>{a}</span>
+                      <span className={`text-left font-bold ${getColor(b, a)}`}>{b}</span>
+                    </div>
+                  );
+                })}
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence> 
     </div> 
   ); 
 } 
