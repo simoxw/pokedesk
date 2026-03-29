@@ -347,6 +347,10 @@ export const api = {
     return results;
   },
 
+  getPokemonCry(pokemonId: number): string {
+    return `https://raw.githubusercontent.com/PokeAPI/cries/main/cries/pokemon/latest/${pokemonId}.ogg`;
+  },
+
   getItalianDescription(entries: any[]): string {
     const itEntry = entries.find((e: any) => e.language.name === 'it');
     return itEntry ? (itEntry.flavor_text || itEntry.description || itEntry.text) : entries.find((e: any) => e.language.name === 'en')?.flavor_text || 'Nessuna descrizione disponibile.';

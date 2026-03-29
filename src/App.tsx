@@ -22,6 +22,8 @@ import OptionsScreen from './components/screens/OptionsScreen';
 import BottomNav from './components/ui/BottomNav';
 import TypeBadge from './components/ui/TypeBadge';
 import { useTickSystem } from './TickSystem';
+import { audioService } from './AudioService';
+import FloatingMuteButton from './components/ui/FloatingMuteButton';
 import { NotificationService } from './NotificationService';
 import { AnimatePresence, motion } from 'motion/react';
 import confetti from 'canvas-confetti';
@@ -30,7 +32,7 @@ export default function App() {
   const { 
     currentScreen, 
     isFirstRun, 
-    settings, 
+    settings,
     pendingMedalUnlock,
     pendingEvolution, 
     pendingNewMove, 
@@ -77,6 +79,24 @@ export default function App() {
     const t = setTimeout(() => dismissMissionToast(), 3000);
     return () => clearTimeout(t);
   }, [pendingMissionToast]);
+
+  useEffect(() => {
+    audioService.setEnabled(settings.audio);
+  }, [settings.audio]);
+
+  useEffect(() => {
+    const battleScreens = ['BATTLE_SCREEN','FRIEND_BATTLE_SCREEN','LEAGUE_BATTLE_SCREEN','MASTER_BATTLE_SCREEN'];
+    const catchScreens = ['CATCH_SCREEN','SAFARI_SCREEN'];
+    if (battleScreens.includes(currentScreen)) {
+      audioService.playMusic('battle');
+    } else if (catchScreens.includes(currentScreen)) {
+      audioService.playMusic('catch');
+    } else if (currentScreen === 'ISLAND_SCREEN') {
+      audioService.playMusic('island');
+    } else {
+      audioService.playMusic('main');
+    }
+  }, [currentScreen]);
 
   const renderScreen = () => {
     switch (currentScreen) {
@@ -349,6 +369,8 @@ export default function App() {
           </motion.div>
         )}
       </AnimatePresence>
+
+      <FloatingMuteButton />
 
       {updateAvailable && (
         <div className="fixed left-1/2 bottom-6 z-50 -translate-x-1/2">

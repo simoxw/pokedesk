@@ -6,6 +6,7 @@ import { BattleEngine } from '../../BattleEngine';
 import { motion, AnimatePresence } from 'motion/react';
 import { Sparkles } from 'lucide-react';
 import confetti from 'canvas-confetti';
+import { useSoundEffects } from '../../useSoundEffects';
 
 const ISLAND_LEGENDARIES = [
   144, 145, 146, 150, 151,
@@ -16,7 +17,7 @@ const ISLAND_LEGENDARIES = [
 ];
 
 export default function IslandScreen() {
-  const { addPokemon, setScreen, incrementStat, addItem, inventory, updatePokedex, setIslandLastCatch, team } = useStore();
+  const { addPokemon, setScreen, incrementStat, addItem, inventory, updatePokedex, setIslandLastCatch, team, settings } = useStore();
   const [pokemon, setPokemon] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [isShiny, setIsShiny] = useState(false);
@@ -27,7 +28,7 @@ export default function IslandScreen() {
   const [attempts, setAttempts] = useState(0);
   const [ballVisible, setBallVisible] = useState(false);
   const [dropMessage, setDropMessage] = useState<string | null>(null);
-  const maxAttempts = 5;
+  const maxAttempts = 3;
 
   useEffect(() => {
     if (!inventory[ballType] || inventory[ballType] === 0) {
@@ -50,6 +51,11 @@ export default function IslandScreen() {
         setPokemon({ ...data, species, level });
         setIsShiny(CatchEngine.checkShiny());
         updatePokedex(id, 'seen');
+        try {
+          const cry = new Audio(api.getPokemonCry(id));
+          cry.volume = 0.5;
+          if (settings.audio) cry.play().catch(() => {});
+        } catch {}
       } catch (e) {
         console.error(e);
       } finally {

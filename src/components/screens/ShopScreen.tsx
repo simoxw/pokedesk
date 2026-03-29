@@ -2,6 +2,7 @@ import React from 'react';
 import { useStore } from '../../store';
 import { motion } from 'motion/react';
 import { ArrowLeft, Coins, ShoppingCart } from 'lucide-react';
+import { useSoundEffects } from '../../useSoundEffects';
 
 const SHOP_ITEMS = [ 
   { id: 'pokeball',    name: 'Pokéball',       cost: 200,  icon: '🔴', description: 'Pokéball base' }, 
@@ -25,8 +26,9 @@ const SHOP_ITEMS = [
 
 
 export default function ShopScreen() {
-  const { coins, inventory, setScreen, addCoins, addItem, medals } = useStore();
+  const { coins, inventory, setScreen, addCoins, addItem, medals, settings } = useStore();
   const medalsCount = medals.filter(m => m.isUnlocked).length;
+  const { playSound } = useSoundEffects(settings.audio);
   const [toast, setToast] = React.useState<string | null>(null);
   const showToast = (msg: string) => {
     setToast(msg);
@@ -37,6 +39,7 @@ export default function ShopScreen() {
     if (coins >= item.cost) {
       addCoins(-item.cost);
       addItem(item.id, 1);
+      playSound('money');
       showToast(`+1 ${item.name}`);
     } else {
       alert("Monete insufficienti!");

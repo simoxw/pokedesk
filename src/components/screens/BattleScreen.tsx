@@ -6,12 +6,14 @@ import { CatchEngine } from '../../CatchEngine';
 import { motion, AnimatePresence } from 'motion/react';
 import { Sword, Backpack, ArrowLeftRight, Shield, ArrowLeft, X, Heart } from 'lucide-react';
 import HPBar from '../ui/HPBar';
+import { useSoundEffects } from '../../useSoundEffects';
 import TypeBadge from '../ui/TypeBadge';
 import confetti from 'canvas-confetti';
 
 export default function BattleScreen() {
   const { team, setScreen, incrementStat, addCoins, addItem, updatePokemon, inventory, useItem, gainExp, currentBattlePath, recordBattleWin, medals, expShareActive, friendBattleTeam, clearFriendBattleTeam, leagueBattleTeam, clearLeagueBattleTeam, setLeagueBattleResult, masterBattleTeam, clearMasterBattleTeam, setMasterBattleResult } = useStore();
   const isFriendBattle = !!friendBattleTeam;
+  const { playSound } = useSoundEffects(useStore.getState().settings.audio);
   const medalsCount = medals.filter((m: any) => m.isUnlocked).length;
   const [activeIdx, setActiveIdx] = useState(0);
   const [enemy, setEnemy] = useState<any>(null);
@@ -697,6 +699,8 @@ export default function BattleScreen() {
     const typeMultiplier = BattleEngine.getTypeEffectiveness(enemyMove.type, currentPlayerPkmn.types);
     const effLabel = BattleEngine.getTypeEffectivenessLabel(typeMultiplier);
     if (effLabel && (enemyDamage > 0 || typeMultiplier === 0)) addLog(effLabel);
+    if (typeMultiplier >= 2) playSound('hitSuper');
+    else if (typeMultiplier > 0 && typeMultiplier < 1) playSound('hitWeak');
 
     // Applica effetto di stato nemico 
     const statusChance = (!enemyMove.effectChance || enemyMove.effectChance === 0) ? 100 : enemyMove.effectChance;
@@ -1193,6 +1197,8 @@ export default function BattleScreen() {
 
       if (isCrit) addLog('Brutto colpo!');
       if (effLabel && (damage > 0 || typeMultiplier === 0)) addLog(effLabel);
+      if (typeMultiplier >= 2) playSound('hitSuper');
+      else if (typeMultiplier > 0 && typeMultiplier < 1) playSound('hitWeak');
 
       // Applica stato con immunità
       let finalStatus = liveEnemyAtStartOfMove.status;
@@ -1259,6 +1265,8 @@ export default function BattleScreen() {
 
       if (isCrit) addLog('Brutto colpo!');
       if (effLabel && (damage > 0 || typeMultiplier === 0)) addLog(effLabel);
+      if (typeMultiplier >= 2) playSound('hitSuper');
+      else if (typeMultiplier > 0 && typeMultiplier < 1) playSound('hitWeak');
 
       // Applica stato con immunità
       let finalStatus = currentEnemyAfterEnemyTurn.status;

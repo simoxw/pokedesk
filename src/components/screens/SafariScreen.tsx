@@ -7,9 +7,10 @@ import { motion, AnimatePresence } from 'motion/react';
 import { Sparkles, ArrowLeft } from 'lucide-react';
 import confetti from 'canvas-confetti';
 import { pickRarityTier, getRandomIdByRarity, RARITY, RarityTier } from '../../rarityTable';
+import { useSoundEffects } from '../../useSoundEffects';
 
 export default function SafariScreen() {
-  const { consumeSafariCharge, addPokemon, setScreen, medals, team, incrementStat, addItem, inventory, updatePokedex } = useStore();
+  const { consumeSafariCharge, addPokemon, setScreen, medals, team, incrementStat, addItem, inventory, updatePokedex, settings } = useStore();
   const medalsCount = medals.filter(m => m.isUnlocked).length;
   const [pokemon, setPokemon] = useState<any>(null);
   const [currentRarity, setCurrentRarity] = useState<RarityTier>('common');
@@ -80,6 +81,11 @@ export default function SafariScreen() {
         setIsShiny(CatchEngine.checkShiny());
         setLoading(false);
         updatePokedex(id, 'seen');
+        try {
+          const cry = new Audio(api.getPokemonCry(id));
+          cry.volume = 0.5;
+          if (settings.audio) cry.play().catch(() => {});
+        } catch {}
       } catch (err: any) {
         setLoading(false);
         if (err.message === 'OFFLINE') {
