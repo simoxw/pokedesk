@@ -50,6 +50,7 @@ export default function App() {
   const [updateAvailable, setUpdateAvailable] = useState(false);
 
   const getPokemonById = (id: string) => [...team, ...box].find(p => p.id === id);
+  const [confirmForget, setConfirmForget] = useState<{ moveId: string; moveName: string } | null>(null);
 
   useEffect(() => {
     if (settings.notifications) {
@@ -230,8 +231,19 @@ export default function App() {
                   {pkmn.moves.map(move => (
                     <button
                       key={move.id}
-                      onClick={() => replaceMove(pkmn.id, move.id, pendingNewMove.move)}
-                      className="flex items-center justify-between rounded-xl bg-slate-800 p-3 hover:bg-slate-700 active:bg-slate-600 transition-colors border border-white/5"
+                      onClick={() => {
+                        if (confirmForget?.moveId === move.id) {
+                          replaceMove(pkmn.id, move.id, pendingNewMove.move);
+                          setConfirmForget(null);
+                        } else {
+                          setConfirmForget({ moveId: move.id, moveName: move.name });
+                        }
+                      }}
+                      className={`flex items-center justify-between rounded-xl p-3 transition-colors border ${
+                        confirmForget?.moveId === move.id
+                          ? 'bg-red-500/20 border-red-500/50'
+                          : 'bg-slate-800 hover:bg-slate-700 border-white/5'
+                      }`}
                     >
                       <div className="flex flex-col items-start gap-1 flex-1 min-w-0">
                         <div className="flex items-center gap-2">
@@ -252,13 +264,22 @@ export default function App() {
                           <span className="text-white/40">PP: {move.pp}/{move.maxPp}</span>
                         </div>
                       </div>
-                      <span className="text-[10px] text-red-400 font-black ml-2 shrink-0">DIMENTICA</span>
+                      <span className={`text-[10px] font-black ml-2 shrink-0 ${
+                        confirmForget?.moveId === move.id ? 'text-red-300' : 'text-red-400'
+                      }`}>
+                        {confirmForget?.moveId === move.id ? '⚠️ CONFERMA' : 'DIMENTICA'}
+                      </span>
                     </button>
                   ))}
+                  {confirmForget && (
+                    <p className="text-[10px] text-red-400/70 text-center italic">
+                      Tocca di nuovo "{confirmForget.moveName}" per confermare che venga dimenticata.
+                    </p>
+                  )}
                 </div>
 
                 <button
-                  onClick={dismissNewMove}
+                  onClick={() => { dismissNewMove(); setConfirmForget(null); }}
                   className="w-full rounded-xl bg-slate-700 py-3 font-semibold text-slate-300 hover:bg-slate-600 transition-colors"
                 >
                   Non imparare

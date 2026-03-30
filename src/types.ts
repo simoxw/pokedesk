@@ -142,6 +142,8 @@ export interface GameState {
   dailyMissions: { date: string; missions: DailyMission[] } | null;
   islandLastCatch: string | null;
   pendingMissionToast: string | null;
+  streak: number;
+  lastStreakDate: string | null;
   leagueProgress: {
     completedRuns: number;
     completedRegions: string[];
@@ -206,6 +208,8 @@ export interface GameState {
   } | null;
   islandLastCatch: string | null;
   pendingMissionToast: string | null;
+  streak: number;
+  lastStreakDate: string | null;
   leagueProgress: {
     completedRuns: number;
     completedRegions: string[];

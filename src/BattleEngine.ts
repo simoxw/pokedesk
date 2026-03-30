@@ -1,6 +1,6 @@
 import { Pokemon, Move, StatusEffect, PokemonType } from './types';
 
-const TYPE_CHART: Record<PokemonType, Partial<Record<PokemonType, number>>> = {
+export const TYPE_CHART: Record<PokemonType, Partial<Record<PokemonType, number>>> = {
   normal: {
     rock: 0.5,
     ghost: 0,

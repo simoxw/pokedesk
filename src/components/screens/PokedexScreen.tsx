@@ -2,7 +2,8 @@ import React, { useState } from 'react';
 import { useStore } from '../../store'; 
 import { api } from '../../api'; 
 import { motion, AnimatePresence } from 'motion/react'; 
-import { ArrowLeft, X, Heart, Sword, Shield, Zap, Activity, Filter, Search } from 'lucide-react'; 
+import { ArrowLeft, X, Heart, Sword, Shield, Zap, Activity, Filter, Search, Calculator } from 'lucide-react';
+import { TYPE_CHART } from '../../BattleEngine'; 
 import TypeBadge from '../ui/TypeBadge'; 
 
 const STAT_META: Record<string, { label: string; icon: React.ReactNode; color: string }> = { 
@@ -36,6 +37,8 @@ export default function PokedexScreen() {
   const [filterGen, setFilterGen] = useState<number | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [showFilters, setShowFilters] = useState(false);
+  const [showTypeCalc, setShowTypeCalc] = useState(false);
+  const [calcAttackType, setCalcAttackType] = useState<string | null>(null);
 
   const GEN_RANGES = [
     { id: 1, label: 'Gen 1', range: [1, 151] },
@@ -112,12 +115,20 @@ export default function PokedexScreen() {
             </button> 
             <h2 className="text-2xl font-black uppercase tracking-tighter">Pokédex</h2> 
           </div>
-          <button 
-            onClick={() => setShowFilters(!showFilters)}
-            className={`p-2 rounded-xl transition-colors ${showFilters ? 'bg-[#e63946] text-white' : 'bg-[#1a1a2e] text-white/60'}`}
-          >
-            <Filter size={20} />
-          </button>
+          <div className="flex gap-2">
+            <button
+              onClick={() => setShowTypeCalc(true)}
+              className="p-2 rounded-xl transition-colors bg-[#1a1a2e] text-white/60"
+            >
+              <Calculator size={20} />
+            </button>
+            <button 
+              onClick={() => setShowFilters(!showFilters)}
+              className={`p-2 rounded-xl transition-colors ${showFilters ? 'bg-[#e63946] text-white' : 'bg-[#1a1a2e] text-white/60'}`}
+            >
+              <Filter size={20} />
+            </button>
+          </div>
         </div> 
 
         <AnimatePresence>
@@ -427,6 +438,80 @@ export default function PokedexScreen() {
           </motion.div> 
         )} 
       </AnimatePresence> 
-    </div> 
-  ); 
+
+      {/* MODAL CALCOLATORE TIPI */}
+      <AnimatePresence>
+        {showTypeCalc && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-50 bg-black/90 backdrop-blur-sm flex flex-col"
+            onClick={() => { setShowTypeCalc(false); setCalcAttackType(null); }}
+          >
+            <motion.div
+              initial={{ y: '100%' }}
+              animate={{ y: 0 }}
+              exit={{ y: '100%' }}
+              transition={{ type: 'spring', damping: 25 }}
+              className="absolute bottom-0 left-0 right-0 bg-[#0f0f1a] rounded-t-[32px] flex flex-col"
+              style={{ maxHeight: '90vh' }}
+              onClick={e => e.stopPropagation()}
+            >
+              <div className="p-6 pb-2">
+                <div className="flex items-center justify-between mb-4">
+                  <h2 className="text-xl font-black uppercase">Calcolatore Tipi</h2>
+                  <button onClick={() => { setShowTypeCalc(false); setCalcAttackType(null); }}
+                    className="p-2 bg-white/10 rounded-xl"><X size={18} /></button>
+                </div>
+                <p className="text-xs text-white/40 mb-4">Scegli un tipo attaccante per vedere l'efficacia su tutti i tipi difensivi.</p>
+                <div className="flex flex-wrap gap-2 mb-4">
+                  {(Object.keys(TYPE_CHART) as string[]).map(t => (
+                    <button key={t}
+                      onClick={() => setCalcAttackType(calcAttackType === t ? null : t)}
+                      className={`px-3 py-1.5 rounded-xl text-[10px] font-black uppercase border transition-all ${calcAttackType === t ? 'border-[#e63946] bg-[#e63946]/20 text-white' : 'border-white/10 bg-[#1a1a2e] text-white/50'}`}>
+                      {t}
+                    </button>
+                  ))}
+                </div>
+              </div>
+              {calcAttackType && (
+                <div className="overflow-y-auto px-6 pb-8 no-scrollbar flex-1">
+                  {[
+                    { label: '⚡ Superefficace ×2', mult: 2, color: 'text-green-400 border-green-500/30 bg-green-500/10' },
+                    { label: '✅ Neutro ×1', mult: 1, color: 'text-white/60 border-white/10 bg-white/5' },
+                    { label: '🔻 Non molto efficace ×0.5', mult: 0.5, color: 'text-orange-400 border-orange-500/30 bg-orange-500/10' },
+                    { label: '🚫 Nessun effetto ×0', mult: 0, color: 'text-red-400 border-red-500/30 bg-red-500/10' },
+                  ].map(({ label, mult, color }) => {
+                    const chart = TYPE_CHART[calcAttackType as any] ?? {};
+                    const types = (Object.keys(TYPE_CHART) as string[]).filter(defType => {
+                      const val = chart[defType as any] ?? 1;
+                      return val === mult;
+                    });
+                    if (types.length === 0) return null;
+                    return (
+                      <div key={mult} className="mb-4">
+                        <p className={`text-[10px] font-black uppercase tracking-widest mb-2 ${color.split(' ')[0]}`}>{label}</p>
+                        <div className="flex flex-wrap gap-2">
+                          {types.map(t => (
+                            <span key={t} className={`px-3 py-1.5 rounded-xl text-[10px] font-black uppercase border ${color}`}>{t}</span>
+                          ))}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+              {!calcAttackType && (
+                <div className="flex items-center justify-center py-8 text-white/20 text-sm">
+                  Seleziona un tipo attaccante
+                </div>
+              )}
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+    </div>
+  );
 } 

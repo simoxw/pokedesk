@@ -28,9 +28,14 @@ export default function HubScreen() {
     box,
     favorites,
     islandLastCatch,
+    claimStreak,
+    streak,
+    lastStreakDate,
   } = useStore();
 
   const [showMissions, setShowMissions] = useState(false);
+  const [showStreak, setShowStreak] = useState(false);
+  const [streakClaimed, setStreakClaimed] = useState(false);
   const [showIncubator, setShowIncubator] = useState(false);
   const [incubStep, setIncubStep] = useState<'list' | 'pick1' | 'pick2'>('list');
   const [incubPick1, setIncubPick1] = useState<any>(null);
@@ -58,6 +63,11 @@ export default function HubScreen() {
 
   useEffect(() => {
     checkDailyMissions();
+    const today = new Date().toISOString().split('T')[0];
+    if (lastStreakDate !== today) {
+      setShowStreak(true);
+      setStreakClaimed(false);
+    }
     eggs.filter(e => Date.now() >= e.hatchAt).forEach(e => hatchEgg(e.id));
     const fixMoves = async () => {
       for (const pokemon of [...team, ...box]) {
@@ -111,6 +121,16 @@ export default function HubScreen() {
   })();
   const islandHours = Math.floor(msToMidnight / 3600000);
   const islandMins = Math.floor((msToMidnight % 3600000) / 60000);
+
+  const STREAK_REWARDS: Record<number, string> = {
+    1: '3× Pokéball',
+    2: '3× Pozioni',
+    3: '200¢ + 1× Superpozione',
+    5: '500¢ + 1× Caramella Rara',
+    7: '1000¢ + 2× Ultraball + 1× Caramella Rara',
+    14: '2000¢ + 1× Masterball + 2× Caramelle Rare',
+  };
+  const nextStreakReward = STREAK_REWARDS[streak + 1] ?? '100¢';
 
   return (
     <div className="h-full relative overflow-hidden overflow-x-hidden flex flex-col items-center justify-evenly py-3 px-6">
@@ -383,6 +403,62 @@ export default function HubScreen() {
 
         </div>
       </div>
+
+      {/* Modal Streak Giornaliera */}
+      <AnimatePresence>
+        {showStreak && !streakClaimed && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-6"
+          >
+            <motion.div
+              initial={{ scale: 0.8, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.8, opacity: 0 }}
+              transition={{ type: 'spring', stiffness: 400, damping: 25 }}
+              className="w-full max-w-sm bg-gradient-to-b from-[#1a1a2e] to-[#0f0f1a] rounded-3xl p-6 border border-white/10 flex flex-col items-center gap-4"
+            >
+              <motion.div
+                animate={{ rotate: [0, -10, 10, -10, 10, 0] }}
+                transition={{ duration: 0.6, delay: 0.3 }}
+                className="text-6xl"
+              >
+                🔥
+              </motion.div>
+              <div className="text-center">
+                <p className="text-white/50 text-xs font-bold uppercase tracking-widest mb-1">Streak giornaliera</p>
+                <p className="text-5xl font-black text-[#e63946]">{streak + 1}</p>
+                <p className="text-white/40 text-xs mt-1">
+                  {streak === 0 ? 'Primo accesso!' : `${streak} giorni consecutivi!`}
+                </p>
+              </div>
+              <div className="w-full bg-[#e63946]/10 border border-[#e63946]/30 rounded-2xl p-4 text-center">
+                <p className="text-[10px] font-black text-white/40 uppercase tracking-widest mb-1">Ricompensa di oggi</p>
+                <p className="text-sm font-black text-[#e63946]">
+                  {STREAK_REWARDS[streak + 1] ?? '100¢'}
+                </p>
+              </div>
+              {STREAK_REWARDS[streak + 2] && (
+                <p className="text-[10px] text-white/30 italic text-center">
+                  Domani: {STREAK_REWARDS[streak + 2]}
+                </p>
+              )}
+              <button
+                onClick={() => {
+                  claimStreak();
+                  setStreakClaimed(true);
+                  setShowStreak(false);
+                }}
+                className="w-full bg-[#e63946] py-4 rounded-2xl font-black text-lg"
+              >
+                RITIRA RICOMPENSA
+              </button>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       {/* Bottom-sheet Missioni */}
       <AnimatePresence>

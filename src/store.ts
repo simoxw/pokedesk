@@ -60,6 +60,8 @@ interface GameStore extends GameState {
   incrementMasterMission: () => void;
   setIslandLastCatch: (date: string) => void;
   dismissMissionToast: () => void;
+  removePokemon: (id: string) => void;
+  claimStreak: () => void;
 }
 
 const MISSION_POOL = [
@@ -190,6 +192,8 @@ export const useStore = create<GameStore>()(
       masterProgress: { defeatedIds: [] },
       islandLastCatch: null,
       pendingMissionToast: null,
+      streak: 0,
+      lastStreakDate: null,
       currentScreen: 'START_SCREEN',
 
       setScreen: (screen) => set({ currentScreen: screen }),
@@ -736,6 +740,35 @@ export const useStore = create<GameStore>()(
       })),
       setIslandLastCatch: (date) => set({ islandLastCatch: date }),
       dismissMissionToast: () => set({ pendingMissionToast: null }),
+      removePokemon: (id) => set((state) => ({
+        team: state.team.filter(p => p.id !== id),
+        box: state.box.filter(p => p.id !== id),
+      })),
+      claimStreak: () => set((state) => {
+        const today = new Date().toISOString().split('T')[0];
+        if (state.lastStreakDate === today) return {};
+        const yesterday = new Date(Date.now() - 86400000).toISOString().split('T')[0];
+        const newStreak = state.lastStreakDate === yesterday ? state.streak + 1 : 1;
+        const STREAK_REWARDS: Record<number, { coins?: number; items?: Record<string, number> }> = {
+          1:  { items: { pokeball: 3 } },
+          2:  { items: { potion: 3 } },
+          3:  { coins: 200, items: { superpotion: 1 } },
+          5:  { coins: 500, items: { rare_candy: 1 } },
+          7:  { coins: 1000, items: { ultraball: 2, rare_candy: 1 } },
+          14: { coins: 2000, items: { masterball: 1, rare_candy: 2 } },
+        };
+        const reward = STREAK_REWARDS[newStreak] ?? { coins: 100 };
+        const newInventory = { ...state.inventory };
+        for (const [id, qty] of Object.entries(reward.items ?? {})) {
+          newInventory[id] = (newInventory[id] || 0) + qty;
+        }
+        return {
+          streak: newStreak,
+          lastStreakDate: today,
+          coins: state.coins + (reward.coins ?? 0),
+          inventory: newInventory,
+        };
+      }),
       recordBattleWin: () => set((state) => {
         let { battlesWon, nextIsBoss } = state.currentBattlePath;
         if (!nextIsBoss) {
@@ -795,6 +828,8 @@ export const useStore = create<GameStore>()(
         masterProgress: { defeatedIds: [] },
         islandLastCatch: null,
         pendingMissionToast: null,
+        streak: 0,
+        lastStreakDate: null,
       }),
     }),
     {
