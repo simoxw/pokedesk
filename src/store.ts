@@ -62,6 +62,7 @@ interface GameStore extends GameState {
   dismissMissionToast: () => void;
   removePokemon: (id: string) => void;
   claimStreak: () => void;
+  claimPokedexReward: (genId: string) => void;
 }
 
 const MISSION_POOL = [
@@ -190,6 +191,7 @@ export const useStore = create<GameStore>()(
         currentRun: null,
       },
       masterProgress: { defeatedIds: [] },
+      claimedPokedexRewards: [],
       islandLastCatch: null,
       pendingMissionToast: null,
       streak: 0,
@@ -769,6 +771,30 @@ export const useStore = create<GameStore>()(
           inventory: newInventory,
         };
       }),
+      claimPokedexReward: (genId) => set((state) => { 
+        if (state.claimedPokedexRewards.includes(genId)) return {}; 
+        const REWARDS: Record<string, { coins: number; items: Record<string, number> }> = { 
+          'gen1': { coins: 1000, items: { rare_candy: 2, ultraball: 3 } }, 
+          'gen2': { coins: 1000, items: { rare_candy: 2, ultraball: 3 } }, 
+          'gen3': { coins: 1500, items: { rare_candy: 3, masterball: 1 } }, 
+          'gen4': { coins: 1500, items: { rare_candy: 3, masterball: 1 } }, 
+          'gen5': { coins: 2000, items: { rare_candy: 4, masterball: 1 } }, 
+          'gen6': { coins: 2000, items: { rare_candy: 4, masterball: 1 } }, 
+          'gen7': { coins: 2500, items: { rare_candy: 5, masterball: 2 } }, 
+          'gen8': { coins: 2500, items: { rare_candy: 5, masterball: 2 } }, 
+        }; 
+        const reward = REWARDS[genId]; 
+        if (!reward) return {}; 
+        const newInventory = { ...state.inventory }; 
+        Object.entries(reward.items).forEach(([id, qty]) => { 
+          newInventory[id] = (newInventory[id] || 0) + qty; 
+        }); 
+        return { 
+          claimedPokedexRewards: [...state.claimedPokedexRewards, genId], 
+          coins: state.coins + reward.coins, 
+          inventory: newInventory, 
+        }; 
+      }),
       recordBattleWin: () => set((state) => {
         let { battlesWon, nextIsBoss } = state.currentBattlePath;
         if (!nextIsBoss) {
@@ -826,6 +852,7 @@ export const useStore = create<GameStore>()(
         masterBattleTeam: null,
         masterBattleResult: null,
         masterProgress: { defeatedIds: [] },
+        claimedPokedexRewards: [],
         islandLastCatch: null,
         pendingMissionToast: null,
         streak: 0,
@@ -850,6 +877,7 @@ export const useStore = create<GameStore>()(
         state.masterBattleTeam = null;
         state.masterBattleResult = null;
         if (!state.masterProgress) state.masterProgress = { defeatedIds: [] };
+        if (!state.claimedPokedexRewards) state.claimedPokedexRewards = [];
       }
     }
   )

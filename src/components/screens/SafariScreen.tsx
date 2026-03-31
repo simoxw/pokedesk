@@ -72,7 +72,9 @@ export default function SafariScreen() {
           }
         };
 
-        const id = idFromRarity ?? getRandomPokemonId();
+        const id = idFromRarity 
+          ?? getRandomIdByRarity(unlockedGens, 'common') 
+          ?? Math.floor(Math.random() * 72) + 650;
 
         const data = await api.getPokemon(id);
         const species = await api.getSpecies(id);
@@ -121,7 +123,7 @@ export default function SafariScreen() {
     else if (circleSize < 70) bonus = 1.5;
 
     useStore.getState().useItem(ballType);
-    const success = CatchEngine.calculateCatchRate(pokemon.species, ballType, bonus, isShiny);
+    const success = CatchEngine.calculateCatchRate(pokemon.species, ballType, bonus, isShiny, true);
     const newAttempts = attempts + 1;
     setAttempts(newAttempts);
 

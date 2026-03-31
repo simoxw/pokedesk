@@ -151,6 +151,7 @@ export interface GameState {
     currentRun: { regionId: string; trainerIndex: number; defeatedTrainers: number[] } | null;
   };
   masterProgress: { defeatedIds: string[] };
+  claimedPokedexRewards: string[];
   currentScreen: ScreenName;
 }
 
@@ -225,6 +226,7 @@ export interface GameState {
   leagueBattleResult: 'win' | 'lose' | null;
   masterBattleTeam: any[] | null;
   masterBattleResult: 'win' | 'lose' | null;
+  claimedPokedexRewards: string[];
   currentScreen: ScreenName;
 }
 

@@ -28,7 +28,7 @@ function extractEvolutions(chain: any): { name: string; id: number }[] {
 } 
  
 export default function PokedexScreen() { 
-  const { pokedex, setScreen } = useStore(); 
+  const { pokedex, setScreen, claimPokedexReward, claimedPokedexRewards, inventory, coins } = useStore(); 
   const [selected, setSelected] = useState<any>(null); 
   const [loadingModal, setLoadingModal] = useState(false); 
   const [tab, setTab] = useState<'info' | 'stats' | 'moves' | 'evo'>('info'); 
@@ -38,6 +38,7 @@ export default function PokedexScreen() {
   const [searchQuery, setSearchQuery] = useState('');
   const [showFilters, setShowFilters] = useState(false);
   const [showTypeCalc, setShowTypeCalc] = useState(false);
+  const [showRegional, setShowRegional] = useState(false);
   const [calcAttackType, setCalcAttackType] = useState<string | null>(null);
 
   const GEN_RANGES = [
@@ -93,6 +94,15 @@ export default function PokedexScreen() {
   const caught = Object.values(pokedex).filter(s => s === 'caught').length;
   const seen = Object.values(pokedex).length; // tutte le specie registrate (seen + caught)
  
+  const regionalStats = GEN_RANGES.map(gen => { 
+    const total = gen.range[1] - gen.range[0] + 1; 
+    const caughtInGen = Array.from({ length: total }, (_, i) => gen.range[0] + i) 
+      .filter(id => pokedex[id] === 'caught').length; 
+    const pct = Math.round((caughtInGen / total) * 100); 
+    const flags: Record<number, string> = { 1: '🗾', 2: '🌸', 3: '🌊', 4: '❄️', 5: '🗽', 6: '🗼', 7: '🌺', 8: '⚔️' };
+    return { ...gen, caughtInGen, total, pct, flag: flags[gen.id] }; 
+  });
+
   const filteredEntries = Object.entries(pokedex)
     .map(([id, status]) => ({ id: Number(id), status }))
     .filter(({ id }) => {
@@ -179,6 +189,71 @@ export default function PokedexScreen() {
             <div className="text-[10px] text-white/40 font-bold uppercase">Totali</div> 
           </div> 
         </div> 
+
+        {/* COMPLETAMENTO REGIONALE */}
+        <div className="mt-4">
+          <button
+            onClick={() => setShowRegional(!showRegional)}
+            className="w-full flex items-center justify-between p-3 bg-[#1a1a2e] border border-white/5 rounded-2xl transition-all active:scale-[0.98]"
+          >
+            <span className="text-[10px] font-black uppercase tracking-widest text-white/60 flex items-center gap-2">
+              📊 PER REGIONE
+            </span>
+            <span className={`transition-transform ${showRegional ? 'rotate-180' : ''}`}>▼</span>
+          </button>
+          
+          <AnimatePresence>
+            {showRegional && (
+              <motion.div
+                initial={{ height: 0, opacity: 0 }}
+                animate={{ height: 'auto', opacity: 1 }}
+                exit={{ height: 0, opacity: 0 }}
+                className="overflow-hidden mt-2"
+              >
+                <div className="bg-[#1a1a2e]/50 rounded-2xl p-3 border border-white/5 space-y-3">
+                  {regionalStats.map(gen => {
+                    const isClaimed = claimedPokedexRewards.includes(`gen${gen.id}`);
+                    const canClaim = gen.pct === 100 && !isClaimed;
+                    return (
+                      <div key={gen.id} className="space-y-1.5">
+                        <div className="flex items-center justify-between text-[10px] font-bold">
+                          <span className="flex items-center gap-2">
+                            <span>{gen.flag}</span>
+                            <span className="text-white/60">{gen.label}</span>
+                          </span>
+                          <span className="text-white/40">{gen.caughtInGen}/{gen.total} ({gen.pct}%)</span>
+                        </div>
+                        <div className="flex items-center gap-3">
+                          <div className="flex-1 h-1.5 bg-white/5 rounded-full overflow-hidden">
+                            <motion.div
+                              initial={{ width: 0 }}
+                              animate={{ width: `${gen.pct}%` }}
+                              className={`h-full rounded-full ${
+                                gen.pct >= 70 ? 'bg-green-500' : gen.pct >= 40 ? 'bg-yellow-500' : 'bg-red-500'
+                              }`}
+                            />
+                          </div>
+                          {isClaimed ? (
+                            <span className="text-[9px] font-black uppercase text-green-500/80 px-2 py-0.5 bg-green-500/10 rounded-lg">
+                              ✓ RITIRATO
+                            </span>
+                          ) : canClaim ? (
+                            <button
+                              onClick={() => claimPokedexReward(`gen${gen.id}`)}
+                              className="text-[9px] font-black uppercase bg-[#e63946] text-white px-2 py-1 rounded-lg animate-pulse"
+                            >
+                              🎁 RITIRA
+                            </button>
+                          ) : null}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
+        </div>
       </div> 
  
       {/* Griglia — solo catturati */} 
