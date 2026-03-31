@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { ArrowLeft, Trash2, Info, ArrowUpDown } from 'lucide-react';
 import { useStore } from '../../store';
 import PokemonDetailsModal from '../ui/PokemonDetailsModal';
+import TypeBadge from '../ui/TypeBadge';
 
 function getExpForLevel(growthRate: string, level: number): number { 
   if (level >= 100) return 0; 
@@ -38,11 +39,18 @@ function PokemonSlot({ pokemon, index, onRemove, onSelect, onUseCandy, onCandyCo
       }`}> 
         {index + 1} 
       </div> 
-      <img
-        src={`https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/${pokemon.pokemonId}.png`}
-        alt={pokemon.name}
-        className="w-16 h-16 object-contain"
-      />
+      <div className="relative">
+        <div className="absolute top-[-25px] left-[-26px] flex gap-1 z-10">
+          {pokemon.types.map((type: any) => (
+            <TypeBadge key={type} type={type} small />
+          ))}
+        </div>
+        <img
+          src={`https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/${pokemon.pokemonId}.png`}
+          alt={pokemon.name}
+          className="w-16 h-16 object-contain"
+        />
+      </div>
       <div className="flex-1 min-w-0">
         <div className="flex items-center gap-2">
           <span className="font-black text-sm uppercase truncate">
