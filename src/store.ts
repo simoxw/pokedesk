@@ -173,7 +173,7 @@ export const useStore = create<GameStore>()(
       expShareActive: false,
       pendingMedalUnlock: null,
       pendingEvolution: null,
-      pendingNewMove: null,
+      pendingNewMoveQueue: [],
       eggs: [],
       favorites: [],
       friendBattleTeam: null,
@@ -252,7 +252,7 @@ export const useStore = create<GameStore>()(
                   if (currentMoves.length < 4) {
                     useStore.getState().updatePokemon(p.id, { moves: [...currentMoves, newMove] });
                   } else {
-                    set({ pendingNewMove: { pokemonId: p.id, move: newMove } });
+                    set((state) => ({ pendingNewMoveQueue: [...(state.pendingNewMoveQueue ?? []), { pokemonId: p.id, move: newMove }] }));
                     break; // Only present the first one as pending
                   }
                 }
@@ -331,7 +331,7 @@ export const useStore = create<GameStore>()(
                   if (currentMoves.length < 4) {
                     useStore.getState().updatePokemon(p.id, { moves: [...currentMoves, newMove] });
                   } else {
-                    set({ pendingNewMove: { pokemonId: p.id, move: newMove } });
+                    set((state) => ({ pendingNewMoveQueue: [...(state.pendingNewMoveQueue ?? []), { pokemonId: p.id, move: newMove }] }));
                     break; // Only present the first one as pending
                   }
                 }
@@ -494,14 +494,14 @@ export const useStore = create<GameStore>()(
                   if (currentMoves.length < 4) {
                     useStore.getState().updatePokemon(p.id, { moves: [...currentMoves, move] });
                   } else {
-                    set({ pendingNewMove: { pokemonId: p.id, move: move } });
+                    set((state) => ({ pendingNewMoveQueue: [...(state.pendingNewMoveQueue ?? []), { pokemonId: p.id, move: move }] }));
                     break; // Only present the first one as pending
                   }
                 }
 
                 // Evolution check only for final level
                 const evolution = await api.getEvolutionTarget(speciesData, newLevel);
-                if (evolution && !useStore.getState().pendingEvolution && !useStore.getState().pendingNewMove) {
+                if (evolution && !useStore.getState().pendingEvolution && useStore.getState().pendingNewMoveQueue.length === 0) {
                   try {
                     const newPokemonData = await api.getPokemon(evolution.newId);
                     const newTypes = newPokemonData.types.map((t: any) => t.type.name);
@@ -555,7 +555,7 @@ export const useStore = create<GameStore>()(
         }; 
       }), 
       dismissEvolution: () => set({ pendingEvolution: null }),
-      dismissNewMove: () => set({ pendingNewMove: null }),
+      dismissNewMove: () => set((state) => ({ pendingNewMoveQueue: state.pendingNewMoveQueue.slice(1) })),
       dismissMedalUnlock: () => set({ pendingMedalUnlock: null }),
       replaceMove: (pokemonId, oldMoveId, newMove) => set((state) => {
         const updatePkmn = (p: Pokemon) => {
@@ -572,7 +572,7 @@ export const useStore = create<GameStore>()(
         return {
           team: state.team.map(updatePkmn),
           box: state.box.map(updatePkmn),
-          pendingNewMove: null
+          pendingNewMoveQueue: (state.pendingNewMoveQueue ?? []).slice(1)
         };
       }),
       updateSettings: (updates) => set((state) => ({ settings: { ...state.settings, ...updates } })),
@@ -817,7 +817,7 @@ export const useStore = create<GameStore>()(
         settings: { audio: true, notifications: true },
         expShareActive: false,
         pendingEvolution: null,
-        pendingNewMove: null,
+        pendingNewMoveQueue: [],
         eggs: [],
         favorites: [],
         friendBattleTeam: null,
@@ -843,7 +843,7 @@ export const useStore = create<GameStore>()(
         state.team = state.team.map(clampHp);
         state.box = state.box.map(clampHp);
         state.pendingEvolution = null;
-        state.pendingNewMove = null;
+        state.pendingNewMoveQueue = [];
         if (!state.eggs) state.eggs = [];
         state.leagueBattleTeam = null;
         state.leagueBattleResult = null;

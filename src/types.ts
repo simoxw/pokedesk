@@ -132,7 +132,7 @@ export interface GameState {
   expShareActive: boolean;
   pendingMedalUnlock: Medal | null;
   pendingEvolution: { pokemonId: string; newPokemonId: number; newName: string; newTypes?: PokemonType[]; newBaseStats?: Stats } | null;
-  pendingNewMove: { pokemonId: string; move: Move } | null;
+  pendingNewMoveQueue: { pokemonId: string; move: Move }[];
   eggs: Egg[];
   favorites: string[];
   friendBattleTeam: any[] | null;
@@ -194,10 +194,10 @@ export interface GameState {
     newTypes?: PokemonType[];
     newBaseStats?: Stats;
   } | null;
-  pendingNewMove: {
+  pendingNewMoveQueue: {
     pokemonId: string;
     move: Move;
-  } | null;
+  }[];
   eggs: Egg[];
   favorites: string[];
   friendBattleTeam: any[] | null;

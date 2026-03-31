@@ -300,10 +300,34 @@ export const api = {
     }
   },
 
-  async getMovesLearnedAtLevel(pokemonData: any, level: number): Promise<Move[]> {
-    const candidateMoves = pokemonData.moves.filter((m: any) =>
-      m.version_group_details.some((v: any) => v.move_learn_method.name === 'level-up' && v.level_learned_at === level)
-    );
+  async getMovesLearnedAtLevel(pokemonData: any, level: number): Promise<Move[]> { 
+    const BANNED_MOVES_LEVELUP = new Set([ 
+      'protect','detect','endure','substitute','splash','celebrate','hold-hands', 
+      'confuse-ray','swagger','flatter','supersonic','teeter-dance','attract','captivate', 
+      'sunny-day','rain-dance','sandstorm','hail','snow', 
+      'grassy-terrain','misty-terrain','electric-terrain','psychic-terrain','gravity', 
+      'magic-room','wonder-room','mud-sport','water-sport','trick-room', 
+      'spikes','stealth-rock','toxic-spikes','sticky-web', 
+      'whirlwind','roar','mean-look','block','spider-web', 
+      'baton-pass','u-turn','volt-switch','parting-shot', 
+      'reflect','light-screen','aurora-veil','safeguard','mist','tailwind','lucky-chant', 
+      'healing-wish','lunar-dance','helping-hand','follow-me','rage-powder','spotlight', 
+      'transform','mirror-move','mimic','sketch','copycat','me-first','assist','metronome', 
+      'sleep-talk','snore','nature-power','instruct','conversion','conversion2','camouflage', 
+      'sonic-boom','dragon-rage','night-shade','seismic-toss','super-fang','psywave', 
+      'fissure','guillotine','horn-drill','sheer-cold', 
+      'self-destruct','explosion','memento','final-gambit','destiny-bond','counter', 
+      'mirror-coat','metal-burst','bide','focus-punch','shell-trap','endeavor','pain-split', 
+      'stockpile','swallow','spit-up','future-sight','doom-desire', 
+      'haze','topsy-turvy','trick','switcheroo','fling','bestow','embargo','heal-block', 
+      'perish-song','yawn','imprison','frustration','return','beat-up', 
+      'leech-seed','ingrain','aqua-ring','curse','nightmare','telekinesis','magnet-rise', 
+      'autotomize','charge','recycle','belch','false-swipe','wish','struggle','teleport', 
+    ]); 
+    const candidateMoves = pokemonData.moves.filter((m: any) => 
+      !BANNED_MOVES_LEVELUP.has(m.move.name) && 
+      m.version_group_details.some((v: any) => v.move_learn_method.name === 'level-up' && v.level_learned_at === level) 
+    ); 
 
     if (candidateMoves.length === 0) return [];
 

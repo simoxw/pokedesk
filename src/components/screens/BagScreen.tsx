@@ -164,7 +164,30 @@ export default function BagScreen() {
                     setLoadingTm(true); 
                     try { 
                       const data = await api.getPokemon(p.pokemonId); 
-                      const BANNED_TM = new Set(['protect','detect','substitute','attract','swagger','taunt','encore','torment','disable','snatch','thief','trick','switcheroo','embargo','sleep-talk','baton-pass','u-turn','volt-switch', 'self-destruct', 'explosion', 'wide-guard', 'quick-guard']); 
+                      const BANNED_TM = new Set([ 
+                        'protect','detect','endure','substitute','splash','celebrate','hold-hands', 
+                        'confuse-ray','swagger','flatter','supersonic','teeter-dance','attract','captivate', 
+                        'taunt','encore','torment','disable','snatch','thief','trick','switcheroo','embargo', 
+                        'sleep-talk','baton-pass','u-turn','volt-switch','parting-shot', 
+                        'sunny-day','rain-dance','sandstorm','hail','snow', 
+                        'grassy-terrain','misty-terrain','electric-terrain','psychic-terrain','gravity', 
+                        'magic-room','wonder-room','mud-sport','water-sport','trick-room', 
+                        'spikes','stealth-rock','toxic-spikes','sticky-web', 
+                        'whirlwind','roar','mean-look','block','spider-web', 
+                        'reflect','light-screen','aurora-veil','safeguard','mist','tailwind','lucky-chant', 
+                        'healing-wish','lunar-dance','helping-hand','follow-me','rage-powder','spotlight', 
+                        'transform','mirror-move','mimic','sketch','copycat','me-first','assist','metronome', 
+                        'nature-power','instruct','conversion','conversion2','camouflage', 
+                        'sonic-boom','dragon-rage','night-shade','seismic-toss','super-fang','psywave', 
+                        'fissure','guillotine','horn-drill','sheer-cold', 
+                        'self-destruct','explosion','wide-guard','quick-guard','memento','final-gambit', 
+                        'destiny-bond','counter','mirror-coat','metal-burst','bide','focus-punch', 
+                        'shell-trap','endeavor','pain-split','stockpile','swallow','spit-up', 
+                        'future-sight','doom-desire','haze','topsy-turvy','fling','bestow','heal-block', 
+                        'perish-song','yawn','imprison','frustration','return','beat-up', 
+                        'leech-seed','ingrain','aqua-ring','curse','nightmare','telekinesis','magnet-rise', 
+                        'autotomize','charge','recycle','belch','false-swipe','wish','struggle','teleport', 
+                      ]); 
                       
                       let candidateMoves = [];
                       if (pendingItem.id === 'tm') {
