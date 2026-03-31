@@ -574,6 +574,17 @@ export default function BattleScreen() {
     }
     // Priorità 2: mossa superefficace
     else {
+      // Priorità 1.5: Cura se HP < 50%
+      const HEAL_MOVES: Record<string, number> = {
+        '105': 0.5, '135': 0.5, '208': 0.5, '303': 0.5, '355': 0.5,
+        '236': 0.5, '235': 0.5, '234': 0.5, '505': 0.5, '392': 0.25,
+        '588': 0.5, '456': 0.5, '273': 0.5, '156': 0.5
+      };
+      const healMove = validMoves.find(m => 
+        (HEAL_MOVES[m.id] || m.name.toLowerCase().includes('recup')) && 
+        liveEnemy.currentHp / liveEnemy.maxHp < 0.5
+      );
+
       const superEffective = validMoves.filter((m: any) =>
         m.category !== 'status' &&
         BattleEngine.getTypeEffectiveness(m.type, currentPlayerPkmn.types) >= 2
@@ -587,7 +598,10 @@ export default function BattleScreen() {
         !isImmuneToStatus(currentPlayerPkmn.types, m.statusEffect)
       );
 
-      if (superEffective.length > 0 && Math.random() < 0.75) {
+      if (healMove && Math.random() < 0.7) {
+        // 70% chance di curarsi se disponibile e vita bassa
+        enemyMove = healMove;
+      } else if (superEffective.length > 0 && Math.random() < 0.75) {
         // 75% chance di usare superefficace se disponibile
         enemyMove = superEffective[Math.floor(Math.random() * superEffective.length)];
       } else if (statusMoves.length > 0 && liveEnemy.currentHp / liveEnemy.maxHp > 0.5 && Math.random() < 0.40) {
@@ -666,6 +680,22 @@ export default function BattleScreen() {
     }
     // --- FINE CHECK STATUS NEMICO ---
 
+    // Accuracy Check per il nemico
+    const enemyAccStage = enemyStages.accuracy - playerStages.evasion;
+    const enemyAccMultiplier = enemyAccStage >= 0 ? (3 + enemyAccStage) / 3 : 3 / (3 - enemyAccStage);
+    const enemyFinalAccuracy = (enemyMove.accuracy || 100) * enemyAccMultiplier;
+
+    if (enemyMove.category !== 'status' && enemyMove.accuracy && enemyMove.accuracy < 100) { 
+      if (Math.random() * 100 >= enemyFinalAccuracy) { 
+        addLog(`${liveEnemy.name} usa ${enemyMove.name}!`); 
+        addLog('Ma ha mancato!'); 
+        await new Promise(r => setTimeout(r, 800)); 
+        setTurn('player'); 
+        setIsAnimating(false); 
+        return; 
+      } 
+    }
+
     // Check Flinch
     if (playerFlinch) {
       addLog(`${currentPlayerPkmn.name} ha tentennato e non può muoversi!`);
@@ -693,14 +723,50 @@ export default function BattleScreen() {
         spDef: applyStage(currentPlayerPkmn.stats.spDef, playerStages.spDef),
       }
     };
-    const enemyDamage = BattleEngine.calculateDamage(effEnemyAtk as any, effPlayerDef as any, enemyMove, false);
+    const isEnemyCrit = Math.random() < 0.06;
+    const enemyDamage = BattleEngine.calculateDamage(effEnemyAtk as any, effPlayerDef as any, enemyMove, isEnemyCrit);
     setLastEnemyMove({ name: enemyMove.name, type: enemyMove.type });
     addLog(`${liveEnemy.name} usa ${enemyMove.name}!${enemyDamage > 0 ? ` (${enemyDamage} danni)` : ''}`);
+    if (isEnemyCrit && enemyDamage > 0) addLog('Brutto colpo!');
     const typeMultiplier = BattleEngine.getTypeEffectiveness(enemyMove.type, currentPlayerPkmn.types);
     const effLabel = BattleEngine.getTypeEffectivenessLabel(typeMultiplier);
     if (effLabel && (enemyDamage > 0 || typeMultiplier === 0)) addLog(effLabel);
     if (typeMultiplier >= 2) playSound('hitSuper');
     else if (typeMultiplier > 0 && typeMultiplier < 1) playSound('hitWeak');
+
+    // --- HEALING NEMICO ---
+    const ENEMY_HEAL_MOVES: Record<string, number> = {
+      '105': 0.5, '135': 0.5, '208': 0.5, '303': 0.5, '355': 0.5,
+      '236': 0.5, '235': 0.5, '234': 0.5, '505': 0.5, '392': 0.25,
+      '588': 0.5, '456': 0.5, '273': 0.5, '156': 0.5
+    };
+    const enemyHealRatio = ENEMY_HEAL_MOVES[enemyMove.id] ?? (enemyMove.name.toLowerCase().includes('recup') ? 0.5 : 0);
+    if (enemyHealRatio > 0 || (enemyMove.category === 'status' && enemyMove.name.toLowerCase().includes('riposo'))) {
+      const healed = Math.floor(liveEnemy.maxHp * (enemyMove.id === '156' ? 1.0 : enemyHealRatio));
+      const newEnemyHp = Math.min(liveEnemy.maxHp, liveEnemy.currentHp + healed);
+      const actualHeal = newEnemyHp - liveEnemy.currentHp;
+      setEnemy((prev: any) => {
+        const next = { ...prev, currentHp: newEnemyHp };
+        enemyRef.current = next;
+        return next;
+      });
+      addLog(`${liveEnemy.name} recupera ${actualHeal} HP!`);
+      if (enemyMove.id === '156') {
+        setEnemy((prev: any) => {
+          const next = { ...prev, status: 'SLP' };
+          enemyRef.current = next;
+          return next;
+        });
+        addLog(`${liveEnemy.name} si è addormentato!`);
+      }
+    }
+
+    // Check Flinch inflitto dal nemico al giocatore
+    if (enemyMove.meta?.flinch_chance > 0) {
+      if (Math.random() * 100 < enemyMove.meta.flinch_chance) {
+        setPlayerFlinch(true);
+      }
+    }
 
     // Applica effetto di stato nemico 
     const statusChance = (!enemyMove.effectChance || enemyMove.effectChance === 0) ? 100 : enemyMove.effectChance;
@@ -947,6 +1013,23 @@ export default function BattleScreen() {
   
     // --- STATUS MOVES che applicano stato al nemico --- 
     if (move.category === 'status') { 
+      // Haze: resetta statistiche 
+      if (move.id === '114' || move.name.toLowerCase().includes('nube')) { 
+        setPlayerStages({ attack: 0, defense: 0, spAtk: 0, spDef: 0, speed: 0, accuracy: 0, evasion: 0 }); 
+        setEnemyStages({ attack: 0, defense: 0, spAtk: 0, spDef: 0, speed: 0, accuracy: 0, evasion: 0 }); 
+        addLog('Tutte le modifiche alle statistiche sono state resettate!'); 
+        return {}; 
+      } 
+ 
+      // Aromatherapy / Heal Bell: cura il team 
+      if (['312', '215'].includes(move.id) || move.name.toLowerCase().includes('aromaterapia') || move.name.toLowerCase().includes('rintoccasana')) { 
+        team.forEach(p => { 
+          if (p.status) updatePokemon(p.id, { status: null }); 
+        }); 
+        addLog('Tutta la squadra è stata guarita dagli stati alterati!'); 
+        return {}; 
+      } 
+
       // Usa i dati veri dalla mossa (move.stat_changes o move.meta.stat_changes). Se non ci sono, usa fallback per alcuni casi (es: Barriera).
       let statChangesData: Array<{ change: number; stat: { name: string } }> =
         move.stat_changes ?? move.meta?.stat_changes ?? [];
@@ -967,6 +1050,20 @@ export default function BattleScreen() {
           statChangesData = [{ change: 1, stat: { name: 'defense' } }];
         else if (id === '106' || lowerName.includes('rafforzamento') || lowerName.includes('harden')) 
           statChangesData = [{ change: 1, stat: { name: 'defense' } }];
+        else if (id === '104' || lowerName.includes('doppioteam') || lowerName.includes('double team'))
+          statChangesData = [{ change: 1, stat: { name: 'evasion' } }];
+        else if (id === '28' || lowerName.includes('turbosabbia') || lowerName.includes('sand attack'))
+          statChangesData = [{ change: -1, stat: { name: 'accuracy' } }];
+        else if (id === '116' || lowerName.includes('focalenergia') || lowerName.includes('focus energy'))
+          statChangesData = [{ change: 2, stat: { name: 'accuracy' } }]; // Simuliamo il crit con accuracy per ora o lasciamo così
+        else if (id === '74' || lowerName.includes('agilità') || lowerName.includes('agility'))
+          statChangesData = [{ change: 2, stat: { name: 'speed' } }];
+        else if (id === '14' || lowerName.includes('danzaspada') || lowerName.includes('swords dance'))
+          statChangesData = [{ change: 2, stat: { name: 'attack' } }];
+        else if (id === '347' || lowerName.includes('calmamente') || lowerName.includes('calm mind'))
+          statChangesData = [{ change: 1, stat: { name: 'special-attack' } }, { change: 1, stat: { name: 'special-defense' } }];
+        else if (id === '349' || lowerName.includes('dragodanza') || lowerName.includes('dragon dance'))
+          statChangesData = [{ change: 1, stat: { name: 'attack' } }, { change: 1, stat: { name: 'speed' } }];
       }
       const STAT_MAP: Record<string, string> = {
         attack: 'attack',
