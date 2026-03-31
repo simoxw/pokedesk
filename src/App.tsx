@@ -35,7 +35,6 @@ export default function App() {
     settings,
     pendingMedalUnlock,
     pendingEvolution, 
-    pendingNewMoveQueue, 
     team, 
     box, 
     confirmEvolution, 
@@ -46,6 +45,7 @@ export default function App() {
     pendingMissionToast,
     dismissMissionToast,
   } = useStore();
+  const pendingNewMoveQueue = useStore(state => state.pendingNewMoveQueue);
   const pendingNewMove = pendingNewMoveQueue?.[0] ?? null;
   const { getTimeToNextTick } = useTickSystem();
   const [updateAvailable, setUpdateAvailable] = useState(false);

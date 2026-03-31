@@ -480,7 +480,9 @@ export default function BagScreen() {
                       if (tmPokemon.moves.length < 4) { 
                         updatePokemon(tmPokemon.id, { moves: [...tmPokemon.moves, move] }); 
                       } else { 
-                        useStore.setState({ pendingNewMove: { pokemonId: tmPokemon.id, move } }); 
+                        useStore.setState((state) => ({ 
+                          pendingNewMoveQueue: [...(state.pendingNewMoveQueue ?? []), { pokemonId: tmPokemon.id, move }] 
+                        })); 
                       } 
                       if (pendingItem) useItem(pendingItem.id); 
                       setTmMoves([]); 
