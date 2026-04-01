@@ -5,6 +5,7 @@ import { BattleEngine } from '../../BattleEngine';
 import { CatchEngine } from '../../CatchEngine';
 import { motion, AnimatePresence } from 'motion/react';
 import TypeBadge from '../ui/TypeBadge';
+import PokemonSprite from '../ui/PokemonSprite';
 import {
   ArrowLeft, Search, X, Copy, ArrowLeftRight,
   SlidersHorizontal, Sparkles, Check, Users, Shuffle
@@ -317,8 +318,9 @@ export default function TradeScreen() {
                     <span className="text-[8px] text-white/20 font-mono self-end">
                       #{pkmn.pokemonId.toString().padStart(3, '0')}
                     </span>
-                    <img
-                      src={`https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/${pkmn.isShiny ? 'shiny/' : ''}${pkmn.pokemonId}.png`}
+                    <PokemonSprite
+                      pokemonId={pkmn.pokemonId}
+                      isShiny={pkmn.isShiny}
                       className="w-14 h-14 object-contain"
                       alt={pkmn.name}
                     />
@@ -499,7 +501,7 @@ export default function TradeScreen() {
                         onClick={() => setWonderPkmn(p)}
                         className={`relative w-full bg-[#1a1a2e] rounded-xl border flex flex-col items-center p-2 transition-all ${wonderPkmn?.id === p.id ? 'border-[#e63946] ring-1 ring-[#e63946]/40' : 'border-white/5'}`}>
                         {p.isShiny && <Sparkles size={8} className="absolute top-1 right-1 text-yellow-400" />}
-                        <img src={`https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/${p.isShiny ? 'shiny/' : ''}${p.pokemonId}.png`}
+                        <PokemonSprite pokemonId={p.pokemonId} isShiny={p.isShiny}
                           className="w-14 h-14 object-contain" />
                         <span className="text-[9px] font-black uppercase truncate w-full text-center">{p.name}</span>
                         <span className="text-[8px] text-white/30">Lv.{p.level}</span>
@@ -630,8 +632,9 @@ export default function TradeScreen() {
             className="flex-shrink-0 mx-4 mb-4 bg-[#1a1a2e] border border-white/10 rounded-2xl p-4"
           >
             <div className="flex items-center gap-3 mb-3">
-              <img
-                src={`https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/${selectedPkmn.isShiny ? 'shiny/' : ''}${selectedPkmn.pokemonId}.png`}
+              <PokemonSprite
+                pokemonId={selectedPkmn.pokemonId}
+                isShiny={selectedPkmn.isShiny}
                 className="w-12 h-12 object-contain"
               />
               <div className="flex-1 min-w-0">

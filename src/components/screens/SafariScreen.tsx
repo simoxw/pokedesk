@@ -8,6 +8,7 @@ import { Sparkles, ArrowLeft } from 'lucide-react';
 import confetti from 'canvas-confetti';
 import { pickRarityTier, getRandomIdByRarity, RARITY, RarityTier } from '../../rarityTable';
 import { useSoundEffects } from '../../useSoundEffects';
+import PokemonSprite from '../ui/PokemonSprite';
 
 export default function SafariScreen() {
   const { consumeSafariCharge, addPokemon, setScreen, medals, team, incrementStat, addItem, inventory, updatePokedex, settings } = useStore();
@@ -302,15 +303,19 @@ export default function SafariScreen() {
             animate={catching ? { scale: [1, 0.8, 1] } : { y: [0, -10, 0] }}
             transition={catching ? { duration: 0.4 } : { duration: 3, repeat: Infinity }}
             src={isShiny 
-              ? (pokemon.sprites.other?.['official-artwork']
-                ?.front_shiny 
-                || pokemon.sprites.other?.['official-artwork']
-                ?.front_default 
+              ? (pokemon.sprites.other?.['official-artwork']?.front_shiny 
+                || pokemon.sprites.other?.['official-artwork']?.front_default 
                 || pokemon.sprites.front_shiny)
-              : (pokemon.sprites.other?.['official-artwork']
-                ?.front_default 
+              : (pokemon.sprites.other?.['official-artwork']?.front_default 
                 || pokemon.sprites.front_default)}
             className="w-80 h-80 object-contain drop-shadow-2xl"
+            onError={(e) => {
+              const img = e.target as HTMLImageElement;
+              if (!img.dataset.fallback) {
+                img.dataset.fallback = '1';
+                img.src = `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/${pokemon?.id}.png`;
+              }
+            }}
           />
           {isShiny && !catching && (
             <motion.div

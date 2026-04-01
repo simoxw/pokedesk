@@ -8,6 +8,7 @@ import { Sword, Backpack, ArrowLeftRight, Shield, ArrowLeft, X, Heart } from 'lu
 import HPBar from '../ui/HPBar';
 import { useSoundEffects } from '../../useSoundEffects';
 import TypeBadge from '../ui/TypeBadge';
+import PokemonSprite from '../ui/PokemonSprite';
 import confetti from 'canvas-confetti';
 
 export default function BattleScreen() {
@@ -1778,6 +1779,13 @@ export default function BattleScreen() {
               }
               src={enemy?.sprites?.front_default ?? `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/${enemy?.pokemonId}.png`}
               className="w-56 h-56 object-contain drop-shadow-2xl"
+              onError={(e) => {
+                const img = e.target as HTMLImageElement;
+                if (!img.dataset.fallback) {
+                  img.dataset.fallback = '1';
+                  img.src = `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/${enemy?.pokemonId}.png`;
+                }
+              }}
             />
             {lastEnemyMove && (
               <div className="absolute top-full left-1/2 mt-1 -translate-x-1/2 flex items-center gap-1 bg-black/60 rounded-full px-2 py-0.5 whitespace-nowrap">
@@ -1803,6 +1811,13 @@ export default function BattleScreen() {
             transition={{ duration: 0.4 }}
             src={`https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/back/${playerPkmn?.isShiny ? 'shiny/' : ''}${playerPkmn?.pokemonId}.png`}
             className="w-52 h-52 object-contain drop-shadow-2xl shrink-0"
+            onError={(e) => {
+              const img = e.target as HTMLImageElement;
+              if (!img.dataset.fallback) {
+                img.dataset.fallback = '1';
+                img.src = `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/${playerPkmn?.pokemonId}.png`;
+              }
+            }}
           />
           <div className="flex-1 bg-black/40 backdrop-blur rounded-2xl p-3 mb-1 min-w-0 w-full">
             <div className="flex flex-col gap-0.5">

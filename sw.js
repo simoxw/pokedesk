@@ -1,4 +1,4 @@
-const CACHE_NAME = 'pokedesk-v3';
+const CACHE_NAME = 'pokedesk-v4';
 const ASSETS_TO_CACHE = [
   'index.html',
   'manifest.json',
@@ -42,7 +42,28 @@ self.addEventListener('fetch', (event) => {
 
   const requestIsSameOrigin = new URL(event.request.url).origin === self.location.origin;
 
+  const SPRITE_HOSTS = ['raw.githubusercontent.com', 'play.pokemonshowdown.com'];
+  const isSprite = SPRITE_HOSTS.includes(new URL(event.request.url).hostname);
+
   if (!requestIsSameOrigin) {
+    if (isSprite) {
+      event.respondWith((async () => {
+        const cached = await caches.match(event.request);
+        if (cached) return cached;
+        try {
+          const response = await fetch(event.request);
+          if (response && response.ok) {
+            const cache = await caches.open(CACHE_NAME);
+            cache.put(event.request, response.clone());
+            return response;
+          }
+          throw new Error('not ok');
+        } catch {
+          return new Response('', { status: 404 });
+        }
+      })());
+      return;
+    }
     event.respondWith(
       fetch(event.request).catch(async () => {
         const cached = await caches.match(event.request);

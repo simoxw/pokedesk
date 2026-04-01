@@ -4,6 +4,7 @@ import { api } from '../../api';
 import { BattleEngine } from '../../BattleEngine';
 import { motion, AnimatePresence } from 'motion/react';
 import { Zap, Target, Sword, TreePine, X } from 'lucide-react';
+import PokemonSprite from '../ui/PokemonSprite';
 
 export default function HubScreen() {
   const { 
@@ -226,8 +227,8 @@ export default function HubScreen() {
               {team.map(pkmn => (
                 <div key={pkmn.id} className="flex flex-col items-center gap-1 flex-1 min-w-0">
                   <div className="relative">
-                    <img 
-                      src={`https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/${pkmn.pokemonId}.png`} 
+                    <PokemonSprite 
+                      pokemonId={pkmn.pokemonId}
                       alt={pkmn.name}
                       className="w-12 h-12 object-contain"
                     />
@@ -763,7 +764,7 @@ export default function HubScreen() {
                             compatible ? 'border-white/10 bg-white/5' : 'border-white/5 opacity-30 cursor-not-allowed'
                           }`}
                         >
-                          <img src={`https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/${p.pokemonId}.png`} className="w-10 h-10 object-contain" />
+                          <PokemonSprite pokemonId={p.pokemonId} className="w-10 h-10 object-contain" />
                           <div className="text-left flex-1 min-w-0">
                             <div className="flex items-center gap-2">
                               <p className="font-black text-sm uppercase truncate">{p.name}</p>
@@ -803,8 +804,8 @@ export default function HubScreen() {
                   {incubPreview && (
                     <>
                       <div className="flex items-center gap-3">
-                        <img
-                          src={`https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/${incubPreview.pokemonId}.png`}
+                        <PokemonSprite
+                          pokemonId={incubPreview.pokemonId}
                           className="w-14 h-14 object-contain"
                         />
                         <div>

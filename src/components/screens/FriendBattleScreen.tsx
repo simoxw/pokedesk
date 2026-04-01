@@ -3,6 +3,7 @@ import { useStore } from '../../store';
 import { motion, AnimatePresence } from 'motion/react';
 import { ArrowLeft, Copy, Check, Sword, Users } from 'lucide-react';
 import TypeBadge from '../ui/TypeBadge';
+import PokemonSprite from '../ui/PokemonSprite';
 
 export default function FriendBattleScreen() {
   const { team, player, setScreen, setFriendBattleTeam } = useStore();
@@ -125,8 +126,9 @@ export default function FriendBattleScreen() {
                 </p>
                 {team.map(p => (
                   <div key={p.id} className="flex items-center gap-3">
-                    <img
-                      src={`https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/${p.isShiny ? 'shiny/' : ''}${p.pokemonId}.png`}
+                    <PokemonSprite
+                      pokemonId={p.pokemonId}
+                      isShiny={p.isShiny}
                       className="w-12 h-12 object-contain"
                     />
                     <div className="flex-1 min-w-0">
@@ -210,8 +212,9 @@ export default function FriendBattleScreen() {
                   </p>
                   {previewTeam.map((p, i) => (
                     <div key={i} className="flex items-center gap-3">
-                      <img
-                        src={`https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/${p.isShiny ? 'shiny/' : ''}${p.pokemonId}.png`}
+                      <PokemonSprite
+                        pokemonId={p.pokemonId}
+                        isShiny={p.isShiny}
                         className="w-12 h-12 object-contain"
                       />
                       <div className="flex-1 min-w-0">

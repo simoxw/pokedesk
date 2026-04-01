@@ -1,6 +1,7 @@
 import React from 'react';
 import { Pokemon, Move } from '../../types';
 import { CheckSquare, Square, Sparkles } from 'lucide-react';
+import PokemonSprite from './PokemonSprite';
 
 interface PokemonCardProps {
   pokemon: Pokemon;
@@ -57,8 +58,9 @@ const PokemonCard = React.memo(({
         <span className="absolute top-0.5 left-1 text-[7px] font-mono text-white/20">
           {String(pokemon.pokemonId).padStart(3, '0')}
         </span>
-        <img
-          src={`https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/${pokemon.isShiny ? 'shiny/' : ''}${pokemon.pokemonId}.png`}
+        <PokemonSprite
+          pokemonId={pokemon.pokemonId}
+          isShiny={pokemon.isShiny}
           className="w-full h-full object-contain scale-110"
           alt={pokemon.name}
         />
@@ -93,8 +95,9 @@ const PokemonCard = React.memo(({
         </div>
       )}
       <div className="relative shrink-0">
-        <img
-          src={`https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/${pokemon.isShiny ? 'shiny/' : ''}${pokemon.pokemonId}.png`}
+        <PokemonSprite
+          pokemonId={pokemon.pokemonId}
+          isShiny={pokemon.isShiny}
           className="w-12 h-12 object-contain"
           alt={pokemon.name}
         />

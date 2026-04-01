@@ -7,6 +7,7 @@ import { motion, AnimatePresence } from 'motion/react';
 import { Sparkles } from 'lucide-react';
 import confetti from 'canvas-confetti';
 import { useSoundEffects } from '../../useSoundEffects';
+import PokemonSprite from '../ui/PokemonSprite';
 
 const ISLAND_LEGENDARIES = [
   144, 145, 146, 150, 151,
@@ -177,6 +178,13 @@ export default function IslandScreen() {
               ? (pokemon.sprites.other?.['official-artwork']?.front_shiny || pokemon.sprites.front_shiny)
               : (pokemon.sprites.other?.['official-artwork']?.front_default || pokemon.sprites.front_default)}
             className="w-72 h-72 object-contain drop-shadow-2xl"
+            onError={(e) => {
+              const img = e.target as HTMLImageElement;
+              if (!img.dataset.fallback) {
+                img.dataset.fallback = '1';
+                img.src = `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/${pokemon?.id}.png`;
+              }
+            }}
           />
           {isShiny && !catching && (
             <motion.div animate={{ opacity: [0,1,0], scale: [0.5,1.2,0.5] }} transition={{ duration: 1, repeat: Infinity }}

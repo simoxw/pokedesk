@@ -4,6 +4,7 @@ import { motion, AnimatePresence } from 'motion/react';
 import PokemonDetailsModal from '../ui/PokemonDetailsModal'; 
 import TypeBadge from '../ui/TypeBadge'; 
 import PokemonCard from '../ui/PokemonCard';
+import PokemonSprite from '../ui/PokemonSprite';
 import { VirtuosoGrid } from 'react-virtuoso';
 import { ArrowLeft, Search, ChevronLeft, ChevronRight, Sparkles, Users, Trash2, Info, SlidersHorizontal, X, CheckSquare, Square } from 'lucide-react'; 
 
@@ -356,8 +357,9 @@ export default function BoxScreen() {
               onClick={e => e.stopPropagation()}
             >
               <div className="flex items-center gap-6">
-                <img 
-                  src={`https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/${selectedPkmn.isShiny ? 'shiny/' : ''}${selectedPkmn.pokemonId}.png`}
+                <PokemonSprite
+                  pokemonId={selectedPkmn.pokemonId}
+                  isShiny={selectedPkmn.isShiny}
                   className="w-32 h-32 object-contain"
                 />
                 <div>
@@ -483,8 +485,9 @@ export default function BoxScreen() {
               <div className="grid grid-cols-2 gap-4 mb-4">
                 {selectedForCompare.map(p => (
                   <div key={p.id} className="bg-[#1a1a2e] rounded-xl p-3">
-                    <img
-                      src={`https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/${p.isShiny ? 'shiny/' : ''}${p.pokemonId}.png`}
+                    <PokemonSprite
+                      pokemonId={p.pokemonId}
+                      isShiny={p.isShiny}
                       alt={p.name}
                       className="w-24 h-24 mx-auto"
                     />
