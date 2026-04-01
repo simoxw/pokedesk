@@ -15,7 +15,7 @@ const TYPE_LIST = [
   'ground','flying','psychic','bug','rock','ghost','dragon',
   'steel','dark','fairy','normal'
 ];
-type SortKey = 'name' | 'level' | 'number' | 'type' | 'iv';
+type SortKey = 'name' | 'level' | 'number' | 'type' | 'iv' | 'date';
 
 export default function TradeScreen() {
   const { box, team, setScreen, addPokemon, updatePokedex, addItem, favorites, removePokemon } = useStore();
@@ -63,6 +63,7 @@ export default function TradeScreen() {
         const ivB = b.ivs.hp + b.ivs.attack + b.ivs.defense + b.ivs.spAtk + b.ivs.spDef + b.ivs.speed;
         return ivB - ivA;
       }
+      if (sortBy === 'date') return (b.caughtAt ?? 0) - (a.caughtAt ?? 0);
       return a.pokemonId - b.pokemonId;
     });
     return result;
@@ -200,6 +201,12 @@ export default function TradeScreen() {
                 className={`ml-auto p-2 rounded-xl border transition-all text-lg ${showFavoritesOnly ? 'bg-yellow-500/20 border-yellow-500/50 text-yellow-400' : 'bg-[#1a1a2e] border-white/10 text-white/40'}`}
               >
                 ★
+              </button>
+              <button
+                onClick={() => setSortBy(sortBy === 'date' ? 'number' : 'date')}
+                className={`p-2 rounded-xl border transition-all text-sm ${sortBy === 'date' ? 'bg-[#e63946] border-[#e63946]' : 'bg-[#1a1a2e] border-white/10 text-white/40'}`}
+              >
+                📅
               </button>
               <button
                 onClick={() => setShowFilters(f => !f)}
@@ -395,6 +402,12 @@ export default function TradeScreen() {
                     className={`ml-auto p-2 rounded-xl border transition-all text-lg ${showFavoritesOnly ? 'bg-yellow-500/20 border-yellow-500/50 text-yellow-400' : 'bg-[#1a1a2e] border-white/10 text-white/40'}`}
                   >
                     ★
+                  </button>
+                  <button
+                    onClick={() => setSortBy(sortBy === 'date' ? 'number' : 'date')}
+                    className={`p-2 rounded-xl border transition-all text-sm ${sortBy === 'date' ? 'bg-[#e63946] border-[#e63946]' : 'bg-[#1a1a2e] border-white/10 text-white/40'}`}
+                  >
+                    📅
                   </button>
                   <button
                     onClick={() => setShowFilters(f => !f)}
