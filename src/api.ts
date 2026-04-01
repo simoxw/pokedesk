@@ -378,5 +378,18 @@ export const api = {
   getItalianDescription(entries: any[]): string {
     const itEntry = entries.find((e: any) => e.language.name === 'it');
     return itEntry ? (itEntry.flavor_text || itEntry.description || itEntry.text) : entries.find((e: any) => e.language.name === 'en')?.flavor_text || 'Nessuna descrizione disponibile.';
+  },
+
+  getSpriteUrl(data: any, isShiny: boolean = false): string {
+    if (isShiny) {
+      return data.sprites.other?.['official-artwork']?.front_shiny
+        || data.sprites.front_shiny
+        || data.sprites.other?.['official-artwork']?.front_default
+        || data.sprites.front_default
+        || `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/${data.id}.png`;
+    }
+    return data.sprites.other?.['official-artwork']?.front_default
+      || data.sprites.front_default
+      || `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/${data.id}.png`;
   }
 };

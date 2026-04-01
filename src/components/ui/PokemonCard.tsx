@@ -63,6 +63,7 @@ const PokemonCard = React.memo(({
           isShiny={pokemon.isShiny}
           className="w-full h-full object-contain scale-110"
           alt={pokemon.name}
+          spriteUrl={pokemon.spriteUrl}
         />
         <div className="absolute bottom-0 left-0 right-0 flex items-center justify-center gap-1 bg-black/40 pb-0.5">
           <span className="text-[8px] font-bold text-white/50">
@@ -100,6 +101,7 @@ const PokemonCard = React.memo(({
           isShiny={pokemon.isShiny}
           className="w-12 h-12 object-contain"
           alt={pokemon.name}
+          spriteUrl={pokemon.spriteUrl}
         />
         {pokemon.isShiny && (
           <span className="absolute -top-1 -right-1 text-yellow-400">

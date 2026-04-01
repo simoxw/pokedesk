@@ -361,6 +361,7 @@ export default function BoxScreen() {
                   pokemonId={selectedPkmn.pokemonId}
                   isShiny={selectedPkmn.isShiny}
                   className="w-32 h-32 object-contain"
+                  spriteUrl={selectedPkmn.spriteUrl}
                 />
                 <div>
                   <h3 className="text-3xl font-black uppercase">{selectedPkmn.name}</h3>
@@ -490,6 +491,7 @@ export default function BoxScreen() {
                       isShiny={p.isShiny}
                       alt={p.name}
                       className="w-24 h-24 mx-auto"
+                      spriteUrl={p.spriteUrl}
                     />
                     <p className="text-center font-black text-white uppercase mt-2">{p.name}</p>
                     <p className="text-center text-xs text-white/40">Lv. {p.level}</p>

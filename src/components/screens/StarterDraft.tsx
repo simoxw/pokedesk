@@ -74,6 +74,7 @@ export default function StarterDraft() {
           caughtAt: Date.now(),
           growthRate: species.growth_rate.name,
           baseSpeciesId,
+          spriteUrl: api.getSpriteUrl(data, false),
         };
         addPokemon(pokemon);
       }

@@ -160,6 +160,7 @@ export default function CatchScreen() {
         caughtAt: Date.now(),
         growthRate: pokemon.species.growth_rate.name,
         baseSpeciesId,
+        spriteUrl: api.getSpriteUrl(pokemon, isShiny),
       });
       incrementStat('totalCaught');
       if (isShiny) incrementStat('shiniesFound');

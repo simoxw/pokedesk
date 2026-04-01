@@ -85,6 +85,7 @@ export interface Pokemon {
   caughtAt: number;
   growthRate: string;
   baseSpeciesId: number;
+  spriteUrl?: string;
 }
 
 export interface Item {

@@ -4,29 +4,29 @@ interface Props {
   pokemonId: number;
   isShiny?: boolean;
   back?: boolean;
+  spriteUrl?: string;
   className?: string;
   alt?: string;
   style?: React.CSSProperties;
 }
 
-function buildUrl(pokemonId: number, isShiny: boolean, back: boolean, attempt: number): string {
+function buildUrl(pokemonId: number, isShiny: boolean, back: boolean, attempt: number, spriteUrl?: string): string {
   const shinyPath = isShiny ? 'shiny/' : '';
   const backPath = back ? 'back/' : '';
   switch (attempt) {
     case 0:
+      if (spriteUrl && !back) return spriteUrl;
       return `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/${backPath}${shinyPath}${pokemonId}.png`;
     case 1:
-      // fallback: front non-shiny da PokeAPI (funziona sempre)
       return `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/${pokemonId}.png`;
     case 2:
-      // fallback finale: official artwork
       return `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/${pokemonId}.png`;
     default:
       return `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/${pokemonId}.png`;
   }
 }
 
-export default function PokemonSprite({ pokemonId, isShiny = false, back = false, className, alt, style }: Props) {
+export default function PokemonSprite({ pokemonId, isShiny = false, back = false, spriteUrl, className, alt, style }: Props) {
   const [attempt, setAttempt] = useState(0);
 
   const handleError = () => {
@@ -35,7 +35,7 @@ export default function PokemonSprite({ pokemonId, isShiny = false, back = false
 
   return (
     <img
-      src={buildUrl(pokemonId, isShiny, back, attempt)}
+      src={buildUrl(pokemonId, isShiny, back, attempt, spriteUrl)}
       alt={alt ?? `Pokemon ${pokemonId}`}
       className={className}
       style={style}
