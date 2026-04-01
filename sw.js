@@ -1,4 +1,4 @@
-const CACHE_NAME = 'pokedesk-v4';
+const CACHE_NAME = 'pokedesk-v5';
 const ASSETS_TO_CACHE = [
   'index.html',
   'manifest.json',
