@@ -124,9 +124,9 @@ export const TYPE_CHART: Record<PokemonType, Partial<Record<PokemonType, number>
   },
   ghost: {
     normal: 0,
-    // dark: rimosso — ghost su dark è neutro (×1), non ×0.5
     psychic: 2,
     ghost: 2,
+    dark: 0.5,
   },
   dragon: {
     dragon: 2,
@@ -134,11 +134,10 @@ export const TYPE_CHART: Record<PokemonType, Partial<Record<PokemonType, number>
     fairy: 0,
   },
   dark: {
-    // psychic: rimosso — dark attacca psychic per ×1 (neutro)
-    // ghost: corretto da 2 a 0.5 — ghost resiste dark
+    psychic: 2,
+    ghost: 2,
     fighting: 0.5,
     dark: 0.5,
-    ghost: 0.5,  // ← CORREZIONE: era 2, è 0.5
     fairy: 0.5,
   },
   steel: {
