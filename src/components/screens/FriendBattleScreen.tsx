@@ -130,7 +130,6 @@ export default function FriendBattleScreen() {
                       pokemonId={p.pokemonId}
                       isShiny={p.isShiny}
                       className="w-12 h-12 object-contain"
-                      spriteUrl={p.spriteUrl}
                     />
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2">
@@ -217,7 +216,6 @@ export default function FriendBattleScreen() {
                         pokemonId={p.pokemonId}
                         isShiny={p.isShiny}
                         className="w-12 h-12 object-contain"
-                        spriteUrl={p.spriteUrl}
                       />
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-2">

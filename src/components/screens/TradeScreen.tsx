@@ -323,7 +323,6 @@ export default function TradeScreen() {
                       isShiny={pkmn.isShiny}
                       className="w-14 h-14 object-contain"
                       alt={pkmn.name}
-                      spriteUrl={pkmn.spriteUrl}
                     />
                     <span className="text-[9px] font-black uppercase truncate w-full text-center leading-tight">
                       {pkmn.customName || pkmn.name}
@@ -503,7 +502,7 @@ export default function TradeScreen() {
                         className={`relative w-full bg-[#1a1a2e] rounded-xl border flex flex-col items-center p-2 transition-all ${wonderPkmn?.id === p.id ? 'border-[#e63946] ring-1 ring-[#e63946]/40' : 'border-white/5'}`}>
                         {p.isShiny && <Sparkles size={8} className="absolute top-1 right-1 text-yellow-400" />}
                         <PokemonSprite pokemonId={p.pokemonId} isShiny={p.isShiny}
-                          className="w-14 h-14 object-contain" spriteUrl={p.spriteUrl} />
+                          className="w-14 h-14 object-contain" />
                         <span className="text-[9px] font-black uppercase truncate w-full text-center">{p.name}</span>
                         <span className="text-[8px] text-white/30">Lv.{p.level}</span>
                       </button>
@@ -637,7 +636,6 @@ export default function TradeScreen() {
                 pokemonId={selectedPkmn.pokemonId}
                 isShiny={selectedPkmn.isShiny}
                 className="w-12 h-12 object-contain"
-                spriteUrl={selectedPkmn.spriteUrl}
               />
               <div className="flex-1 min-w-0">
                 <p className="font-black text-sm uppercase truncate">{selectedPkmn.name}</p>

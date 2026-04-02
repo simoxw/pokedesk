@@ -232,7 +232,6 @@ export default function HubScreen() {
                       pokemonId={pkmn.pokemonId}
                       alt={pkmn.name}
                       className="w-12 h-12 object-contain"
-                      spriteUrl={pkmn.spriteUrl}
                     />
                     {pkmn.status && (
                       <span className={`absolute -top-1 -right-1 text-[7px] font-black px-1 py-0.5 rounded shadow-sm ${
@@ -766,7 +765,7 @@ export default function HubScreen() {
                             compatible ? 'border-white/10 bg-white/5' : 'border-white/5 opacity-30 cursor-not-allowed'
                           }`}
                         >
-                          <PokemonSprite pokemonId={p.pokemonId} className="w-10 h-10 object-contain" spriteUrl={p.spriteUrl} />
+                          <PokemonSprite pokemonId={p.pokemonId} className="w-10 h-10 object-contain" />
                           <div className="text-left flex-1 min-w-0">
                             <div className="flex items-center gap-2">
                               <p className="font-black text-sm uppercase truncate">{p.name}</p>
@@ -809,7 +808,6 @@ export default function HubScreen() {
                         <PokemonSprite
                           pokemonId={incubPreview.pokemonId}
                           className="w-14 h-14 object-contain"
-                          spriteUrl={incubPreview.spriteUrl}
                         />
                         <div>
                           <p className="font-black text-sm uppercase">{incubPreview.name} <span className="text-yellow-400">Lv.5</span></p>

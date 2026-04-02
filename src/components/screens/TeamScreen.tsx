@@ -50,7 +50,6 @@ function PokemonSlot({ pokemon, index, onRemove, onSelect, onUseCandy, onCandyCo
           pokemonId={pokemon.pokemonId}
           alt={pokemon.name}
           className="w-16 h-16 object-contain"
-          spriteUrl={pokemon.spriteUrl}
         />
       </div>
       <div className="flex-1 min-w-0">
