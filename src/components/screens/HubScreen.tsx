@@ -3,7 +3,7 @@ import { useStore } from '../../store';
 import { api } from '../../api';
 import { BattleEngine } from '../../BattleEngine';
 import { motion, AnimatePresence } from 'motion/react';
-import { Zap, Target, Sword, TreePine, X } from 'lucide-react';
+import { Zap, Target, Sword, TreePine, X, Trophy } from 'lucide-react';
 import PokemonSprite from '../ui/PokemonSprite';
 
 export default function HubScreen() {
@@ -276,6 +276,7 @@ export default function HubScreen() {
             <span className="text-white/30 text-xs">→</span>
           </div>
         </button>
+
 
         <div className="flex flex-col gap-3 w-full max-w-sm">
           {/* CATTURA */}

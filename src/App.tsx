@@ -19,6 +19,7 @@ import LeagueBattleScreen from './components/screens/LeagueBattleScreen';
 import MasterBattleScreen from './components/screens/MasterBattleScreen';
 import IslandScreen from './components/screens/IslandScreen';
 import OptionsScreen from './components/screens/OptionsScreen';
+import AchievementScreen from './components/screens/AchievementScreen';
 import BottomNav from './components/ui/BottomNav';
 import TypeBadge from './components/ui/TypeBadge';
 import { useTickSystem } from './TickSystem';
@@ -121,6 +122,7 @@ export default function App() {
       case 'LEAGUE_BATTLE_SCREEN': return <LeagueBattleScreen />;
       case 'MASTER_BATTLE_SCREEN': return <MasterBattleScreen />;
       case 'ISLAND_SCREEN': return <IslandScreen />;
+      case 'ACHIEVEMENT_SCREEN': return <AchievementScreen />;
       default: return <StartScreen />;
     }
   };

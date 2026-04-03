@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
-import { GameState, Pokemon, ScreenName, Medal, Item, Move, DailyMission, Egg } from './types';
+import { GameState, Pokemon, ScreenName, Medal, Item, Move, DailyMission, Egg, Achievement } from './types';
 import { api } from './api';
 import { BattleEngine } from './BattleEngine';
 import { CatchEngine } from './CatchEngine';
@@ -63,6 +63,9 @@ interface GameStore extends GameState {
   removePokemon: (id: string) => void;
   claimStreak: () => void;
   claimPokedexReward: (genId: string) => void;
+  initializeAchievements: () => void;
+  updateAchievementProgress: (achievementId: string, progress: number) => void;
+  unlockAchievement: (achievementId: string) => void;
 }
 
 type MissionTemplate = {
@@ -210,6 +213,7 @@ export const useStore = create<GameStore>()(
       dailyMissions: null,
       pendingMissionToast: null,
       streak: 0,
+      achievements: [],
       
       // actions
       setScreen: (screen: ScreenName) => set({ currentScreen: screen }),
@@ -812,6 +816,65 @@ export const useStore = create<GameStore>()(
           coins: state.coins + reward.coins,
           inventory: newInventory,
         };
+      }),
+       initializeAchievements: () => set((state) => {
+         const allPokemon = [...state.team, ...state.box];
+         const shinyCount = allPokemon.filter(p => p.isShiny).length;
+         const gen1Count = Object.keys(state.pokedex).filter(id => parseInt(id) <= 151).length;
+         const gen2Count = Object.keys(state.pokedex).filter(id => parseInt(id) > 151 && parseInt(id) <= 251).length;
+         const totalCount = Object.keys(state.pokedex).length;
+
+         const achievements: Achievement[] = [
+           { id: 'catch_10', name: 'Primo Passo', description: 'Cattura 10 Pokémon', category: 'catch', target: 10, reward: { coins: 500 }, progress: state.stats.totalCaught, unlocked: false },
+           { id: 'catch_100', name: 'Cacciatore Esperto', description: 'Cattura 100 Pokémon', category: 'catch', target: 100, reward: { coins: 5000 }, progress: state.stats.totalCaught, unlocked: false },
+           { id: 'catch_500', name: 'Maestro Catture', description: 'Cattura 500 Pokémon', category: 'catch', target: 500, reward: { coins: 20000, items: { masterball: 1 } }, progress: state.stats.totalCaught, unlocked: false },
+           { id: 'battle_10', name: 'Guerriero', description: 'Vinci 10 battaglie', category: 'battle', target: 10, reward: { coins: 1000 }, progress: state.stats.totalBattles, unlocked: false },
+           { id: 'battle_50', name: 'Campione', description: 'Vinci 50 battaglie', category: 'battle', target: 50, reward: { coins: 5000 }, progress: state.stats.totalBattles, unlocked: false },
+           { id: 'battle_100', name: 'Leggenda', description: 'Vinci 100 battaglie', category: 'battle', target: 100, reward: { coins: 10000, items: { rare_candy: 5 } }, progress: state.stats.totalBattles, unlocked: false },
+           { id: 'shiny_1', name: 'Scintilla', description: 'Cattura 1 Shiny', category: 'shiny', target: 1, reward: { coins: 2000 }, progress: shinyCount, unlocked: false },
+           { id: 'shiny_10', name: 'Shiny Hunter', description: 'Cattura 10 Shiny', category: 'shiny', target: 10, reward: { coins: 15000, items: { masterball: 1 } }, progress: shinyCount, unlocked: false },
+           { id: 'shiny_50', name: 'Cacciatore di Stelle', description: 'Cattura 50 Shiny', category: 'shiny', target: 50, reward: { coins: 50000, title: 'Shiny Hunter' }, progress: shinyCount, unlocked: false },
+           { id: 'pokedex_gen1', name: 'Professor Kanto', description: 'Completa il Pokédex Gen 1', category: 'collection', target: 151, reward: { coins: 10000, items: { rare_candy: 3 } }, progress: gen1Count, unlocked: false },
+           { id: 'pokedex_gen2', name: 'Professor Johto', description: 'Completa il Pokédex Gen 2', category: 'collection', target: 100, reward: { coins: 10000, items: { rare_candy: 3 } }, progress: gen2Count, unlocked: false },
+           { id: 'pokedex_all', name: 'Professor Pokémon', description: 'Completa tutti i Pokédex', category: 'collection', target: 1008, reward: { coins: 50000, title: 'Professor' }, progress: totalCount, unlocked: false },
+           { id: 'league_win', name: 'Aspirante', description: 'Sconfiggi un membro della Lega', category: 'special', target: 1, reward: { coins: 5000 }, progress: 0, unlocked: false },
+           { id: 'league_master', name: 'Campione', description: 'Sconfiggi tutti i Master', category: 'special', target: 8, reward: { coins: 20000, title: 'Champion' }, progress: 0, unlocked: false },
+           { id: 'no_damage', name: 'Invincibile', description: 'Vinci una battaglia senza subire danni', category: 'special', target: 1, reward: { coins: 3000 }, progress: 0, unlocked: false },
+           { id: 'streak_10', name: 'Serie Vincente', description: '10 vittorie consecutive', category: 'special', target: 10, reward: { coins: 5000 }, progress: 0, unlocked: false },
+           { id: 'breed_10', name: 'Allevatore', description: 'Schiudi 10 uova', category: 'special', target: 10, reward: { coins: 5000, items: { rare_candy: 5 } }, progress: state.eggs.filter(e => e.hatchAt < Date.now()).length, unlocked: false }
+         ];
+
+         return { achievements };
+       }),
+      updateAchievementProgress: (achievementId: string, progress: number) => set((state: any) => ({
+        achievements: state.achievements.map((a: any) => 
+          a.id === achievementId ? { ...a, progress: Math.min(progress, a.target) } : a
+        )
+      })),
+      unlockAchievement: (achievementId: string) => set((state: any) => {
+        const updated = state.achievements.map((a: any) => 
+          a.id === achievementId ? { ...a, unlocked: true } : a
+        );
+        const achievement = state.achievements.find((a: any) => a.id === achievementId);
+        if (!achievement) return { achievements: updated };
+        
+        let newState: any = { achievements: updated };
+        
+        // Aggiungi monete
+        if (achievement.reward.coins) {
+          newState.coins = state.coins + achievement.reward.coins;
+        }
+        
+        // Aggiungi items
+        if (achievement.reward.items) {
+          const newInventory = { ...state.inventory };
+          Object.entries(achievement.reward.items).forEach(([itemId, qty]) => {
+            newInventory[itemId] = (newInventory[itemId] || 0) + qty;
+          });
+          newState.inventory = newInventory;
+        }
+        
+        return newState;
       }),
     }),
     {

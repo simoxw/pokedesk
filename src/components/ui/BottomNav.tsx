@@ -6,7 +6,8 @@ import {
   Database, 
   Sword, 
   BookOpen, 
-  Menu 
+  Menu,
+  Trophy
 } from 'lucide-react';
 
 export default function BottomNav() {

@@ -17,7 +17,8 @@ export type ScreenName =
   | 'LEAGUE_SELECT_SCREEN'
   | 'LEAGUE_BATTLE_SCREEN'
   | 'MASTER_BATTLE_SCREEN'
-  | 'ISLAND_SCREEN';
+  | 'ISLAND_SCREEN'
+  | 'ACHIEVEMENT_SCREEN';
 export type PokemonType = 
   | 'normal' | 'fire' | 'water' | 'electric' | 'grass' | 'ice' 
   | 'fighting' | 'poison' | 'ground' | 'flying' | 'psychic' 
@@ -145,6 +146,7 @@ export interface GameState {
   pendingMissionToast: string | null;
   streak: number;
   lastStreakDate: string | null;
+  achievements: Achievement[];
   leagueProgress: {
     completedRuns: number;
     completedRegions: string[];
@@ -229,6 +231,7 @@ export interface GameState {
   masterBattleResult: 'win' | 'lose' | null;
   claimedPokedexRewards: string[];
   currentScreen: ScreenName;
+  achievements: Achievement[];
 }
 
 export interface PokemonSpecies {
@@ -245,4 +248,16 @@ export interface EvolutionChain {
     species: { name: string; url: string };
     evolves_to: any[];
   };
+}
+
+export interface Achievement {
+  id: string;
+  name: string;
+  description: string;
+  category: 'catch' | 'battle' | 'shiny' | 'collection' | 'special';
+  progress: number;
+  target: number;
+  reward: { coins: number; items?: Record<string, number>; title?: string };
+  unlocked: boolean;
+  retroactive?: boolean;
 }
