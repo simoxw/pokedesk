@@ -465,20 +465,35 @@ export const useStore = create<GameStore>()(
       gainExp: (pokemonId: string, amount: number) => set((state) => {
         const pokemon = [...state.team, ...state.box].find(p => p.id === pokemonId);
         if (!pokemon) return {};
-        const newExp = pokemon.exp + amount;
-        const nextLevelExp = BattleEngine.getExpForNextLevel(pokemon.level, pokemon.growthRate);
-        if (newExp >= nextLevelExp) {
-          const newLevel = pokemon.level + 1;
-          const newStats = BattleEngine.calculateStats(newLevel, pokemon.baseStats, pokemon.ivs, pokemon.evs ?? { hp: 0, attack: 0, defense: 0, spAtk: 0, spDef: 0, speed: 0 }, pokemon.nature);
-          const newNextLevelExp = BattleEngine.getExpForNextLevel(newLevel, pokemon.growthRate);
-          return {
-            team: state.team.map(p => p.id === pokemonId ? { ...p, exp: newExp, level: newLevel, stats: newStats } : p),
-            box: state.box.map(p => p.id === pokemonId ? { ...p, exp: newExp, level: newLevel, stats: newStats } : p),
-          };
+
+        let newExp = pokemon.exp + amount;
+        let newLevel = pokemon.level;
+        let newStats = pokemon.stats;
+
+        while (newLevel < 100) {
+          const nextLevelExp = BattleEngine.getExpForNextLevel(newLevel, pokemon.growthRate);
+          if (newExp >= nextLevelExp) {
+            newLevel += 1;
+            newStats = BattleEngine.calculateStats(
+              newLevel, pokemon.baseStats, pokemon.ivs,
+              pokemon.evs ?? { hp:0, attack:0, defense:0, spAtk:0, spDef:0, speed:0 },
+              pokemon.nature
+            );
+          } else {
+            break;
+          }
         }
+
+        const hpDiff = newStats.hp - pokemon.stats.hp;
+        const newCurrentHp = Math.min(newStats.hp, pokemon.currentHp + hpDiff);
+
         return {
-          team: state.team.map(p => p.id === pokemonId ? { ...p, exp: newExp } : p),
-          box: state.box.map(p => p.id === pokemonId ? { ...p, exp: newExp } : p),
+          team: state.team.map(p => p.id === pokemonId
+            ? { ...p, exp: newExp, level: newLevel, stats: newStats, currentHp: newCurrentHp }
+            : p),
+          box: state.box.map(p => p.id === pokemonId
+            ? { ...p, exp: newExp, level: newLevel, stats: newStats, currentHp: newCurrentHp }
+            : p),
         };
       }),
       resetGame: () => set({
@@ -523,12 +538,20 @@ export const useStore = create<GameStore>()(
         if (!pending) return {};
         const updatePkmn = (p: Pokemon) => {
           if (p.id !== pending.pokemonId) return p;
+          const newBaseStats = pending.newBaseStats!;
+          const newStats = BattleEngine.calculateStats(
+            p.level, newBaseStats, p.ivs,
+            p.evs ?? { hp:0, attack:0, defense:0, spAtk:0, spDef:0, speed:0 },
+            p.nature
+          );
           return {
             ...p,
             pokemonId: pending.newPokemonId,
             name: pending.newName,
-            baseStats: pending.newBaseStats!,
+            baseStats: newBaseStats,
             types: pending.newTypes ?? p.types,
+            stats: newStats,
+            currentHp: Math.min(newStats.hp, p.currentHp + (newStats.hp - p.stats.hp)),
           };
         };
         return {
@@ -663,6 +686,10 @@ export const useStore = create<GameStore>()(
             team: state.team.length < 4 ? [...state.team, newPokemon] : state.team,
             box: state.team.length >= 4 ? [...state.box, newPokemon] : state.box,
             pokedex: { ...state.pokedex, [newPokemon.pokemonId]: 'caught' },
+            stats: {
+              ...state.stats,
+              totalCaught: state.stats.totalCaught + 1,
+            },
           }));
         } catch (e) {
           console.error('Failed to hatch egg:', e);
@@ -755,8 +782,8 @@ export const useStore = create<GameStore>()(
           leagueProgress: {
             ...state.leagueProgress,
             completedRegions: allDone ? [] : newCompleted,
-            trophies: alreadyCompleted
-              ? state.leagueProgress.trophies
+            trophies: allDone
+              ? [trophyLabel]
               : [...state.leagueProgress.trophies, trophyLabel],
             completedRuns: allDone
               ? state.leagueProgress.completedRuns + 1
@@ -781,9 +808,9 @@ export const useStore = create<GameStore>()(
         box: state.box.filter(p => p.id !== id),
       })),
       claimStreak: () => set((state) => {
-        const today = new Date().toISOString().split('T')[0];
+        const today = new Date().toLocaleDateString('en-CA');
         if (state.lastStreakDate === today) return {};
-        const yesterday = new Date(Date.now() - 86400000).toISOString().split('T')[0];
+        const yesterday = new Date(Date.now() - 86400000).toLocaleDateString('en-CA');
         const streak = state.lastStreakDate === yesterday ? (state.streak || 0) + 1 : 1;
         const reward = streak <= 7 ? STREAK_REWARDS[streak - 1] : STREAK_REWARDS[6];
         return {
