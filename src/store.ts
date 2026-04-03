@@ -527,7 +527,7 @@ export const useStore = create<GameStore>()(
           basePokemonId: nonDitto.baseSpeciesId,
           baseSpeciesId: nonDitto.baseSpeciesId,
           createdAt: now,
-          hatchAt: now + 40000,
+          hatchAt: now + 72 * 3600000, // 72 ore in millisecondi
           ivs: bestIvs,
           nature: CatchEngine.getNature(),
           isShiny: false,
