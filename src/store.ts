@@ -470,10 +470,14 @@ export const useStore = create<GameStore>()(
         let newLevel = pokemon.level;
         let newStats = pokemon.stats;
 
+        // Track levels gained for move learning
+        const levelsGained: number[] = [];
+
         while (newLevel < 100) {
           const nextLevelExp = BattleEngine.getExpForNextLevel(newLevel, pokemon.growthRate);
           if (newExp >= nextLevelExp) {
             newLevel += 1;
+            levelsGained.push(newLevel);
             newStats = BattleEngine.calculateStats(
               newLevel, pokemon.baseStats, pokemon.ivs,
               pokemon.evs ?? { hp:0, attack:0, defense:0, spAtk:0, spDef:0, speed:0 },
@@ -486,6 +490,63 @@ export const useStore = create<GameStore>()(
 
         const hpDiff = newStats.hp - pokemon.stats.hp;
         const newCurrentHp = Math.min(newStats.hp, pokemon.currentHp + hpDiff);
+
+        // Check for new moves to learn (non-blocking, async)
+        if (levelsGained.length > 0) {
+          (async () => {
+            try {
+              const pokemonData = await api.getPokemon(pokemon.pokemonId);
+              for (const lvl of levelsGained) {
+                const learnedMoves = await api.getMovesLearnedAtLevel(pokemonData, lvl);
+                const freshPkmn = useStore.getState().team.find(t => t.id === pokemonId) ?? useStore.getState().box.find(t => t.id === pokemonId);
+                const currentMoves = freshPkmn?.moves ?? pokemon.moves;
+                
+                for (const newMove of learnedMoves) {
+                  const alreadyHas = currentMoves.some((m: any) => m.id === newMove.id) ?? false;
+                  if (!alreadyHas) {
+                    if (currentMoves.length < 4) {
+                      useStore.getState().updatePokemon(pokemonId, { moves: [...currentMoves, newMove] });
+                    } else {
+                      set((state) => ({ pendingNewMoveQueue: [...(state.pendingNewMoveQueue ?? []), { pokemonId, move: newMove }] }));
+                      break; // Only present the first one as pending
+                    }
+                  }
+                }
+              }
+            } catch (e) {
+              console.error("Error checking for moves on level up:", e);
+            }
+          })();
+        }
+
+        // Check for evolution (non-blocking, async)
+        if (newLevel > pokemon.level) {
+          (async () => {
+            try {
+              const speciesData = await api.getSpecies(pokemon.pokemonId);
+              const evolution = await api.getEvolutionTarget(speciesData, newLevel);
+              if (evolution && !useStore.getState().pendingEvolution) {
+                try {
+                  const newPokemonData = await api.getPokemon(evolution.newId);
+                  const newTypes = newPokemonData.types.map((t: any) => t.type.name);
+                  const newBaseStats = {
+                    hp: newPokemonData.stats[0].base_stat,
+                    attack: newPokemonData.stats[1].base_stat,
+                    defense: newPokemonData.stats[2].base_stat,
+                    spAtk: newPokemonData.stats[3].base_stat,
+                    spDef: newPokemonData.stats[4].base_stat,
+                    speed: newPokemonData.stats[5].base_stat,
+                  };
+                  set({ pendingEvolution: { pokemonId, newPokemonId: evolution.newId, newName: evolution.newName, newTypes, newBaseStats } });
+                } catch {
+                  set({ pendingEvolution: { pokemonId, newPokemonId: evolution.newId, newName: evolution.newName } });
+                }
+              }
+            } catch (e) {
+              console.error("Error checking for evolution on level up:", e);
+            }
+          })();
+        }
 
         return {
           team: state.team.map(p => p.id === pokemonId
