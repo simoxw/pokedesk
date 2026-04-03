@@ -25,12 +25,19 @@ export default function ProfileScreen() {
         <h2 className="text-2xl font-black">PROFILO</h2>
       </header>
 
-      <div className="bg-[#1a1a2e] rounded-[32px] p-8 mb-8 border border-white/5 flex flex-col items-center">
-        <div className="w-24 h-24 bg-[#e63946] rounded-full flex items-center justify-center text-4xl mb-4 shadow-xl shadow-[#e63946]/20 relative group">
-          {player.gender === 'M' ? '👦' : '👧'}
-          <button 
+      <div className="bg-[#1a1a2e] rounded-[28px] p-6 mb-8 border border-white/5 flex flex-col items-center">
+        <div className="relative inline-block mb-3">
+          <div className="w-20 h-20 bg-[#e63946] rounded-full flex items-center justify-center overflow-hidden shadow-xl shadow-[#e63946]/20">
+            <img
+              src={`https://play.pokemonshowdown.com/sprites/trainers/${player.gender === 'M' ? 'brendan-gen3' : 'may-gen3'}.png`}
+              alt="Trainer"
+              className="w-full h-full object-cover"
+            />
+          </div>
+          <button
             onClick={() => updatePlayer({ gender: player.gender === 'M' ? 'F' : 'M' })}
-            className="absolute -bottom-1 -right-1 p-2 bg-[#1a1a2e] rounded-full border border-white/10 text-white/50 hover:text-white transition-colors"
+            className="absolute -top-3 -right-3 p-2 bg-[#1a1a2e] rounded-full border border-white/10 text-white/50 hover:text-white transition-colors shadow-lg hover:bg-[#2a2a3e]"
+            title="Cambia genere"
           >
             <ArrowLeft size={12} className="rotate-180" />
           </button>
@@ -62,9 +69,9 @@ export default function ProfileScreen() {
         <p className="text-white/30 text-xs mt-1">Allenatore dal {new Date(player.createdAt).toLocaleDateString()}</p>
       </div>
 
-      <div className="grid grid-cols-2 gap-4 mb-8">
-        <StatCard icon={<Sword size={18} />} label="LOTTE VINTE" value={stats.totalBattles} />
-        <StatCard icon={<Target size={18} />} label="CATTURATI" value={stats.totalCaught} />
+      <div className="grid grid-cols-2 gap-3 mb-8">
+        <StatCard icon={<Sword size={16} />} label="LOTTE VINTE" value={stats.totalBattles} />
+        <StatCard icon={<Target size={16} />} label="CATTURATI" value={stats.totalCaught} />
         <StatCard icon={<Trophy size={18} />} label="MEDAGLIE" value={medalsWon} />
         <StatCard icon={<Sparkles size={18} />} label="SHINY" value={stats.shiniesFound} />
       </div>
@@ -133,12 +140,12 @@ export default function ProfileScreen() {
 
 function StatCard({ icon, label, value }: { icon: React.ReactNode, label: string, value: number | string }) {
   return (
-    <div className="bg-[#1a1a2e] p-4 rounded-2xl border border-white/5">
+    <div className="bg-[#1a1a2e] p-3 rounded-2xl border border-white/5">
       <div className="flex items-center gap-2 text-white/40 mb-1">
         {icon}
-        <span className="text-[10px] font-bold uppercase tracking-widest">{label}</span>
+        <span className="text-[9px] font-bold uppercase tracking-widest">{label}</span>
       </div>
-      <div className="text-2xl font-black">{value}</div>
+      <div className="text-xl font-black">{value}</div>
     </div>
   );
 }
