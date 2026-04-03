@@ -28,6 +28,14 @@ const ISLAND_LEGENDARIES = [
   888, 889, 890, 891, 892, 893, 894, 895, 896, 897, 898, 899, 900, 901, 902, 903, 904, 905, 906,
 ];
 
+// Evento mensile: primo lunedì del mese (giorni 1-7)
+const isEventDay = (date: Date) => {
+  const day = date.getDate(); // 1-31
+  const dayOfWeek = date.getDay(); // 0=Domenica, 1=Lunedì, ..., 6=Sabato
+  // È lunedì (dayOfWeek === 1) E siamo nei primi 7 giorni del mese
+  return dayOfWeek === 1 && day >= 1 && day <= 7;
+};
+
 export default function IslandScreen() {
   const { addPokemon, setScreen, incrementStat, addItem, inventory, updatePokedex, setIslandLastCatch, team, settings } = useStore();
   const [pokemon, setPokemon] = useState<any>(null);
@@ -49,6 +57,8 @@ export default function IslandScreen() {
     }
   }, [inventory, ballType]);
 
+  const [isPerfectIVs, setIsPerfectIVs] = useState(false);
+
   useEffect(() => {
     const init = async () => {
       setLoading(true);
@@ -61,7 +71,17 @@ export default function IslandScreen() {
         const data = await api.getPokemon(id);
         const species = await api.getSpecies(id);
         setPokemon({ ...data, species, level });
-        setIsShiny(CatchEngine.checkShiny());
+
+        // Check evento mensile (10% chance di IVs perfetti)
+        const eventActive = isEventDay(new Date());
+        const perfectRoll = eventActive && Math.random() < 0.10;
+        setIsPerfectIVs(perfectRoll);
+
+        // Shiny rate: 1/100 durante evento con IVs perfetti, altrimenti 1/512
+        const shinyChance = perfectRoll ? 1 / 100 : 1 / 512;
+        const shinyRoll = Math.random();
+        setIsShiny(shinyRoll < shinyChance);
+
         updatePokedex(id, 'seen');
         try {
           const cry = new Audio(api.getPokemonCry(id));
@@ -103,7 +123,10 @@ export default function IslandScreen() {
     if (success) {
       setResult('success');
       confetti({ particleCount: 150, spread: 80, origin: { y: 0.6 }, colors: ['#fbbf24','#60a5fa','#a78bfa','#34d399'] });
-      const ivs = CatchEngine.generateIVs();
+      // IVs perfetti se evento, altrimenti random
+      const ivs = isPerfectIVs 
+        ? { hp: 31, attack: 31, defense: 31, spAtk: 31, spDef: 31, speed: 31 }
+        : CatchEngine.generateIVs();
       const nature = CatchEngine.getNature();
       const baseStats = {
         hp: pokemon.stats[0].base_stat, attack: pokemon.stats[1].base_stat,
@@ -172,6 +195,15 @@ export default function IslandScreen() {
       </div>
 
       <div className="relative z-10 pt-6 pb-2 text-center">
+        {isPerfectIVs && (
+          <motion.div 
+            animate={{ scale: [1, 1.05, 1], opacity: [0.8, 1, 0.8] }}
+            transition={{ duration: 2, repeat: Infinity }}
+            className="inline-flex items-center gap-2 bg-gradient-to-r from-yellow-500/30 via-amber-400/30 to-yellow-500/30 border border-yellow-400/50 rounded-full px-4 py-1.5 mb-2"
+          >
+            <span className="text-yellow-300 font-black text-xs uppercase tracking-widest">🌟 EVENTO SPECIALE - IVs PERFETTI!</span>
+          </motion.div>
+        )}
         <div className="inline-flex items-center gap-2 bg-yellow-500/20 border border-yellow-500/40 rounded-full px-4 py-1.5 mb-2">
           <span className="text-yellow-400 font-black text-xs uppercase tracking-widest">⭐ Pokémon Leggendario</span>
         </div>
@@ -179,6 +211,15 @@ export default function IslandScreen() {
           {api.getItalianName(pokemon.species.names)}
         </h2>
         <p className="font-bold opacity-60 text-sm">Lv. {pokemon.level}</p>
+        {isPerfectIVs && (
+          <div className="mt-2 flex items-center justify-center gap-1">
+            {[31,31,31,31,31,31].map((iv, i) => (
+              <span key={i} className="text-[10px] font-black text-yellow-400 bg-yellow-500/20 px-1.5 py-0.5 rounded">
+                {['HP','ATK','DEF','SPA','SPD','SPE'][i]}: {iv}
+              </span>
+            ))}
+          </div>
+        )}
       </div>
 
       <div className="flex-1 flex items-center justify-center relative z-10">
