@@ -1132,17 +1132,18 @@ export default function BattleScreen() {
     const drainRatio = (metaDrain > 0 ? metaDrain / 100 : fallbackDrain);
     const isDrain = drainRatio > 0;
     if (isDrain) {
+      const freshPkmn = useStore.getState().team.find((p: any) => p.id === playerPkmn.id) ?? playerPkmn;
       const healing = Math.floor(realDamage * drainRatio);
       if (healing > 0) {
-        const newHp = Math.min(playerPkmn.stats.hp, playerPkmn.currentHp + healing);
-        const actualHeal = newHp - playerPkmn.currentHp;
+        const newHp = Math.min(freshPkmn.stats.hp, freshPkmn.currentHp + healing);
+        const actualHeal = newHp - freshPkmn.currentHp;
         if (actualHeal > 0) {
-          updatePokemon(playerPkmn.id, { currentHp: newHp });
-          addLog(`${playerPkmn.name} ha assorbito ${actualHeal} HP!`);
+          updatePokemon(freshPkmn.id, { currentHp: newHp });
+          addLog(`${freshPkmn.name} ha assorbito ${actualHeal} HP!`);
         }
       }
       return {};
-    } 
+    }
 
     // --- MOSSE OFFENSIVE con effetto stato secondario --- 
     if (move.statusEffect && !currentEnemy.status && move.effectChance) { 
