@@ -46,7 +46,7 @@ interface GameStore extends GameState {
   replaceMove: (pokemonId: string, oldMoveId: string, newMove: Move) => void;
   updateSettings: (settings: Partial<GameState['settings']>) => void;
   startIncubation: (p1: Pokemon, p2: Pokemon) => void;
-  hatchEgg: (eggId: string) => void;
+  hatchEgg: (eggId: string) => Promise<void>;
   toggleFavorite: (id: string) => void;
   recordBattleWin: () => void;
   toggleExpShare: () => void;
@@ -65,24 +65,31 @@ interface GameStore extends GameState {
   claimPokedexReward: (genId: string) => void;
 }
 
-const MISSION_POOL = [
-  { type: 'catch' as const, target: 2, description: 'Cattura 2 Pokémon', reward: { coins: 250 } },
-  { type: 'catch' as const, target: 5, description: 'Cattura 5 Pokémon', reward: { coins: 500, items: { pokeball: 3 } } },
-  { type: 'catch' as const, target: 3, description: 'Cattura 3 Pokémon', reward: { coins: 300, items: { potion: 2 } } },
-  { type: 'catch' as const, target: 1, description: 'Cattura 1 Pokémon', reward: { coins: 150 } },
-  { type: 'battleWin' as const, target: 3, description: 'Vinci 3 battaglie', reward: { coins: 350 } },
-  { type: 'battleWin' as const, target: 5, description: 'Vinci 5 battaglie', reward: { coins: 600, items: { superpotion: 1 } } },
-  { type: 'battleWin' as const, target: 1, description: 'Vinci 1 battaglia', reward: { coins: 150 } },
-  { type: 'battleWin' as const, target: 10, description: 'Vinci 10 battaglie', reward: { coins: 900, items: { megaball: 2 } } },
-  { type: 'defeatGym' as const, target: 1, description: 'Sconfiggi un Capopalestra', reward: { coins: 1000, items: { rare_candy: 1 } } },
-  { type: 'useItem' as const, target: 1, description: 'Usa una pozione', reward: { coins: 100 } },
-  { type: 'useItem' as const, target: 3, description: 'Usa 3 oggetti curativi', reward: { coins: 250, items: { potion: 1 } } },
-  { type: 'useItem' as const, target: 5, description: 'Usa 5 oggetti curativi', reward: { coins: 400, items: { superpotion: 1 } } },
-  { type: 'catchShiny' as const, target: 1, description: 'Cattura uno Shiny ✨', reward: { coins: 2000, items: { rare_candy: 2 } } },
-  { type: 'catch' as const, target: 10, description: 'Cattura 10 Pokémon', reward: { coins: 800, items: { ultraball: 1 } } },
-  { type: 'defeatLeague' as const, target: 1, description: 'Sconfiggi un membro della Lega', reward: { coins: 1500, items: { rare_candy: 1 } } },
-  { type: 'defeatLeague' as const, target: 3, description: 'Sconfiggi 3 membri della Lega', reward: { coins: 3000, items: { rare_candy: 2, ultraball: 2 } } },
-  { type: 'defeatMaster' as const, target: 1, description: 'Sconfiggi un Master Trainer', reward: { coins: 2500, items: { rare_candy: 2, masterball: 1 } } },
+type MissionTemplate = {
+  type: 'catch' | 'battleWin' | 'defeatGym' | 'useItem' | 'catchShiny' | 'defeatLeague' | 'defeatMaster';
+  target: number;
+  description: string;
+  reward: { coins?: number; items?: Record<string, number> };
+};
+
+const MISSION_POOL: MissionTemplate[] = [
+  { type: 'catch', target: 2, description: 'Cattura 2 Pokémon', reward: { coins: 250 } },
+  { type: 'catch', target: 5, description: 'Cattura 5 Pokémon', reward: { coins: 500, items: { pokeball: 3 } } },
+  { type: 'catch', target: 3, description: 'Cattura 3 Pokémon', reward: { coins: 300, items: { potion: 2 } } },
+  { type: 'catch', target: 1, description: 'Cattura 1 Pokémon', reward: { coins: 150 } },
+  { type: 'battleWin', target: 3, description: 'Vinci 3 battaglie', reward: { coins: 350 } },
+  { type: 'battleWin', target: 5, description: 'Vinci 5 battaglie', reward: { coins: 600, items: { superpotion: 1 } } },
+  { type: 'battleWin', target: 1, description: 'Vinci 1 battaglia', reward: { coins: 150 } },
+  { type: 'battleWin', target: 10, description: 'Vinci 10 battaglie', reward: { coins: 900, items: { megaball: 2 } } },
+  { type: 'defeatGym', target: 1, description: 'Sconfiggi un Capopalestra', reward: { coins: 1000, items: { rare_candy: 1 } } },
+  { type: 'useItem', target: 1, description: 'Usa una pozione', reward: { coins: 100 } },
+  { type: 'useItem', target: 3, description: 'Usa 3 oggetti curativi', reward: { coins: 250, items: { potion: 1 } } },
+  { type: 'useItem', target: 5, description: 'Usa 5 oggetti curativi', reward: { coins: 400, items: { superpotion: 1 } } },
+  { type: 'catchShiny', target: 1, description: 'Cattura uno Shiny ✨', reward: { coins: 2000, items: { rare_candy: 2 } } },
+  { type: 'catch', target: 10, description: 'Cattura 10 Pokémon', reward: { coins: 800, items: { ultraball: 1 } } },
+  { type: 'defeatLeague', target: 1, description: 'Sconfiggi un membro della Lega', reward: { coins: 1500, items: { rare_candy: 1 } } },
+  { type: 'defeatLeague', target: 3, description: 'Sconfiggi 3 membri della Lega', reward: { coins: 3000, items: { rare_candy: 2, ultraball: 2 } } },
+  { type: 'defeatMaster', target: 1, description: 'Sconfiggi un Master Trainer', reward: { coins: 2500, items: { rare_candy: 2, masterball: 1 } } },
 ];
 
 function generateDailyMissions(state: GameState | undefined): { date: string; missions: DailyMission[] } {
@@ -147,21 +154,32 @@ function updateMissionProgress(
   };
 }
 
+const STREAK_REWARDS = [
+  { coins: 50, item: 'pokeball', qty: 3 },
+  { coins: 50, item: 'potion', qty: 3 },
+  { coins: 200, item: 'superpotion', qty: 1 },
+  { coins: 300, item: 'hyperpotion', qty: 1 },
+  { coins: 500, item: 'rare_candy', qty: 1 },
+  { coins: 750, item: 'rare_candy', qty: 1 },
+  { coins: 1000, item: 'ultraball', qty: 2 },
+];
+
 const INITIAL_MEDALS: Medal[] = Array.from({ length: 40 }, (_, i) => ({
   id: i,
   name: `Capopalestra ${i + 1}`,
-  type: 'normal', // Will be randomized or set later
+  type: 'normal',
   isUnlocked: false,
 }));
 
 export const useStore = create<GameStore>()(
   persist(
-    (set) => ({
-      player: { name: '', gender: 'M', createdAt: Date.now(), playTime: 0 },
+    (set, get) => ({
+      // initial state
+      player: { name: '', gender: 'M' as const, createdAt: Date.now(), playTime: 0 },
       team: [],
       box: [],
-      inventory: { 'pokeball': 10, 'potion': 5, 'full_heal': 2 },
-      coins: 500,
+      inventory: {},
+      coins: 0,
       medals: INITIAL_MEDALS,
       currentBattlePath: { battlesWon: 0, nextIsBoss: false },
       charges: 6,
@@ -173,6 +191,12 @@ export const useStore = create<GameStore>()(
       settings: { audio: true, notifications: true },
       expShareActive: false,
       pendingMedalUnlock: null,
+      leagueProgress: { currentRun: null, completedRegions: [], trophies: [], completedRuns: 0 },
+      masterProgress: { defeatedIds: [] },
+      claimedPokedexRewards: [],
+      currentScreen: 'START_SCREEN' as ScreenName,
+      lastStreakDate: null,
+      islandLastCatch: null,
       pendingEvolution: null,
       pendingNewMoveQueue: [],
       eggs: [],
@@ -184,51 +208,44 @@ export const useStore = create<GameStore>()(
       masterBattleResult: null,
       isFirstRun: true,
       dailyMissions: null,
-      leagueProgress: {
-        completedRuns: 0,
-        completedRegions: [],
-        trophies: [],
-        currentRun: null,
-      },
-      masterProgress: { defeatedIds: [] },
-      claimedPokedexRewards: [],
-      islandLastCatch: null,
       pendingMissionToast: null,
       streak: 0,
-      lastStreakDate: null,
-      currentScreen: 'START_SCREEN',
-
-      setScreen: (screen) => set({ currentScreen: screen }),
-      setPlayer: (name, gender) => set({ player: { name, gender, createdAt: Date.now(), playTime: 0 }, isFirstRun: false }),
-      updatePlayer: (updates) => set((state) => ({ player: { ...state.player, ...updates } })),
-      addPokemon: (pokemon) => set((state) => {
+      
+      // actions
+      setScreen: (screen: ScreenName) => set({ currentScreen: screen }),
+      setPlayer: (name: string, gender: 'M' | 'F') => 
+        set({ player: { name, gender, createdAt: Date.now(), playTime: 0 }, isFirstRun: false }),
+      updatePlayer: (updates: Partial<GameState['player']>) => 
+        set((state) => ({ player: { ...state.player, ...updates } })),
+      addPokemon: (pokemon: Pokemon) => set((state) => {
         if (state.team.length < 4) {
           return { team: [...state.team, pokemon], pokedex: { ...state.pokedex, [pokemon.pokemonId]: 'caught' } };
         }
         return { box: [...state.box, pokemon], pokedex: { ...state.pokedex, [pokemon.pokemonId]: 'caught' } };
       }),
-      updatePokemon: (id, updates) => set((state) => ({
+      updatePokemon: (id: string, updates: Partial<Pokemon>) => set((state) => ({
         team: state.team.map(p => p.id === id ? { ...p, ...updates } : p),
         box: state.box.map(p => p.id === id ? { ...p, ...updates } : p),
       })),
-      releasePokemon: (id) => set((state) => {
+      releasePokemon: (id: string) => set((state) => {
         const pkmn = [...state.team, ...state.box].find(p => p.id === id);
         if (!pkmn) return {};
         const candyKey = `candy_${pkmn.baseSpeciesId ?? pkmn.pokemonId}`;
-        const currentAmount = state.inventory[candyKey] || 0;
         return {
           team: state.team.filter(p => p.id !== id),
           box: state.box.filter(p => p.id !== id),
-          inventory: { ...state.inventory, [candyKey]: currentAmount + 1 },
-          stats: { ...state.stats, pokemonReleased: state.stats.pokemonReleased + 1 }
+          inventory: {
+            ...state.inventory,
+            [candyKey]: (state.inventory[candyKey] || 0) + 1,
+          },
+          stats: { ...state.stats, pokemonReleased: state.stats.pokemonReleased + 1 },
         };
       }),
-
-      useRareCandy: (id) => set((state) => {
+      useRareCandy: (pokemonId: string) => set((state) => {
         const CANDY_COST = 1;
         if ((state.inventory['rare_candy'] || 0) < CANDY_COST) return {};
         const applyTo = (list: any[]) => list.map(p => {
-          if (p.id !== id || p.level >= 100) return p;
+          if (p.id !== pokemonId || p.level >= 100) return p;
           const newLevel = p.level + 1;
           const newStats = BattleEngine.calculateStats(
             newLevel,
@@ -237,63 +254,7 @@ export const useStore = create<GameStore>()(
             p.evs ?? { hp: 0, attack: 0, defense: 0, spAtk: 0, spDef: 0, speed: 0 },
             p.nature
           );
-
-          // Evolution and Move learning check (non-blocking)
-          (async () => {
-            try {
-              const pokemonData = await api.getPokemon(p.pokemonId);
-              const speciesData = await api.getSpecies(p.pokemonId);
-              
-              // Moves check
-              const learnedMoves = await api.getMovesLearnedAtLevel(pokemonData, newLevel);
-              const freshPkmn = useStore.getState().team.find(t => t.id === p.id) ?? useStore.getState().box.find(t => t.id === p.id);
-              const currentMoves = freshPkmn?.moves ?? p.moves;
-              for (const newMove of learnedMoves) {
-                const alreadyHas = currentMoves.some(m => m.id === newMove.id) ?? false;
-                if (!alreadyHas) {
-                  if (currentMoves.length < 4) {
-                    useStore.getState().updatePokemon(p.id, { moves: [...currentMoves, newMove] });
-                  } else {
-                    set((state) => ({ pendingNewMoveQueue: [...(state.pendingNewMoveQueue ?? []), { pokemonId: p.id, move: newMove }] }));
-                    break; // Only present the first one as pending
-                  }
-                }
-              }
-
-              // Evolution check
-              const evolution = await api.getEvolutionTarget(speciesData, newLevel);
-              if (evolution && !useStore.getState().pendingEvolution) {
-                try {
-                  const newPokemonData = await api.getPokemon(evolution.newId);
-                  const newTypes = newPokemonData.types.map((t: any) => t.type.name);
-                  const newBaseStats = {
-                    hp: newPokemonData.stats[0].base_stat,
-                    attack: newPokemonData.stats[1].base_stat,
-                    defense: newPokemonData.stats[2].base_stat,
-                    spAtk: newPokemonData.stats[3].base_stat,
-                    spDef: newPokemonData.stats[4].base_stat,
-                    speed: newPokemonData.stats[5].base_stat,
-                  };
-                  set({ pendingEvolution: { pokemonId: p.id, newPokemonId: evolution.newId, newName: evolution.newName, newTypes, newBaseStats } });
-                } catch {
-                  set({ pendingEvolution: { pokemonId: p.id, newPokemonId: evolution.newId, newName: evolution.newName } });
-                }
-              }
-            } catch (e) {
-              console.error("Error checking for evolution/moves:", e);
-            }
-          })();
-
-          const newCurrentHp = Math.min(newStats.hp, Math.max(0, p.currentHp + (newStats.hp - p.stats.hp)));
-          const expForNewLevel = (() => {
-            const gr = p.growthRate ?? 'medium';
-            if (gr === 'slow') return Math.floor(5 * newLevel ** 3 / 4);
-            if (gr === 'medium-slow') return Math.max(0, Math.floor(6/5 * newLevel**3 - 15*newLevel**2 + 100*newLevel - 140));
-            if (gr === 'fast') return Math.floor(4 * newLevel ** 3 / 5);
-            return Math.floor(newLevel ** 3);
-          })();
-          const newExp = Math.max(p.exp, expForNewLevel);
-          return { ...p, level: newLevel, exp: newExp, stats: newStats, currentHp: newCurrentHp };
+          return { ...p, level: newLevel, stats: newStats };
         });
         return {
           team: applyTo(state.team),
@@ -325,10 +286,10 @@ export const useStore = create<GameStore>()(
               
               // Moves check
               const learnedMoves = await api.getMovesLearnedAtLevel(pokemonData, newLevel);
-              const freshPkmn = useStore.getState().team.find(t => t.id === p.id) ?? useStore.getState().box.find(t => t.id === p.id);
+              const freshPkmn = useStore.getState().team.find((t: any) => t.id === p.id) ?? useStore.getState().box.find((t: any) => t.id === p.id);
               const currentMoves = freshPkmn?.moves ?? p.moves;
               for (const newMove of learnedMoves) {
-                const alreadyHas = currentMoves.some(m => m.id === newMove.id) ?? false;
+                const alreadyHas = currentMoves.some((m: any) => m.id === newMove.id) ?? false;
                 if (!alreadyHas) {
                   if (currentMoves.length < 4) {
                     useStore.getState().updatePokemon(p.id, { moves: [...currentMoves, newMove] });
@@ -346,35 +307,26 @@ export const useStore = create<GameStore>()(
               if (evolution && !useStore.getState().pendingEvolution) {
                 try {
                   const newPokemonData = await api.getPokemon(evolution.newId);
-                  const newTypes = newPokemonData.types.map((t: any) => t.type.name);
-                  const newBaseStats = {
-                    hp: newPokemonData.stats[0].base_stat,
-                    attack: newPokemonData.stats[1].base_stat,
-                    defense: newPokemonData.stats[2].base_stat,
-                    spAtk: newPokemonData.stats[3].base_stat,
-                    spDef: newPokemonData.stats[4].base_stat,
-                    speed: newPokemonData.stats[5].base_stat,
-                  };
-                  set({ pendingEvolution: { pokemonId: p.id, newPokemonId: evolution.newId, newName: evolution.newName, newTypes, newBaseStats } });
-                } catch {
-                  set({ pendingEvolution: { pokemonId: p.id, newPokemonId: evolution.newId, newName: evolution.newName } });
+                  const newBaseStats = CatchEngine.getBaseStats(newPokemonData);
+                  set((state) => ({
+                    pendingEvolution: {
+                      pokemonId: p.id,
+                      newPokemonId: evolution.newId,
+                      newName: newPokemonData.name,
+                      newTypes: newPokemonData.types.map((t: any) => t.type.name),
+                      newBaseStats,
+                    },
+                  }));
+                } catch (e) {
+                  console.error('Failed to load evolution data:', e);
                 }
               }
             } catch (e) {
-              console.error("Error checking for evolution/moves:", e);
+              console.error('Async evolution/move check failed:', e);
             }
           })();
 
-          const newCurrentHp = Math.min(newStats.hp, Math.max(0, p.currentHp + (newStats.hp - p.stats.hp)));
-          const expForNewLevel = (() => {
-            const gr = p.growthRate ?? 'medium';
-            if (gr === 'slow') return Math.floor(5 * newLevel ** 3 / 4);
-            if (gr === 'medium-slow') return Math.max(0, Math.floor(6/5 * newLevel**3 - 15*newLevel**2 + 100*newLevel - 140));
-            if (gr === 'fast') return Math.floor(4 * newLevel ** 3 / 5);
-            return Math.floor(newLevel ** 3);
-          })();
-          const newExp = Math.max(p.exp, expForNewLevel);
-          return { ...p, level: newLevel, exp: newExp, stats: newStats, currentHp: newCurrentHp };
+          return { ...p, level: newLevel, stats: newStats };
         });
         return {
           team: applyTo(state.team),
@@ -382,184 +334,142 @@ export const useStore = create<GameStore>()(
           inventory: { ...state.inventory, [candyKey]: state.inventory[candyKey] - CANDY_COST }
         };
       }),
-      addToTeam: (pokemon, index) => set((state) => {
+
+      addToTeam: (pokemon: Pokemon, index: number) => set((state) => {
+        if (index < 0 || index >= 6) return {};
         const newTeam = [...state.team];
-        const newBox = state.box.filter(p => p.id !== pokemon.id);
-        if (newTeam[index]) newBox.push(newTeam[index]);
         newTeam[index] = pokemon;
-        return { team: newTeam, box: newBox };
+        return { team: newTeam, box: state.box.filter(p => p.id !== pokemon.id) };
       }),
-      removeFromTeam: (index) => set((state) => {
-        const newTeam = [...state.team];
-        const removed = newTeam.splice(index, 1)[0];
-        return { team: newTeam, box: [...state.box, removed] };
+      removeFromTeam: (index: number) => set((state) => {
+        if (index < 0 || index >= state.team.length) return {};
+        return {
+          team: state.team.filter((_, i) => i !== index),
+          box: [...state.box, state.team[index]],
+        };
       }),
-      reorderTeam: (oldIndex, newIndex) => set((state) => {
+      reorderTeam: (oldIndex: number, newIndex: number) => set((state) => {
         const newTeam = [...state.team];
-        const [moved] = newTeam.splice(oldIndex, 1);
-        newTeam.splice(newIndex, 0, moved);
+        const [movedPokemon] = newTeam.splice(oldIndex, 1);
+        newTeam.splice(newIndex, 0, movedPokemon);
         return { team: newTeam };
       }),
-      addCoins: (amount) => set((state) => ({ coins: state.coins + amount })),
-      addItem: (itemId, amount) => set((state) => ({
+      addCoins: (amount: number) => set((state) => ({ coins: state.coins + amount })),
+      addItem: (itemId: string, amount: number) => set((state) => ({
         inventory: { ...state.inventory, [itemId]: (state.inventory[itemId] || 0) + amount }
       })),
-      useItem: (itemId) => set((state) => {
-        const isHeal = ['potion', 'superpotion', 'hyperpotion', 'full_heal'].includes(itemId);
-        const missionUpdate = isHeal ? updateMissionProgress(state, 'useItem') : {};
-        return {
-          inventory: { ...state.inventory, [itemId]: Math.max(0, (state.inventory[itemId] || 0) - 1) },
-          ...missionUpdate
-        };
-      }),
-      unlockMedal: (id) => set((state) => ({
+      useItem: (itemId: string) => set((state) => ({
+        inventory: { ...state.inventory, [itemId]: Math.max(0, (state.inventory[itemId] || 0) - 1) }
+      })),
+      unlockMedal: (id: number) => set((state) => ({
         medals: state.medals.map(m => m.id === id ? { ...m, isUnlocked: true } : m)
       })),
-      addCharge: (amount) => set((state) => ({ charges: Math.min(6, state.charges + amount) })),
-      consumeCharge: () => set((state) => {
-        if (state.charges >= 6) {
-          return { charges: 5, lastTickTimestamp: Date.now() };
-        }
-        return { charges: Math.max(0, state.charges - 1) };
-      }),
-      consumeSafariCharge: () => set((state) => {
-        if (state.safariCharges >= 8) {
-          return { safariCharges: 7, lastSafariTickTimestamp: Date.now() };
-        }
-        return { safariCharges: Math.max(0, state.safariCharges - 1) };
-      }),
-      addSafariCharge: (amount) => set((state) => ({
-        safariCharges: Math.min(8, state.safariCharges + amount)
+      addCharge: (amount: number) => set((state) => ({
+        charges: Math.min(10, state.charges + amount),
+        lastTickTimestamp: Date.now(),
       })),
-      updatePokedex: (id, status) => set((state) => ({
-        pokedex: { ...state.pokedex, [id]: status === 'caught' ? 'caught' : (state.pokedex[id] === 'caught' ? 'caught' : 'seen') }
+      consumeCharge: () => set((state) => ({
+        charges: Math.max(0, state.charges - 1),
       })),
-      incrementStat: (key) => set((state) => {
-        const missionUpdate =
-          key === 'totalCaught' ? updateMissionProgress(state, 'catch') :
-          key === 'shiniesFound' ? updateMissionProgress(state, 'catchShiny') :
-          {};
+      consumeSafariCharge: () => set((state) => ({
+        safariCharges: Math.max(0, state.safariCharges - 1),
+      })),
+      addSafariCharge: (amount: number) => set((state) => ({
+        safariCharges: Math.min(30, state.safariCharges + amount),
+        lastSafariTickTimestamp: Date.now(),
+      })),
+      updatePokedex: (pokemonId: number, status: 'seen' | 'caught') => set((state) => {
+        const current = state.pokedex[pokemonId];
+        if (current === 'caught') return {}; // Don't downgrade caught to seen
+        return { pokedex: { ...state.pokedex, [pokemonId]: status } };
+      }),
+      incrementStat: (key: keyof GameState['stats']) => set((state) => ({
+        stats: { ...state.stats, [key]: state.stats[key] + 1 }
+      })),
+      updatePlayTime: (seconds: number) => set((state) => ({
+        player: { ...state.player, playTime: state.player.playTime + seconds }
+      })),
+      gainExp: (pokemonId: string, amount: number) => set((state) => {
+        const pokemon = [...state.team, ...state.box].find(p => p.id === pokemonId);
+        if (!pokemon) return {};
+        const newExp = pokemon.exp + amount;
+        const nextLevelExp = BattleEngine.getExpForNextLevel(pokemon.level, pokemon.growthRate);
+        if (newExp >= nextLevelExp) {
+          const newLevel = pokemon.level + 1;
+          const newStats = BattleEngine.calculateStats(newLevel, pokemon.baseStats, pokemon.ivs, pokemon.evs ?? { hp: 0, attack: 0, defense: 0, spAtk: 0, spDef: 0, speed: 0 }, pokemon.nature);
+          const newNextLevelExp = BattleEngine.getExpForNextLevel(newLevel, pokemon.growthRate);
+          return {
+            team: state.team.map(p => p.id === pokemonId ? { ...p, exp: newExp, level: newLevel, stats: newStats } : p),
+            box: state.box.map(p => p.id === pokemonId ? { ...p, exp: newExp, level: newLevel, stats: newStats } : p),
+          };
+        }
         return {
-          stats: { ...state.stats, [key]: state.stats[key] + 1 },
-          ...missionUpdate
+          team: state.team.map(p => p.id === pokemonId ? { ...p, exp: newExp } : p),
+          box: state.box.map(p => p.id === pokemonId ? { ...p, exp: newExp } : p),
         };
       }),
-      gainExp: (id, amount) => set((state) => {
-        const expTable: Record<string, (lvl: number) => number> = {
-          'slow': (l) => Math.floor(5 * l ** 3 / 4),
-          'medium-slow': (l) => Math.floor((6/5) * Math.pow(l, 3) - 15 * Math.pow(l, 2) + 100 * l - 140),
-          'medium': (l) => Math.floor(Math.pow(l, 3)),
-          'fast': (l) => Math.floor(4 * Math.pow(l, 3) / 5),
+      resetGame: () => set({
+        player: { name: '', gender: 'M' as const, createdAt: Date.now(), playTime: 0 },
+        team: [],
+        box: [],
+        inventory: { 'pokeball': 10, 'potion': 5, 'full_heal': 2 },
+        coins: 500,
+        medals: INITIAL_MEDALS,
+        currentBattlePath: { battlesWon: 0, nextIsBoss: false },
+        charges: 6,
+        lastTickTimestamp: Date.now(),
+        safariCharges: 0,
+        lastSafariTickTimestamp: Date.now(),
+        pokedex: {},
+        stats: { totalCaught: 0, totalBattles: 0, shiniesFound: 0, pokemonReleased: 0 },
+        isFirstRun: true,
+        dailyMissions: null,
+        leagueProgress: { currentRun: null, completedRegions: [], trophies: [], completedRuns: 0 },
+        masterProgress: { defeatedIds: [] },
+        currentScreen: 'START_SCREEN' as ScreenName,
+        favorites: [],
+        friendBattleTeam: null,
+        leagueBattleTeam: null,
+        leagueBattleResult: null,
+        masterBattleTeam: null,
+        masterBattleResult: null,
+        pendingEvolution: null,
+        pendingNewMoveQueue: [],
+        eggs: [],
+        claimedPokedexRewards: [],
+        lastStreakDate: null,
+        islandLastCatch: null,
+        pendingMissionToast: null,
+        settings: { audio: true, notifications: true },
+        expShareActive: false,
+        pendingMedalUnlock: null,
+        streak: 0,
+      }),
+      confirmEvolution: () => set((state) => {
+        const pending = state.pendingEvolution;
+        if (!pending) return {};
+        const updatePkmn = (p: Pokemon) => {
+          if (p.id !== pending.pokemonId) return p;
+          return {
+            ...p,
+            pokemonId: pending.newPokemonId,
+            name: pending.newName,
+            baseStats: pending.newBaseStats!,
+            types: pending.newTypes ?? p.types,
+          };
         };
-        const updateTeamOrBox = (list: any[]) => list.map(p => {
-          if (p.id !== id) return p;
-          if (p.level >= 100) return p;
-          const newExp = p.exp + amount;
-          const getExpNeeded = expTable[p.growthRate] ?? expTable['medium'];
-          let newLevel = p.level;
-          let remainingExp = newExp;
-          while (newLevel < 100 && remainingExp >= getExpNeeded(newLevel + 1)) {
-            newLevel++;
-          }
-          if (newLevel > p.level) {
-            // Ricalcola stats al nuovo livello 
-            const newStats = BattleEngine.calculateStats(
-              newLevel,
-              p.baseStats,
-              p.ivs,
-              p.evs ?? { hp: 0, attack: 0, defense: 0, spAtk: 0, spDef: 0, speed: 0 },
-              p.nature
-            );
-
-            // Evolution and Move learning check (non-blocking)
-            (async () => {
-              try {
-                const pokemonData = await api.getPokemon(p.pokemonId);
-                const speciesData = await api.getSpecies(p.pokemonId);
-                
-                // Moves check for all intermediate levels
-                const newMovesToLearn: Move[] = [];
-                for (let lvl = p.level + 1; lvl <= newLevel; lvl++) {
-                  const learnedMoves = await api.getMovesLearnedAtLevel(pokemonData, lvl);
-                  for (const newMove of learnedMoves) {
-                    const alreadyHas = p.moves.some(m => m.id === newMove.id);
-                    const alreadyInList = newMovesToLearn.some(m => m.id === newMove.id);
-                    if (!alreadyHas && !alreadyInList) {
-                      newMovesToLearn.push(newMove);
-                    }
-                  }
-                }
-                // Process accumulated moves
-                for (const move of newMovesToLearn) {
-                  const freshPkmn = useStore.getState().team.find(t => t.id === p.id) ?? useStore.getState().box.find(t => t.id === p.id);
-                  const currentMoves = freshPkmn?.moves ?? p.moves;
-                  if (currentMoves.length < 4) {
-                    useStore.getState().updatePokemon(p.id, { moves: [...currentMoves, move] });
-                  } else {
-                    set((state) => ({ pendingNewMoveQueue: [...(state.pendingNewMoveQueue ?? []), { pokemonId: p.id, move: move }] }));
-                    break; // Only present the first one as pending
-                  }
-                }
-
-                // Evolution check only for final level
-                const evolution = await api.getEvolutionTarget(speciesData, newLevel);
-                if (evolution && !useStore.getState().pendingEvolution && useStore.getState().pendingNewMoveQueue.length === 0) {
-                  try {
-                    const newPokemonData = await api.getPokemon(evolution.newId);
-                    const newTypes = newPokemonData.types.map((t: any) => t.type.name);
-                    const newBaseStats = {
-                      hp: newPokemonData.stats[0].base_stat,
-                      attack: newPokemonData.stats[1].base_stat,
-                      defense: newPokemonData.stats[2].base_stat,
-                      spAtk: newPokemonData.stats[3].base_stat,
-                      spDef: newPokemonData.stats[4].base_stat,
-                      speed: newPokemonData.stats[5].base_stat,
-                    };
-                    set({ pendingEvolution: { pokemonId: p.id, newPokemonId: evolution.newId, newName: evolution.newName, newTypes, newBaseStats } });
-                  } catch {
-                    set({ pendingEvolution: { pokemonId: p.id, newPokemonId: evolution.newId, newName: evolution.newName } });
-                  }
-                }
-              } catch (e) {
-                console.error("Error checking for evolution/moves:", e);
-              }
-            })();
-
-            const newCurrentHp = Math.min(newStats.hp, Math.max(0, p.currentHp + (newStats.hp - p.stats.hp)));
-            return { ...p, level: newLevel, exp: remainingExp, stats: newStats, currentHp: newCurrentHp };
-          }
-          return { ...p, exp: remainingExp };
-        });
         return {
-          team: updateTeamOrBox(state.team),
-          box: updateTeamOrBox(state.box),
+          team: state.team.map(updatePkmn),
+          box: state.box.map(updatePkmn),
+          pendingEvolution: null,
         };
       }),
-      updatePlayTime: (seconds) => set((state) => ({ player: { ...state.player, playTime: state.player.playTime + seconds } })),
-      confirmEvolution: () => set((state) => { 
-        const { pendingEvolution } = state; 
-        if (!pendingEvolution) return {}; 
-        const { pokemonId, newPokemonId, newName, newTypes, newBaseStats } = pendingEvolution; 
-        const updatePkmn = (p: Pokemon) => { 
-          if (p.id !== pokemonId) return p; 
-          const types = newTypes ?? p.types; 
-          const baseStats = newBaseStats ?? p.baseStats; 
-          const newStats =  newBaseStats 
-            ? BattleEngine.calculateStats(p.level, baseStats, p.ivs, p.evs ?? { hp: 0, attack: 0, defense: 0, spAtk: 0, spDef: 0, speed: 0 }, p.nature) 
-            : p.stats; 
-          const hpGain = newBaseStats ? Math.max(0, newStats.hp - p.stats.hp) : 0; 
-          return { ...p, pokemonId: newPokemonId, name: newName, types, baseStats, stats: newStats, currentHp: Math.min(newStats.hp, p.currentHp + hpGain) }; 
-        }; 
-        return { 
-          team: state.team.map(updatePkmn), 
-          box: state.box.map(updatePkmn), 
-          pendingEvolution: null 
-        }; 
-      }), 
       dismissEvolution: () => set({ pendingEvolution: null }),
-      dismissNewMove: () => set((state) => ({ pendingNewMoveQueue: state.pendingNewMoveQueue.slice(1) })),
+      dismissNewMove: () => set((state) => ({
+        pendingNewMoveQueue: (state.pendingNewMoveQueue ?? []).slice(1)
+      })),
       dismissMedalUnlock: () => set({ pendingMedalUnlock: null }),
-      replaceMove: (pokemonId, oldMoveId, newMove) => set((state) => {
+      replaceMove: (pokemonId: string, oldMoveId: string, newMove: Move) => set((state) => {
         const updatePkmn = (p: Pokemon) => {
           if (p.id !== pokemonId) return p;
           const moves = [...p.moves];
@@ -577,23 +487,23 @@ export const useStore = create<GameStore>()(
           pendingNewMoveQueue: (state.pendingNewMoveQueue ?? []).slice(1)
         };
       }),
-      updateSettings: (updates) => set((state) => ({ settings: { ...state.settings, ...updates } })),
-      setFriendBattleTeam: (team) => set({ friendBattleTeam: team }),
+      updateSettings: (updates: Partial<GameState['settings']>) => set((state) => ({ settings: { ...state.settings, ...updates } })),
+      setFriendBattleTeam: (team: any[]) => set({ friendBattleTeam: team }),
       clearFriendBattleTeam: () => set({ friendBattleTeam: null }),
-      setLeagueBattleTeam: (team) => set({ leagueBattleTeam: team }),
+      setLeagueBattleTeam: (team: any[]) => set({ leagueBattleTeam: team }),
       clearLeagueBattleTeam: () => set({ leagueBattleTeam: null }),
       setLeagueBattleResult: (result: 'win' | 'lose' | null) => set({ leagueBattleResult: result }),
-      setMasterBattleTeam: (team) => set({ masterBattleTeam: team }),
+      setMasterBattleTeam: (team: any[]) => set({ masterBattleTeam: team }),
       clearMasterBattleTeam: () => set({ masterBattleTeam: null }),
       setMasterBattleResult: (result: 'win' | 'lose' | null) => set({ masterBattleResult: result }),
-      recordMasterWin: (trainerId) => set((state) => ({
+      recordMasterWin: (trainerId: string) => set((state) => ({
         masterProgress: {
           defeatedIds: state.masterProgress.defeatedIds.includes(trainerId)
             ? state.masterProgress.defeatedIds
             : [...state.masterProgress.defeatedIds, trainerId],
         },
       })),
-      startIncubation: (p1, p2) => set((state) => {
+      startIncubation: (p1: Pokemon, p2: Pokemon) => set((state) => {
         if (state.eggs.length >= 4) return {};
         const isDitto = (p: Pokemon) => p.pokemonId === 132;
         const compatible =
@@ -616,79 +526,130 @@ export const useStore = create<GameStore>()(
           parent2Id: p2.id,
           basePokemonId: nonDitto.baseSpeciesId,
           baseSpeciesId: nonDitto.baseSpeciesId,
+          createdAt: now,
+          hatchAt: now + 40000,
           ivs: bestIvs,
           nature: CatchEngine.getNature(),
-          isShiny: CatchEngine.checkShiny(),
-          createdAt: now,
-          hatchAt: now + 72 * 60 * 60 * 1000,
+          isShiny: false,
         };
         return { eggs: [...state.eggs, egg] };
       }),
-      hatchEgg: (eggId) => set((state) => {
+      hatchEgg: async (eggId: string) => {
+        const state = get();
         const egg = state.eggs.find(e => e.id === eggId);
-        if (!egg) return {};
-        // Stats placeholder — fixMoves in HubScreen completerà nome/stat/mosse
-        const placeholder = { hp: 45, attack: 45, defense: 45, spAtk: 45, spDef: 45, speed: 45 };
-        const stats = BattleEngine.calculateStats(5, placeholder, egg.ivs,
-          { hp: 0, attack: 0, defense: 0, spAtk: 0, spDef: 0, speed: 0 }, egg.nature);
-        const newPokemon: Pokemon = {
-          id: Math.random().toString(36).substr(2, 9),
-          pokemonId: egg.basePokemonId,
-          name: `#${egg.basePokemonId}`,  // fixMoves sostituirà con il nome reale
-          level: 5,
-          exp: 125,
-          types: ['normal'],
-          baseStats: placeholder,
-          ivs: egg.ivs,
-          evs: { hp: 0, attack: 0, defense: 0, spAtk: 0, spDef: 0, speed: 0 },
-          stats,
-          nature: egg.nature,
-          moves: [],  // fixMoves popolerà
-          currentHp: stats.hp,
-          status: null,
-          isShiny: egg.isShiny,
-          caughtAt: Date.now(),
-          growthRate: 'medium',
-          baseSpeciesId: egg.baseSpeciesId,
-        };
-        const newTeam = state.team.length < 4 ? [...state.team, newPokemon] : state.team;
-        const newBox = state.team.length >= 4 ? [...state.box, newPokemon] : state.box;
-        return {
-          eggs: state.eggs.filter(e => e.id !== eggId),
-          team: newTeam,
-          box: newBox,
-          pokedex: { ...state.pokedex, [egg.basePokemonId]: 'caught' as const },
-        };
-      }),
-      toggleFavorite: (id) => set((state) => ({
+        if (!egg) return;
+        
+        try {
+          // Fetch Pokemon data from API
+          const pokemonData = await api.getPokemon(egg.basePokemonId);
+          const speciesData = await api.getSpecies(egg.basePokemonId);
+          
+          // Build complete Pokemon object
+          const baseStats = {
+            hp: pokemonData.stats[0].base_stat,
+            attack: pokemonData.stats[1].base_stat,
+            defense: pokemonData.stats[2].base_stat,
+            spAtk: pokemonData.stats[3].base_stat,
+            spDef: pokemonData.stats[4].base_stat,
+            speed: pokemonData.stats[5].base_stat,
+          };
+          
+          const stats = BattleEngine.calculateStats(
+            1,
+            baseStats,
+            egg.ivs,
+            { hp: 0, attack: 0, defense: 0, spAtk: 0, spDef: 0, speed: 0 },
+            egg.nature
+          );
+          
+          const moves = await api.getPokemonMoves(pokemonData, 1);
+          
+          const newPokemon: Pokemon = {
+            id: Math.random().toString(36).substr(2, 9),
+            pokemonId: egg.basePokemonId,
+            name: api.getItalianName(speciesData.names),
+            level: 1,
+            exp: 0,
+            types: pokemonData.types.map((t: any) => t.type.name),
+            stats,
+            baseStats,
+            ivs: egg.ivs,
+            evs: { hp: 0, attack: 0, defense: 0, spAtk: 0, spDef: 0, speed: 0 },
+            nature: egg.nature,
+            moves,
+            currentHp: stats.hp,
+            status: null,
+            isShiny: egg.isShiny,
+            caughtAt: Date.now(),
+            growthRate: speciesData.growth_rate.name,
+            baseSpeciesId: egg.baseSpeciesId,
+          };
+          
+          set((state) => ({
+            eggs: state.eggs.filter(e => e.id !== eggId),
+            team: state.team.length < 4 ? [...state.team, newPokemon] : state.team,
+            box: state.team.length >= 4 ? [...state.box, newPokemon] : state.box,
+            pokedex: { ...state.pokedex, [newPokemon.pokemonId]: 'caught' },
+          }));
+        } catch (e) {
+          console.error('Failed to hatch egg:', e);
+        }
+      },
+      toggleFavorite: (id: string) => set((state) => ({
         favorites: state.favorites.includes(id)
-          ? state.favorites.filter(f => f !== id)
-          : [...state.favorites, id]
+          ? state.favorites.filter(fid => fid !== id)
+          : [...state.favorites, id],
       })),
+      recordBattleWin: () => set((state) => {
+        let { battlesWon, nextIsBoss } = state.currentBattlePath;
+        if (!nextIsBoss) {
+          battlesWon += 1;
+          if (battlesWon % 15 === 0) {
+            nextIsBoss = true;
+          }
+          return { currentBattlePath: { battlesWon, nextIsBoss }, ...updateMissionProgress(state, 'battleWin') };
+        } else {
+          const nextMedal = state.medals.find(m => !m.isUnlocked);
+          let newMedals = state.medals;
+          if (nextMedal) {
+            newMedals = state.medals.map(m => m.id === nextMedal.id ? { ...m, isUnlocked: true } : m);
+          }
+          return {
+            currentBattlePath: { battlesWon: 0, nextIsBoss: false },
+            medals: newMedals,
+            pendingMedalUnlock: nextMedal ? { ...nextMedal, isUnlocked: true } : null,
+            ...updateMissionProgress(state, 'defeatGym'),
+          };
+        }
+      }),
       toggleExpShare: () => set((state) => ({ expShareActive: !state.expShareActive })),
       checkDailyMissions: () => set((state) => {
+        if (!state.dailyMissions) {
+          return { dailyMissions: generateDailyMissions(state) };
+        }
         const today = new Date().toISOString().split('T')[0];
-        if (state.dailyMissions?.date === today) return {};
+        if (state.dailyMissions.date === today) return {};
         return { dailyMissions: generateDailyMissions(state) };
       }),
-      claimMission: (id) => set((state) => {
+      claimMission: (id: string) => set((state) => {
         if (!state.dailyMissions) return {};
         const mission = state.dailyMissions.missions.find(m => m.id === id);
-        if (!mission || !mission.completed || mission.claimed) return {};
-        const { coins = 0, items = {} } = mission.reward;
+        if (!mission || mission.claimed) return {};
         const newInventory = { ...state.inventory };
-        for (const [itemId, amount] of Object.entries(items)) {
-          newInventory[itemId] = (newInventory[itemId] || 0) + amount;
+        if (mission.reward.items) {
+          Object.entries(mission.reward.items).forEach(([itemId, amount]) => {
+            newInventory[itemId] = (newInventory[itemId] || 0) + amount;
+          });
         }
         return {
-          coins: state.coins + coins,
+          coins: state.coins + (mission.reward.coins || 0),
           inventory: newInventory,
           dailyMissions: {
             ...state.dailyMissions,
             missions: state.dailyMissions.missions.map(m =>
               m.id === id ? { ...m, claimed: true } : m
-            )
-          }
+            ),
+          },
         };
       }),
       startLeagueRun: (regionId: string) => set((state) => ({
@@ -712,7 +673,7 @@ export const useStore = create<GameStore>()(
       }),
       completeLeagueRegion: (regionId: string, trophyLabel: string) => set((state) => {
         const alreadyCompleted = state.leagueProgress.completedRegions.includes(regionId);
-        const allRegions = ['kanto','johto','hoenn','sinnoh','unova','kalos','alola','galar'];
+        const allRegions = ['kanto', 'johto', 'hoenn', 'sinnoh', 'unova', 'kalos', 'alola', 'galar'];
         const newCompleted = alreadyCompleted
           ? state.leagueProgress.completedRegions
           : [...state.leagueProgress.completedRegions, regionId];
@@ -740,9 +701,9 @@ export const useStore = create<GameStore>()(
       incrementMasterMission: () => set((state) => ({
         ...updateMissionProgress(state, 'defeatMaster')
       })),
-      setIslandLastCatch: (date) => set({ islandLastCatch: date }),
+      setIslandLastCatch: (date: string) => set({ islandLastCatch: date }),
       dismissMissionToast: () => set({ pendingMissionToast: null }),
-      removePokemon: (id) => set((state) => ({
+      removePokemon: (id: string) => set((state) => ({
         team: state.team.filter(p => p.id !== id),
         box: state.box.filter(p => p.id !== id),
       })),
@@ -750,113 +711,38 @@ export const useStore = create<GameStore>()(
         const today = new Date().toISOString().split('T')[0];
         if (state.lastStreakDate === today) return {};
         const yesterday = new Date(Date.now() - 86400000).toISOString().split('T')[0];
-        const newStreak = state.lastStreakDate === yesterday ? state.streak + 1 : 1;
-        const STREAK_REWARDS: Record<number, { coins?: number; items?: Record<string, number> }> = {
-          1:  { items: { pokeball: 3 } },
-          2:  { items: { potion: 3 } },
-          3:  { coins: 200, items: { superpotion: 1 } },
-          5:  { coins: 500, items: { rare_candy: 1 } },
-          7:  { coins: 1000, items: { ultraball: 2, rare_candy: 1 } },
-          14: { coins: 2000, items: { masterball: 1, rare_candy: 2 } },
-        };
-        const reward = STREAK_REWARDS[newStreak] ?? { coins: 100 };
-        const newInventory = { ...state.inventory };
-        for (const [id, qty] of Object.entries(reward.items ?? {})) {
-          newInventory[id] = (newInventory[id] || 0) + qty;
-        }
+        const streak = state.lastStreakDate === yesterday ? (state.streak || 0) + 1 : 1;
+        const reward = streak <= 7 ? STREAK_REWARDS[streak - 1] : STREAK_REWARDS[6];
         return {
-          streak: newStreak,
           lastStreakDate: today,
-          coins: state.coins + (reward.coins ?? 0),
+          streak,
+          coins: state.coins + reward.coins,
+          inventory: { ...state.inventory, [reward.item]: (state.inventory[reward.item] || 0) + reward.qty },
+        };
+      }),
+      claimPokedexReward: (genId: string) => set((state) => {
+        if (state.claimedPokedexRewards.includes(genId)) return {};
+        const REWARDS: Record<string, { coins: number; items: Record<string, number> }> = {
+          'gen1': { coins: 1000, items: { rare_candy: 2, ultraball: 3 } },
+          'gen2': { coins: 1000, items: { rare_candy: 2, ultraball: 3 } },
+          'gen3': { coins: 1500, items: { rare_candy: 3, masterball: 1 } },
+          'gen4': { coins: 1500, items: { rare_candy: 3, masterball: 1 } },
+          'gen5': { coins: 2000, items: { rare_candy: 4, masterball: 1 } },
+          'gen6': { coins: 2000, items: { rare_candy: 4, masterball: 1 } },
+          'gen7': { coins: 2500, items: { rare_candy: 5, masterball: 2 } },
+          'gen8': { coins: 2500, items: { rare_candy: 5, masterball: 2 } },
+        };
+        const reward = REWARDS[genId];
+        if (!reward) return {};
+        const newInventory = { ...state.inventory };
+        Object.entries(reward.items).forEach(([id, qty]) => {
+          newInventory[id] = (newInventory[id] || 0) + qty;
+        });
+        return {
+          claimedPokedexRewards: [...state.claimedPokedexRewards, genId],
+          coins: state.coins + reward.coins,
           inventory: newInventory,
         };
-      }),
-      claimPokedexReward: (genId) => set((state) => { 
-        if (state.claimedPokedexRewards.includes(genId)) return {}; 
-        const REWARDS: Record<string, { coins: number; items: Record<string, number> }> = { 
-          'gen1': { coins: 1000, items: { rare_candy: 2, ultraball: 3 } }, 
-          'gen2': { coins: 1000, items: { rare_candy: 2, ultraball: 3 } }, 
-          'gen3': { coins: 1500, items: { rare_candy: 3, masterball: 1 } }, 
-          'gen4': { coins: 1500, items: { rare_candy: 3, masterball: 1 } }, 
-          'gen5': { coins: 2000, items: { rare_candy: 4, masterball: 1 } }, 
-          'gen6': { coins: 2000, items: { rare_candy: 4, masterball: 1 } }, 
-          'gen7': { coins: 2500, items: { rare_candy: 5, masterball: 2 } }, 
-          'gen8': { coins: 2500, items: { rare_candy: 5, masterball: 2 } }, 
-        }; 
-        const reward = REWARDS[genId]; 
-        if (!reward) return {}; 
-        const newInventory = { ...state.inventory }; 
-        Object.entries(reward.items).forEach(([id, qty]) => { 
-          newInventory[id] = (newInventory[id] || 0) + qty; 
-        }); 
-        return { 
-          claimedPokedexRewards: [...state.claimedPokedexRewards, genId], 
-          coins: state.coins + reward.coins, 
-          inventory: newInventory, 
-        }; 
-      }),
-      recordBattleWin: () => set((state) => {
-        let { battlesWon, nextIsBoss } = state.currentBattlePath;
-        if (!nextIsBoss) {
-          battlesWon += 1;
-          if (battlesWon % 15 === 0) {
-            nextIsBoss = true;
-          }
-          return { currentBattlePath: { battlesWon, nextIsBoss }, ...updateMissionProgress(state, 'battleWin') };
-        } else {
-          const nextMedal = state.medals.find(m => !m.isUnlocked);
-          let newMedals = state.medals;
-          if (nextMedal) {
-            newMedals = state.medals.map(m => m.id === nextMedal.id ? { ...m, isUnlocked: true } : m);
-          }
-          return {
-            currentBattlePath: { battlesWon: 0, nextIsBoss: false },
-            medals: newMedals,
-            pendingMedalUnlock: nextMedal ? { ...nextMedal, isUnlocked: true } : null,
-            ...updateMissionProgress(state, 'defeatGym'),
-          };
-        }
-      }),
-      resetGame: () => set({
-        player: { name: '', gender: 'M', createdAt: Date.now(), playTime: 0 },
-        team: [],
-        box: [],
-        inventory: { 'pokeball': 10, 'potion': 5, 'full_heal': 2 },
-        coins: 500,
-        medals: INITIAL_MEDALS,
-        currentBattlePath: { battlesWon: 0, nextIsBoss: false },
-        charges: 6,
-        lastTickTimestamp: Date.now(),
-        safariCharges: 0,
-        lastSafariTickTimestamp: Date.now(),
-        pokedex: {},
-        stats: { totalCaught: 0, totalBattles: 0, shiniesFound: 0, pokemonReleased: 0 },
-        isFirstRun: true,
-        dailyMissions: null,
-        leagueProgress: {
-          completedRuns: 0,
-          completedRegions: [],
-          trophies: [],
-          currentRun: null,
-        },
-        currentScreen: 'START_SCREEN',
-        settings: { audio: true, notifications: true },
-        expShareActive: false,
-        pendingEvolution: null,
-        pendingNewMoveQueue: [],
-        eggs: [],
-        favorites: [],
-        friendBattleTeam: null,
-        leagueBattleTeam: null,
-        leagueBattleResult: null,
-        masterBattleTeam: null,
-        masterBattleResult: null,
-        masterProgress: { defeatedIds: [] },
-        claimedPokedexRewards: [],
-        islandLastCatch: null,
-        pendingMissionToast: null,
-        streak: 0,
-        lastStreakDate: null,
       }),
     }),
     {

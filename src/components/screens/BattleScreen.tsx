@@ -581,7 +581,7 @@ export default function BattleScreen() {
         '236': 0.5, '235': 0.5, '234': 0.5, '505': 0.5, '392': 0.25,
         '588': 0.5, '456': 0.5, '273': 0.5, '156': 0.5
       };
-      const healMove = validMoves.find(m => 
+      const healMove = validMoves.find((m: any) => 
         (HEAL_MOVES[m.id] || m.name.toLowerCase().includes('recup')) && 
         liveEnemy.currentHp / liveEnemy.maxHp < 0.5
       );
@@ -626,7 +626,7 @@ export default function BattleScreen() {
         : { name: 'Lotta', type: 'normal', power: 40, category: 'physical', pp: 1, maxPp: 1, id: '0', accuracy: 100, priority: 0, description: '' };
     }
 
-    setEnemy(prev => {
+    setEnemy((prev: any) => {
       if (!prev) return prev;
       const updatedMoves = prev.moves.map((m: any) =>
         m.id === enemyMove.id ? { ...m, pp: Math.max(0, m.pp - 1) } : m
@@ -742,8 +742,8 @@ export default function BattleScreen() {
       '588': 0.5, '456': 0.5, '273': 0.5, '156': 0.5
     };
     const enemyHealRatio = ENEMY_HEAL_MOVES[enemyMove.id] ?? (enemyMove.name.toLowerCase().includes('recup') ? 0.5 : 0);
-    if (enemyHealRatio > 0 || (enemyMove.category === 'status' && enemyMove.name.toLowerCase().includes('riposo'))) {
-      const healed = Math.floor(liveEnemy.maxHp * (enemyMove.id === '156' ? 1.0 : enemyHealRatio));
+    if (enemyHealRatio > 0 || enemyMove.id === '156') {
+      const healed = Math.floor(liveEnemy.maxHp * 0.5);
       const newEnemyHp = Math.min(liveEnemy.maxHp, liveEnemy.currentHp + healed);
       const actualHeal = newEnemyHp - liveEnemy.currentHp;
       setEnemy((prev: any) => {
@@ -752,14 +752,7 @@ export default function BattleScreen() {
         return next;
       });
       addLog(`${liveEnemy.name} recupera ${actualHeal} HP!`);
-      if (enemyMove.id === '156') {
-        setEnemy((prev: any) => {
-          const next = { ...prev, status: 'SLP' };
-          enemyRef.current = next;
-          return next;
-        });
-        addLog(`${liveEnemy.name} si è addormentato!`);
-      }
+      // Riposo: solo guarigione al 50%, nessun sonno
     }
 
     // Check Flinch inflitto dal nemico al giocatore
@@ -1344,6 +1337,38 @@ export default function BattleScreen() {
         // NON resettare enemyStages qui: il debuff sul nemico deve restare anche se il player cambia 
         setEnemyFlinch(false);
         setPlayerFlinch(false);
+        setIsAnimating(false);
+        return;
+      }
+
+      // Ricontrolla status dopo il turno nemico (può aver appena applicato SLP/PAR/FRZ)
+      if (freshPlayerPkmn.status === 'SLP') {
+        if (Math.random() < 0.2) {
+          updatePokemon(freshPlayerPkmn.id, { status: null, sleepTurns: undefined });
+          addLog(`${freshPlayerPkmn.name} si è svegliato!`);
+        } else {
+          addLog(`${freshPlayerPkmn.name} sta dormendo profondamente...`);
+          setTurn('player');
+          setIsAnimating(false);
+          return;
+        }
+      }
+
+      if (freshPlayerPkmn.status === 'FRZ') {
+        if (Math.random() < 0.2) {
+          updatePokemon(freshPlayerPkmn.id, { status: null });
+          addLog(`${freshPlayerPkmn.name} si è scongelato!`);
+        } else {
+          addLog(`${freshPlayerPkmn.name} è congelato e non può muoversi!`);
+          setTurn('player');
+          setIsAnimating(false);
+          return;
+        }
+      }
+
+      if (freshPlayerPkmn.status === 'PAR' && Math.random() < 0.25) {
+        addLog(`${freshPlayerPkmn.name} è paralizzato e non riesce a muoversi!`);
+        setTurn('player');
         setIsAnimating(false);
         return;
       }

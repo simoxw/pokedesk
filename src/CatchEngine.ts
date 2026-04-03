@@ -1,4 +1,4 @@
-import { Pokemon, Item } from './types';
+import { Pokemon, Item, Stats } from './types';
 
 export const CatchEngine = {
   calculateCatchRate(
@@ -47,5 +47,37 @@ export const CatchEngine = {
       'Calm', 'Gentle', 'Sassy', 'Careful', 'Quirky'
     ];
     return natures[Math.floor(Math.random() * natures.length)];
+  },
+
+  getBaseStats(pokemonData: any): Stats {
+    return {
+      hp: pokemonData.stats[0].base_stat,
+      attack: pokemonData.stats[1].base_stat,
+      defense: pokemonData.stats[2].base_stat,
+      spAtk: pokemonData.stats[3].base_stat,
+      spDef: pokemonData.stats[4].base_stat,
+      speed: pokemonData.stats[5].base_stat,
+    };
+  },
+
+  createPokemon(
+    pokemonId: number,
+    level: number,
+    isShiny: boolean,
+    ivs: Stats,
+    evs: Stats = { hp: 0, attack: 0, defense: 0, spAtk: 0, spDef: 0, speed: 0 },
+    nature: string = 'Quirky'
+  ) {
+    // This method needs to fetch data from API, so we return a partial object
+    // The actual implementation should be async and use api.getPokemon
+    // For now, we'll return a structure that can be filled in by the caller
+    return {
+      pokemonId,
+      level,
+      isShiny,
+      ivs,
+      evs,
+      nature,
+    };
   }
 };

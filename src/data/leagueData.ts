@@ -294,7 +294,7 @@ export const LEAGUE_REGIONS: LeagueRegion[] = [
         name: 'Febe',
         title: 'Superquattro dei Fantasma',
         type: 'ghost',
-        spriteUrl: sprite('phoebe'),
+        spriteUrl: 'https://play.pokemonshowdown.com/sprites/trainers/faba.png',
         pokemon: [
           { id: 302, level: 53 }, // Sableye
           { id: 353, level: 54 }, // Shuppet
@@ -334,7 +334,7 @@ export const LEAGUE_REGIONS: LeagueRegion[] = [
         name: 'Drake',
         title: 'Superquattro del Drago',
         type: 'dragon',
-        spriteUrl: sprite('drake'),
+        spriteUrl: 'https://play.pokemonshowdown.com/sprites/trainers/drake-gen3.png',
         pokemon: [
           { id: 372, level: 52 }, // Shelgon
           { id: 334, level: 54 }, // Altaria
