@@ -108,6 +108,18 @@ const ACHIEVEMENTS_DATA = [
     target: 1008,
     reward: { coins: 50000, title: 'Professor' }
   },
+  { id: 'col_gen3', name: 'Esploratore Hoenn', description: 'Cattura 50 Pokémon di Gen 3', category: 'collection' as const, target: 50, reward: { coins: 3000, items: { rare_candy: 2 } } },
+  { id: 'col_gen3_full', name: 'Maestro Hoenn', description: 'Cattura tutti i 135 Pokémon di Gen 3', category: 'collection' as const, target: 135, reward: { coins: 10000, items: { rare_candy: 3, masterball: 1 } } },
+  { id: 'col_gen4', name: 'Esploratore Sinnoh', description: 'Cattura 50 Pokémon di Gen 4', category: 'collection' as const, target: 50, reward: { coins: 3000, items: { rare_candy: 2 } } },
+  { id: 'col_gen4_full', name: 'Maestro Sinnoh', description: 'Cattura tutti i 107 Pokémon di Gen 4', category: 'collection' as const, target: 107, reward: { coins: 10000, items: { rare_candy: 3, masterball: 1 } } },
+  { id: 'col_gen5', name: 'Esploratore Unima', description: 'Cattura 50 Pokémon di Gen 5', category: 'collection' as const, target: 50, reward: { coins: 4000, items: { rare_candy: 2 } } },
+  { id: 'col_gen5_full', name: 'Maestro Unima', description: 'Cattura tutti i 156 Pokémon di Gen 5', category: 'collection' as const, target: 156, reward: { coins: 12000, items: { rare_candy: 4, masterball: 1 } } },
+  { id: 'col_gen6', name: 'Esploratore Kalos', description: 'Cattura 30 Pokémon di Gen 6', category: 'collection' as const, target: 30, reward: { coins: 4000, items: { rare_candy: 2 } } },
+  { id: 'col_gen6_full', name: 'Maestro Kalos', description: 'Cattura tutti i 72 Pokémon di Gen 6', category: 'collection' as const, target: 72, reward: { coins: 12000, items: { rare_candy: 4, masterball: 1 } } },
+  { id: 'col_gen7', name: 'Esploratore Alola', description: 'Cattura 30 Pokémon di Gen 7', category: 'collection' as const, target: 30, reward: { coins: 4000, items: { rare_candy: 2 } } },
+  { id: 'col_gen7_full', name: 'Maestro Alola', description: 'Cattura tutti i 88 Pokémon di Gen 7', category: 'collection' as const, target: 88, reward: { coins: 12000, items: { rare_candy: 4, masterball: 2 } } },
+  { id: 'col_gen8', name: 'Esploratore Galar', description: 'Cattura 30 Pokémon di Gen 8', category: 'collection' as const, target: 30, reward: { coins: 4000, items: { rare_candy: 2 } } },
+  { id: 'col_gen8_full', name: 'Maestro Galar', description: 'Cattura tutti i 89 Pokémon di Gen 8', category: 'collection' as const, target: 89, reward: { coins: 12000, items: { rare_candy: 4, masterball: 2 } } },
   
   // LEGA
   {
@@ -171,7 +183,7 @@ const CATEGORY_COLORS = {
 };
 
 export default function AchievementScreen() {
-  const { achievements, stats, team, box, pokedex, incrementStat, addCoins, addItem, setScreen, initializeAchievements, updateAchievementProgress, unlockAchievement: unlockAchievementStore } = useStore();
+  const { achievements, stats, team, box, pokedex, incrementStat, addCoins, addItem, setScreen, initializeAchievements, updateAchievementProgress, unlockAchievement: unlockAchievementStore, leagueProgress, masterProgress } = useStore();
   const [showNotification, setShowNotification] = useState<string | null>(null);
 
   // Inizializza achievements se vuoto
@@ -184,50 +196,51 @@ export default function AchievementScreen() {
   // Calcola progressi retroattivi
   useEffect(() => {
     const updateRetroactiveProgress = () => {
-      const allPokemon = [...team, ...box];
-      const shinyCount = allPokemon.filter(p => p.isShiny).length;
-      const gen1Count = Object.keys(pokedex).filter(id => parseInt(id) <= 151).length;
-      const gen2Count = Object.keys(pokedex).filter(id => parseInt(id) > 151 && parseInt(id) <= 251).length;
-      const totalCount = Object.keys(pokedex).length;
-
-      ACHIEVEMENTS_DATA.forEach(a => {
-        let progress = 0;
-        switch (a.id) {
-          case 'catch_10':
-          case 'catch_100':
-          case 'catch_500':
-            progress = stats.totalCaught;
-            break;
-          case 'battle_10':
-          case 'battle_50':
-          case 'battle_100':
-            progress = stats.totalBattles;
-            break;
-          case 'shiny_1':
-          case 'shiny_10':
-          case 'shiny_50':
-            progress = shinyCount;
-            break;
-          case 'pokedex_gen1':
-            progress = gen1Count;
-            break;
-          case 'pokedex_gen2':
-            progress = gen2Count;
-            break;
-          case 'pokedex_all':
-            progress = totalCount;
-            break;
-          default:
-            progress = 0;
-        }
-        
-        updateAchievementProgress(a.id, progress);
-        console.log(`Achievement ${a.id}: progress ${progress}/${a.target}`);
-      });
+      const caughtIds = Object.entries(pokedex) 
+        .filter(([, s]) => s === 'caught') 
+        .map(([id]) => Number(id)); 
+ 
+      const countInRange = (min: number, max: number) => 
+        caughtIds.filter(id => id >= min && id <= max).length; 
+ 
+      const shinyCaught = [...team, ...box].filter(p => p.isShiny).length; 
+ 
+      const progressMap: Record<string, number> = { 
+        catch_10: stats.totalCaught, 
+        catch_100: stats.totalCaught, 
+        catch_500: stats.totalCaught, 
+        battle_10: stats.totalBattles, 
+        battle_50: stats.totalBattles, 
+        battle_100: stats.totalBattles, 
+        shiny_1: shinyCaught, 
+        shiny_10: shinyCaught, 
+        shiny_50: shinyCaught, 
+        pokedex_gen1: countInRange(1, 151), 
+        pokedex_gen2: countInRange(152, 251), 
+        pokedex_all: caughtIds.length, 
+        league_win: (leagueProgress.completedRegions.length > 0 || leagueProgress.completedRuns > 0) ? 1 : 0, 
+        league_master: masterProgress?.defeatedIds?.length ?? 0, 
+        col_gen3: countInRange(252, 386), 
+        col_gen3_full: countInRange(252, 386), 
+        col_gen4: countInRange(387, 493), 
+        col_gen4_full: countInRange(387, 493), 
+        col_gen5: countInRange(494, 649), 
+        col_gen5_full: countInRange(494, 649), 
+        col_gen6: countInRange(650, 721), 
+        col_gen6_full: countInRange(650, 721), 
+        col_gen7: countInRange(722, 809), 
+        col_gen7_full: countInRange(722, 809), 
+        col_gen8: countInRange(810, 898), 
+        col_gen8_full: countInRange(810, 898), 
+      }; 
+ 
+      Object.entries(progressMap).forEach(([id, progress]) => { 
+        updateAchievementProgress(id, progress); 
+      }); 
     };
 
     updateRetroactiveProgress();
-  }, [stats, team, box, pokedex]);
+  }, [stats, team, box, pokedex, leagueProgress, masterProgress]);
 
   const unlockAchievement = (achievementId: string) => {
     // Usa la funzione dello store per sbloccare l'achievement
@@ -257,11 +270,14 @@ export default function AchievementScreen() {
     if (current) return current.progress;
     
     // Calcolo retroattivo
-    const allPokemon = [...team, ...box];
-    const shinyCount = allPokemon.filter(p => p.isShiny).length;
-    const gen1Count = Object.keys(pokedex).filter(id => parseInt(id) <= 151).length;
-    const gen2Count = Object.keys(pokedex).filter(id => parseInt(id) > 151 && parseInt(id) <= 251).length;
-    const totalCount = Object.keys(pokedex).length;
+    const caughtIds = Object.entries(pokedex) 
+      .filter(([, s]) => s === 'caught') 
+      .map(([id]) => Number(id)); 
+
+    const countInRange = (min: number, max: number) => 
+      caughtIds.filter(id => id >= min && id <= max).length; 
+
+    const shinyCount = [...team, ...box].filter(p => p.isShiny).length; 
 
     switch (achievementId) {
       case 'catch_10':
@@ -277,11 +293,33 @@ export default function AchievementScreen() {
       case 'shiny_50':
         return shinyCount;
       case 'pokedex_gen1':
-        return gen1Count;
+        return countInRange(1, 151);
       case 'pokedex_gen2':
-        return gen2Count;
+        return countInRange(152, 251);
       case 'pokedex_all':
-        return totalCount;
+        return caughtIds.length;
+      case 'league_win':
+        return (leagueProgress.completedRegions.length > 0 || leagueProgress.completedRuns > 0) ? 1 : 0;
+      case 'league_master':
+        return masterProgress?.defeatedIds?.length ?? 0;
+      case 'col_gen3':
+      case 'col_gen3_full':
+        return countInRange(252, 386);
+      case 'col_gen4':
+      case 'col_gen4_full':
+        return countInRange(387, 493);
+      case 'col_gen5':
+      case 'col_gen5_full':
+        return countInRange(494, 649);
+      case 'col_gen6':
+      case 'col_gen6_full':
+        return countInRange(650, 721);
+      case 'col_gen7':
+      case 'col_gen7_full':
+        return countInRange(722, 809);
+      case 'col_gen8':
+      case 'col_gen8_full':
+        return countInRange(810, 898);
       default:
         return 0;
     }
@@ -336,22 +374,22 @@ export default function AchievementScreen() {
         </div>
 
         {/* Stats Summary */}
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
-          <div className="bg-white/5 rounded-2xl p-4 text-center">
-            <div className="text-2xl font-black">{stats.totalCaught}</div>
-            <div className="text-xs text-white/40">Catture</div>
+        <div className="grid grid-cols-4 gap-2 mb-6">
+          <div className="bg-white/5 rounded-xl p-2 text-center">
+            <div className="text-lg font-black">{stats.totalCaught}</div>
+            <div className="text-[10px] text-white/40">Catture</div>
           </div>
-          <div className="bg-white/5 rounded-2xl p-4 text-center">
-            <div className="text-2xl font-black">{stats.totalBattles}</div>
-            <div className="text-xs text-white/40">Vittorie</div>
+          <div className="bg-white/5 rounded-xl p-2 text-center">
+            <div className="text-lg font-black">{stats.totalBattles}</div>
+            <div className="text-[10px] text-white/40">Vittorie</div>
           </div>
-          <div className="bg-white/5 rounded-2xl p-4 text-center">
-            <div className="text-2xl font-black">{[...team, ...box].filter(p => p.isShiny).length}</div>
-            <div className="text-xs text-white/40">Shiny</div>
+          <div className="bg-white/5 rounded-xl p-2 text-center">
+            <div className="text-lg font-black">{[...team, ...box].filter(p => p.isShiny).length}</div>
+            <div className="text-[10px] text-white/40">Shiny</div>
           </div>
-          <div className="bg-white/5 rounded-2xl p-4 text-center">
-            <div className="text-2xl font-black">{Object.keys(pokedex).length}</div>
-            <div className="text-xs text-white/40">Pokédex</div>
+          <div className="bg-white/5 rounded-xl p-2 text-center">
+            <div className="text-lg font-black">{Object.keys(pokedex).length}</div>
+            <div className="text-[10px] text-white/40">Pokédex</div>
           </div>
         </div>
       </div>

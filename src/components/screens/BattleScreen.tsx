@@ -44,6 +44,7 @@ export default function BattleScreen() {
   const enemyRef = React.useRef<any>(null);
   enemyRef.current = enemy;
   const [apiError, setApiError] = useState<string | null>(null);
+  const [playerTookDamage, setPlayerTookDamage] = useState(false);
 
   const playerPkmn = team[activeIdx];
   const isLeagueBattle = !!leagueBattleTeam;
@@ -478,6 +479,14 @@ export default function BattleScreen() {
     }
 
     recordBattleWin(); 
+    // Achievement: Invincibile 
+    if (!playerTookDamage) { 
+      useStore.getState().updateAchievementProgress('no_damage', 1); 
+    } 
+    // Achievement: Serie Vincente 
+    const newStreak = (useStore.getState().battleWinStreak ?? 0); 
+    useStore.getState().updateAchievementProgress('streak_10', newStreak); 
+
     if (isBoss) { 
       addLog("🏅 Medaglia conquistata!"); 
       confetti({ particleCount: 150, spread: 70, origin: { y: 0.6 } }); 
@@ -823,6 +832,7 @@ export default function BattleScreen() {
     const newPlayerHp = Math.max(0, currentPlayerPkmn.currentHp - enemyDamage);
     updatePokemon(currentPlayerPkmn.id, { currentHp: newPlayerHp });
     if (enemyDamage > 0) {
+      setPlayerTookDamage(true);
       setPlayerHitAnim(true);
       setTimeout(() => setPlayerHitAnim(false), 400);
     }
@@ -908,6 +918,7 @@ export default function BattleScreen() {
     setIsAnimating(true);
     addLog(`Vai ${team[idx].name}!`);
     setActiveIdx(idx);
+    setPlayerTookDamage(false);
     setPlayerStages({ attack: 0, defense: 0, spAtk: 0, spDef: 0, speed: 0, accuracy: 0, evasion: 0 });
     // Dopo il cambio il nemico attacca 
     await new Promise(r => setTimeout(r, 600));

@@ -6,6 +6,7 @@ import { BattleEngine } from './BattleEngine';
 import { CatchEngine } from './CatchEngine';
 
 interface GameStore extends GameState {
+  battleWinStreak: number;
   setScreen: (screen: ScreenName) => void;
   setFriendBattleTeam: (team: any[]) => void;
   clearFriendBattleTeam: () => void;
@@ -49,6 +50,7 @@ interface GameStore extends GameState {
   hatchEgg: (eggId: string) => Promise<void>;
   toggleFavorite: (id: string) => void;
   recordBattleWin: () => void;
+  resetBattleStreak: () => void;
   toggleExpShare: () => void;
   checkDailyMissions: () => void;
   claimMission: (id: string) => void;
@@ -213,6 +215,7 @@ export const useStore = create<GameStore>()(
       dailyMissions: null,
       pendingMissionToast: null,
       streak: 0,
+      battleWinStreak: 0,
       achievements: [],
       
       // actions
@@ -221,11 +224,23 @@ export const useStore = create<GameStore>()(
         set({ player: { name, gender, createdAt: Date.now(), playTime: 0 }, isFirstRun: false }),
       updatePlayer: (updates: Partial<GameState['player']>) => 
         set((state) => ({ player: { ...state.player, ...updates } })),
-      addPokemon: (pokemon: Pokemon) => set((state) => {
-        if (state.team.length < 4) {
-          return { team: [...state.team, pokemon], pokedex: { ...state.pokedex, [pokemon.pokemonId]: 'caught' } };
-        }
-        return { box: [...state.box, pokemon], pokedex: { ...state.pokedex, [pokemon.pokemonId]: 'caught' } };
+      addPokemon: (pokemon: Pokemon) => set((state) => { 
+        const missionUpdates = updateMissionProgress(state, 'catch'); 
+        const shinyUpdates = pokemon.isShiny ? updateMissionProgress({ ...state, ...missionUpdates }, 'catchShiny') : {}; 
+        if (state.team.length < 4) { 
+          return { 
+            team: [...state.team, pokemon], 
+            pokedex: { ...state.pokedex, [pokemon.pokemonId]: 'caught' }, 
+            ...missionUpdates, 
+            ...shinyUpdates, 
+          }; 
+        } 
+        return { 
+          box: [...state.box, pokemon], 
+          pokedex: { ...state.pokedex, [pokemon.pokemonId]: 'caught' }, 
+          ...missionUpdates, 
+          ...shinyUpdates, 
+        }; 
       }),
       updatePokemon: (id: string, updates: Partial<Pokemon>) => set((state) => ({
         team: state.team.map(p => p.id === id ? { ...p, ...updates } : p),
@@ -425,9 +440,14 @@ export const useStore = create<GameStore>()(
       addItem: (itemId: string, amount: number) => set((state) => ({
         inventory: { ...state.inventory, [itemId]: (state.inventory[itemId] || 0) + amount }
       })),
-      useItem: (itemId: string) => set((state) => ({
-        inventory: { ...state.inventory, [itemId]: Math.max(0, (state.inventory[itemId] || 0) - 1) }
-      })),
+      useItem: (itemId: string) => set((state) => { 
+        const healItems = new Set(['potion', 'superpotion', 'hyperpotion', 'full_heal']); 
+        const missionUpdates = healItems.has(itemId) ? updateMissionProgress(state, 'useItem') : {}; 
+        return { 
+          inventory: { ...state.inventory, [itemId]: Math.max(0, (state.inventory[itemId] || 0) - 1) }, 
+          ...missionUpdates, 
+        }; 
+      }),
       unlockMedal: (id: number) => set((state) => ({
         medals: state.medals.map(m => m.id === id ? { ...m, isUnlocked: true } : m)
       })),
@@ -593,6 +613,7 @@ export const useStore = create<GameStore>()(
         expShareActive: false,
         pendingMedalUnlock: null,
         streak: 0,
+        battleWinStreak: 0,
       }),
       confirmEvolution: () => set((state) => {
         const pending = state.pendingEvolution;
@@ -752,6 +773,9 @@ export const useStore = create<GameStore>()(
               totalCaught: state.stats.totalCaught + 1,
             },
           }));
+
+          const currentBreed = get().achievements.find(a => a.id === 'breed_10')?.progress ?? 0;
+          get().updateAchievementProgress('breed_10', currentBreed + 1);
         } catch (e) {
           console.error('Failed to hatch egg:', e);
         }
@@ -768,7 +792,11 @@ export const useStore = create<GameStore>()(
           if (battlesWon % 15 === 0) {
             nextIsBoss = true;
           }
-          return { currentBattlePath: { battlesWon, nextIsBoss }, ...updateMissionProgress(state, 'battleWin') };
+          return { 
+            currentBattlePath: { battlesWon, nextIsBoss }, 
+            battleWinStreak: (state.battleWinStreak ?? 0) + 1,
+            ...updateMissionProgress(state, 'battleWin') 
+          };
         } else {
           const nextMedal = state.medals.find(m => !m.isUnlocked);
           let newMedals = state.medals;
@@ -777,12 +805,14 @@ export const useStore = create<GameStore>()(
           }
           return {
             currentBattlePath: { battlesWon: 0, nextIsBoss: false },
+            battleWinStreak: 0,
             medals: newMedals,
             pendingMedalUnlock: nextMedal ? { ...nextMedal, isUnlocked: true } : null,
             ...updateMissionProgress(state, 'defeatGym'),
           };
         }
       }),
+      resetBattleStreak: () => set({ battleWinStreak: 0 }),
       toggleExpShare: () => set((state) => ({ expShareActive: !state.expShareActive })),
       checkDailyMissions: () => set((state) => {
         if (!state.dailyMissions) {
@@ -925,6 +955,18 @@ export const useStore = create<GameStore>()(
            { id: 'pokedex_gen1', name: 'Professor Kanto', description: 'Completa il Pokédex Gen 1', category: 'collection', target: 151, reward: { coins: 10000, items: { rare_candy: 3 } }, progress: gen1Count, unlocked: false },
            { id: 'pokedex_gen2', name: 'Professor Johto', description: 'Completa il Pokédex Gen 2', category: 'collection', target: 100, reward: { coins: 10000, items: { rare_candy: 3 } }, progress: gen2Count, unlocked: false },
            { id: 'pokedex_all', name: 'Professor Pokémon', description: 'Completa tutti i Pokédex', category: 'collection', target: 1008, reward: { coins: 50000, title: 'Professor' }, progress: totalCount, unlocked: false },
+           { id: 'col_gen3', name: 'Esploratore Hoenn', description: 'Cattura 50 Pokémon di Gen 3', category: 'collection', target: 50, reward: { coins: 3000, items: { rare_candy: 2 } }, progress: 0, unlocked: false },
+           { id: 'col_gen3_full', name: 'Maestro Hoenn', description: 'Cattura tutti i 135 Pokémon di Gen 3', category: 'collection', target: 135, reward: { coins: 10000, items: { rare_candy: 3, masterball: 1 } }, progress: 0, unlocked: false },
+           { id: 'col_gen4', name: 'Esploratore Sinnoh', description: 'Cattura 50 Pokémon di Gen 4', category: 'collection', target: 50, reward: { coins: 3000, items: { rare_candy: 2 } }, progress: 0, unlocked: false },
+           { id: 'col_gen4_full', name: 'Maestro Sinnoh', description: 'Cattura tutti i 107 Pokémon di Gen 4', category: 'collection', target: 107, reward: { coins: 10000, items: { rare_candy: 3, masterball: 1 } }, progress: 0, unlocked: false },
+           { id: 'col_gen5', name: 'Esploratore Unima', description: 'Cattura 50 Pokémon di Gen 5', category: 'collection', target: 50, reward: { coins: 4000, items: { rare_candy: 2 } }, progress: 0, unlocked: false },
+           { id: 'col_gen5_full', name: 'Maestro Unima', description: 'Cattura tutti i 156 Pokémon di Gen 5', category: 'collection', target: 156, reward: { coins: 12000, items: { rare_candy: 4, masterball: 1 } }, progress: 0, unlocked: false },
+           { id: 'col_gen6', name: 'Esploratore Kalos', description: 'Cattura 30 Pokémon di Gen 6', category: 'collection', target: 30, reward: { coins: 4000, items: { rare_candy: 2 } }, progress: 0, unlocked: false },
+           { id: 'col_gen6_full', name: 'Maestro Kalos', description: 'Cattura tutti i 72 Pokémon di Gen 6', category: 'collection', target: 72, reward: { coins: 12000, items: { rare_candy: 4, masterball: 1 } }, progress: 0, unlocked: false },
+           { id: 'col_gen7', name: 'Esploratore Alola', description: 'Cattura 30 Pokémon di Gen 7', category: 'collection', target: 30, reward: { coins: 4000, items: { rare_candy: 2 } }, progress: 0, unlocked: false },
+           { id: 'col_gen7_full', name: 'Maestro Alola', description: 'Cattura tutti i 88 Pokémon di Gen 7', category: 'collection', target: 88, reward: { coins: 12000, items: { rare_candy: 4, masterball: 2 } }, progress: 0, unlocked: false },
+           { id: 'col_gen8', name: 'Esploratore Galar', description: 'Cattura 30 Pokémon di Gen 8', category: 'collection', target: 30, reward: { coins: 4000, items: { rare_candy: 2 } }, progress: 0, unlocked: false },
+           { id: 'col_gen8_full', name: 'Maestro Galar', description: 'Cattura tutti i 89 Pokémon di Gen 8', category: 'collection', target: 89, reward: { coins: 12000, items: { rare_candy: 4, masterball: 2 } }, progress: 0, unlocked: false },
            { id: 'league_win', name: 'Aspirante', description: 'Sconfiggi un membro della Lega', category: 'special', target: 1, reward: { coins: 5000 }, progress: 0, unlocked: false },
            { id: 'league_master', name: 'Campione', description: 'Sconfiggi tutti i Master', category: 'special', target: 8, reward: { coins: 20000, title: 'Champion' }, progress: 0, unlocked: false },
            { id: 'no_damage', name: 'Invincibile', description: 'Vinci una battaglia senza subire danni', category: 'special', target: 1, reward: { coins: 3000 }, progress: 0, unlocked: false },
