@@ -298,28 +298,30 @@ export default function AchievementScreen() {
         return countInRange(152, 251);
       case 'pokedex_all':
         return caughtIds.length;
-      case 'league_win':
-        return (leagueProgress.completedRegions.length > 0 || leagueProgress.completedRuns > 0) ? 1 : 0;
-      case 'league_master':
-        return masterProgress?.defeatedIds?.length ?? 0;
-      case 'col_gen3':
-      case 'col_gen3_full':
-        return countInRange(252, 386);
-      case 'col_gen4':
-      case 'col_gen4_full':
-        return countInRange(387, 493);
-      case 'col_gen5':
-      case 'col_gen5_full':
-        return countInRange(494, 649);
-      case 'col_gen6':
-      case 'col_gen6_full':
-        return countInRange(650, 721);
-      case 'col_gen7':
-      case 'col_gen7_full':
-        return countInRange(722, 809);
-      case 'col_gen8':
-      case 'col_gen8_full':
-        return countInRange(810, 898);
+      case 'col_gen3': 
+      case 'col_gen3_full': 
+        return countInRange(252, 386); 
+      case 'col_gen4': 
+      case 'col_gen4_full': 
+        return countInRange(387, 493); 
+      case 'col_gen5': 
+      case 'col_gen5_full': 
+        return countInRange(494, 649); 
+      case 'col_gen6': 
+      case 'col_gen6_full': 
+        return countInRange(650, 721); 
+      case 'col_gen7': 
+      case 'col_gen7_full': 
+        return countInRange(722, 809); 
+      case 'col_gen8': 
+      case 'col_gen8_full': 
+        return countInRange(810, 898); 
+      case 'breed_10': 
+        return achievements.find(a => a.id === 'breed_10')?.progress ?? 0; 
+      case 'no_damage': 
+        return achievements.find(a => a.id === 'no_damage')?.progress ?? 0; 
+      case 'streak_10': 
+        return achievements.find(a => a.id === 'streak_10')?.progress ?? 0; 
       default:
         return 0;
     }
@@ -467,6 +469,17 @@ export default function AchievementScreen() {
                         transition={{ duration: 0.5 }}
                       />
                     </div>
+
+                    {status === 'completed' && ( 
+                      <div className="mt-3 flex items-center justify-between"> 
+                        <p className="text-[11px] text-green-400 font-bold"> 
+                          ✅ Obiettivo completato! Tocca per ritirare la ricompensa. 
+                        </p> 
+                        <span className="text-[10px] bg-green-500 text-black font-black px-3 py-1 rounded-full animate-pulse"> 
+                          RITIRA 
+                        </span> 
+                      </div> 
+                    )}
                   </motion.div>
                 );
               })}

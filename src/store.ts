@@ -614,6 +614,7 @@ export const useStore = create<GameStore>()(
         pendingMedalUnlock: null,
         streak: 0,
         battleWinStreak: 0,
+        achievements: [],
       }),
       confirmEvolution: () => set((state) => {
         const pending = state.pendingEvolution;
@@ -938,9 +939,10 @@ export const useStore = create<GameStore>()(
        initializeAchievements: () => set((state) => {
          const allPokemon = [...state.team, ...state.box];
          const shinyCount = allPokemon.filter(p => p.isShiny).length;
-         const gen1Count = Object.keys(state.pokedex).filter(id => parseInt(id) <= 151).length;
-         const gen2Count = Object.keys(state.pokedex).filter(id => parseInt(id) > 151 && parseInt(id) <= 251).length;
-         const totalCount = Object.keys(state.pokedex).length;
+         const caughtEntries = Object.entries(state.pokedex).filter(([, s]) => s === 'caught').map(([id]) => Number(id)); 
+         const gen1Count = caughtEntries.filter(id => id <= 151).length; 
+         const gen2Count = caughtEntries.filter(id => id >= 152 && id <= 251).length; 
+         const totalCount = caughtEntries.length; 
 
          const achievements: Achievement[] = [
            { id: 'catch_10', name: 'Primo Passo', description: 'Cattura 10 Pokémon', category: 'catch', target: 10, reward: { coins: 500 }, progress: state.stats.totalCaught, unlocked: false },
@@ -1026,6 +1028,8 @@ export const useStore = create<GameStore>()(
         state.masterBattleResult = null;
         if (!state.masterProgress) state.masterProgress = { defeatedIds: [] };
         if (!state.claimedPokedexRewards) state.claimedPokedexRewards = [];
+        if (state.battleWinStreak === undefined) state.battleWinStreak = 0; 
+        if (!state.achievements) state.achievements = []; 
       }
     }
   )
