@@ -32,11 +32,14 @@ export default function LeagueSelectScreen() {
 
   const isRegionUnlocked = (regionId: string) => medalsCount >= 40;
 
-  const getRegionStatus = (regionId: string) => {
-    if (leagueProgress.completedRegions.includes(regionId)) return 'completed';
-    if (leagueProgress.currentRun?.regionId === regionId) return 'inprogress';
-    return 'available';
-  };
+  const getRegionStatus = (regionId: string) => { 
+    if (leagueProgress.completedRegions.includes(regionId)) return 'completed'; 
+    if (leagueProgress.currentRun?.regionId === regionId) return 'inprogress'; 
+    // Regione completata in una run precedente (ha trofeo ma completedRegions resettato) 
+    const regionDef = LEAGUE_REGIONS.find(r => r.id === regionId); 
+    if (regionDef && leagueProgress.trophies.includes(regionDef.completionReward.trophyLabel)) return 'completed'; 
+    return 'available'; 
+  }; 
 
   const handleSelectRegion = (regionId: string) => {
     if (!isRegionUnlocked(regionId)) return;
@@ -92,7 +95,7 @@ export default function LeagueSelectScreen() {
         {/* Trofei */}
         {leagueProgress.trophies.length > 0 && (
           <div className="flex gap-1 flex-wrap mb-2">
-            {leagueProgress.trophies.map(t => (
+            {[...new Set(leagueProgress.trophies)].map(t => ( 
               <span
                 key={t}
                 className="text-[9px] font-black bg-yellow-500/20 text-yellow-400 border border-yellow-500/30 px-2 py-0.5 rounded-full"

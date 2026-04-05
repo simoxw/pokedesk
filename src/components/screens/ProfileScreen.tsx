@@ -113,7 +113,8 @@ export default function ProfileScreen() {
           { id: 'alola',  label: 'Alola',  flag: '🌺' },
           { id: 'galar',  label: 'Galar',  flag: '⚔️' },
         ].map(region => {
-          const completed = leagueProgress.completedRegions.includes(region.id);
+          const completed = leagueProgress.trophies.some(t => t.includes(region.label)) 
+            || leagueProgress.completedRegions.includes(region.id); 
           return (
             <div
               key={region.id}

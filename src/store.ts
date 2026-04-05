@@ -863,26 +863,29 @@ export const useStore = create<GameStore>()(
           }
         };
       }),
-      completeLeagueRegion: (regionId: string, trophyLabel: string) => set((state) => {
-        const alreadyCompleted = state.leagueProgress.completedRegions.includes(regionId);
-        const allRegions = ['kanto', 'johto', 'hoenn', 'sinnoh', 'unova', 'kalos', 'alola', 'galar'];
-        const newCompleted = alreadyCompleted
-          ? state.leagueProgress.completedRegions
-          : [...state.leagueProgress.completedRegions, regionId];
-        const allDone = allRegions.every(r => newCompleted.includes(r));
-        return {
-          leagueProgress: {
-            ...state.leagueProgress,
-            completedRegions: allDone ? [] : newCompleted,
-            trophies: allDone
-              ? [trophyLabel]
-              : [...state.leagueProgress.trophies, trophyLabel],
-            completedRuns: allDone
-              ? state.leagueProgress.completedRuns + 1
-              : state.leagueProgress.completedRuns,
-            currentRun: null,
-          }
-        };
+      completeLeagueRegion: (regionId: string, trophyLabel: string) => set((state) => { 
+        const allRegions = ['kanto', 'johto', 'hoenn', 'sinnoh', 'unova', 'kalos', 'alola', 'galar']; 
+        const alreadyCompleted = state.leagueProgress.completedRegions.includes(regionId); 
+        const newCompleted = alreadyCompleted 
+          ? state.leagueProgress.completedRegions 
+          : [...state.leagueProgress.completedRegions, regionId]; 
+        const allDone = allRegions.every(r => newCompleted.includes(r)); 
+        // Trofei: aggiungi solo se non già presente (deduplicazione) 
+        const newTrophies = state.leagueProgress.trophies.includes(trophyLabel) 
+          ? state.leagueProgress.trophies 
+          : [...state.leagueProgress.trophies, trophyLabel]; 
+        return { 
+          leagueProgress: { 
+            ...state.leagueProgress, 
+            // Se ciclo completato: resetta per nuovo giro, altrimenti aggiorna 
+            completedRegions: allDone ? [] : newCompleted, 
+            trophies: newTrophies, // mai resettato, accumula tutti i trofei unici 
+            completedRuns: allDone 
+              ? state.leagueProgress.completedRuns + 1 
+              : state.leagueProgress.completedRuns, 
+            currentRun: null, 
+          } 
+        }; 
       }),
       abandonLeagueRun: () => set((state) => ({
         leagueProgress: { ...state.leagueProgress, currentRun: null }
@@ -1036,6 +1039,10 @@ export const useStore = create<GameStore>()(
         if (!state.claimedPokedexRewards) state.claimedPokedexRewards = [];
         if (state.battleWinStreak === undefined) state.battleWinStreak = 0; 
         if (!state.achievements) state.achievements = []; 
+        // Deduplica trofei nei save esistenti 
+        if (state.leagueProgress?.trophies) { 
+          state.leagueProgress.trophies = [...new Set(state.leagueProgress.trophies)]; 
+        } 
       }
     }
   )
