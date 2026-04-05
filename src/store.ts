@@ -976,7 +976,13 @@ export const useStore = create<GameStore>()(
            { id: 'breed_10', name: 'Allevatore', description: 'Schiudi 10 uova', category: 'special', target: 10, reward: { coins: 5000, items: { rare_candy: 5 } }, progress: state.eggs.filter(e => e.hatchAt < Date.now()).length, unlocked: false }
          ];
 
-         return { achievements };
+         // Mantieni gli achievement già sbloccati, aggiungi quelli mancanti 
+         const existingIds = new Set(state.achievements.map((a: any) => a.id)); 
+         const merged = [ 
+           ...state.achievements, 
+           ...achievements.filter(a => !existingIds.has(a.id)), 
+         ]; 
+         return { achievements: merged }; 
        }),
       updateAchievementProgress: (achievementId: string, progress: number) => set((state: any) => ({
         achievements: state.achievements.map((a: any) => 

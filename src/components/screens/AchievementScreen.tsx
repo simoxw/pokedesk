@@ -186,12 +186,15 @@ export default function AchievementScreen() {
   const { achievements, stats, team, box, pokedex, incrementStat, addCoins, addItem, setScreen, initializeAchievements, updateAchievementProgress, unlockAchievement: unlockAchievementStore, leagueProgress, masterProgress } = useStore();
   const [showNotification, setShowNotification] = useState<string | null>(null);
 
-  // Inizializza achievements se vuoto
-  useEffect(() => {
-    if (achievements.length === 0) {
-      initializeAchievements();
-    }
-  }, [achievements.length, initializeAchievements]);
+  // Inizializza achievements se vuoto o se ne mancano alcuni
+  useEffect(() => { 
+    const knownIds = new Set(ACHIEVEMENTS_DATA.map(a => a.id)); 
+    const storeIds = new Set(achievements.map(a => a.id)); 
+    const missingAny = [...knownIds].some(id => !storeIds.has(id)); 
+    if (achievements.length === 0 || missingAny) { 
+      initializeAchievements(); 
+    } 
+  }, [achievements.length, initializeAchievements]); 
 
   // Calcola progressi retroattivi
   useEffect(() => {
@@ -242,21 +245,23 @@ export default function AchievementScreen() {
     updateRetroactiveProgress();
   }, [stats, team, box, pokedex, leagueProgress, masterProgress]);
 
-  const unlockAchievement = (achievementId: string) => {
-    // Usa la funzione dello store per sbloccare l'achievement
-    const current = achievements.find(a => a.id === achievementId);
-    if (current && !current.unlocked) {
-      // Chiama la funzione dello store
-      unlockAchievementStore(achievementId);
-      
-      // Mostra notifica
-      const achievement = ACHIEVEMENTS_DATA.find(a => a.id === achievementId);
-      if (achievement) {
-        setShowNotification(achievement.name);
-        setTimeout(() => setShowNotification(null), 3000);
-      }
-    }
-  };
+  const unlockAchievement = (achievementId: string) => { 
+    const current = achievements.find(a => a.id === achievementId); 
+    // Se non esiste ancora in store, inizializza prima poi sblocca 
+    if (!current) { 
+      initializeAchievements(); 
+      setTimeout(() => { 
+        unlockAchievementStore(achievementId); 
+      }, 50); 
+    } else if (!current.unlocked) { 
+      unlockAchievementStore(achievementId); 
+    } 
+    const achievement = ACHIEVEMENTS_DATA.find(a => a.id === achievementId); 
+    if (achievement) { 
+      setShowNotification(achievement.name); 
+      setTimeout(() => setShowNotification(null), 3000); 
+    } 
+  }; 
 
   const handleAchievementClick = (achievementId: string) => {
     const status = getAchievementStatus(achievementId);
