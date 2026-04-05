@@ -20,6 +20,7 @@ import MasterBattleScreen from './components/screens/MasterBattleScreen';
 import IslandScreen from './components/screens/IslandScreen';
 import OptionsScreen from './components/screens/OptionsScreen';
 import AchievementScreen from './components/screens/AchievementScreen';
+import BattleTowerScreen from './components/screens/BattleTowerScreen';
 import BottomNav from './components/ui/BottomNav';
 import TypeBadge from './components/ui/TypeBadge';
 import { useTickSystem } from './TickSystem';
@@ -45,6 +46,7 @@ export default function App() {
     replaceMove,
     pendingMissionToast,
     dismissMissionToast,
+    battleTower,
   } = useStore();
   const pendingNewMoveQueue = useStore(state => state.pendingNewMoveQueue);
   const pendingNewMove = pendingNewMoveQueue?.[0] ?? null;
@@ -123,6 +125,7 @@ export default function App() {
       case 'MASTER_BATTLE_SCREEN': return <MasterBattleScreen />;
       case 'ISLAND_SCREEN': return <IslandScreen />;
       case 'ACHIEVEMENT_SCREEN': return <AchievementScreen />;
+      case 'BATTLE_TOWER_SCREEN': return <BattleTowerScreen />;
       default: return <StartScreen />;
     }
   };
@@ -135,7 +138,8 @@ export default function App() {
     'BATTLE_SCREEN',
     'FRIEND_BATTLE_SCREEN',
     'LEAGUE_BATTLE_SCREEN',
-    'MASTER_BATTLE_SCREEN'
+    'MASTER_BATTLE_SCREEN',
+    'BATTLE_TOWER_SCREEN'
   ].includes(currentScreen);
 
   return (
@@ -143,7 +147,7 @@ export default function App() {
       <main className="flex-1 relative">
         <AnimatePresence mode="sync">
           <motion.div
-            key={currentScreen}
+            key={currentScreen === 'BATTLE_SCREEN' && battleTower?.isActive ? `BATTLE_TOWER_FLOOR_${battleTower.currentFloor}` : currentScreen}
             initial={{ opacity: 0, x: 20 }}
             animate={{ opacity: 1, x: 0 }}
             exit={{ opacity: 0, x: -20 }}

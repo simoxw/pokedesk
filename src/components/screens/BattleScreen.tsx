@@ -10,10 +10,13 @@ import { useSoundEffects } from '../../useSoundEffects';
 import TypeBadge from '../ui/TypeBadge';
 import PokemonSprite from '../ui/PokemonSprite';
 import confetti from 'canvas-confetti';
+import { generateRandomEVs, getTowerFloorConfig, TOWER_MILESTONES } from '../../services/battleTowerService';
 
 export default function BattleScreen() {
-  const { team, setScreen, incrementStat, addCoins, addItem, updatePokemon, inventory, useItem, gainExp, currentBattlePath, recordBattleWin, medals, expShareActive, friendBattleTeam, clearFriendBattleTeam, leagueBattleTeam, clearLeagueBattleTeam, setLeagueBattleResult, masterBattleTeam, clearMasterBattleTeam, setMasterBattleResult } = useStore();
+  const { team, setScreen, incrementStat, addCoins, addItem, updatePokemon, inventory, useItem, gainExp, currentBattlePath, recordBattleWin, medals, expShareActive, friendBattleTeam, clearFriendBattleTeam, leagueBattleTeam, clearLeagueBattleTeam, setLeagueBattleResult, masterBattleTeam, clearMasterBattleTeam, setMasterBattleResult, battleTower, startBattleTower, advanceBattleTowerFloor, abandonBattleTower, claimBattleTowerReward } = useStore();
   const isFriendBattle = !!friendBattleTeam;
+  const isTowerBattle = !!battleTower?.isActive;
+  const towerFloor = battleTower?.currentFloor ?? 0;
   const { playSound } = useSoundEffects(useStore.getState().settings.audio);
   const medalsCount = medals.filter((m: any) => m.isUnlocked).length;
   const [activeIdx, setActiveIdx] = useState(0);
@@ -99,7 +102,7 @@ export default function BattleScreen() {
       try {
         setLogs(['Inizia la battaglia!']);
 
-        // LEAGUE BATTLE
+        // PRIORITÀ: LEGA, MASTER, AMICI hanno la precedenza sulla Torre se i loro team sono settati
         if (isLeagueBattle && leagueBattleTeam && leagueBattleTeam.length > 0) {
           const toEnemy = (p: any) => ({
             ...p,
@@ -119,7 +122,6 @@ export default function BattleScreen() {
           return;
         }
 
-        // MASTER BATTLE
         if (isMasterBattle && masterBattleTeam && masterBattleTeam.length > 0) {
           const toEnemy = (p: any) => ({
             ...p,
@@ -139,7 +141,6 @@ export default function BattleScreen() {
           return;
         }
 
-        // FRIEND BATTLE — usa il team dell'amico direttamente
         if (isFriendBattle && friendBattleTeam && friendBattleTeam.length > 0) {
           const toEnemy = (p: any) => ({
             ...p,
@@ -160,6 +161,76 @@ export default function BattleScreen() {
           setLoading(false);
           return;
         }
+
+        if (isTowerBattle) {
+           const floor = battleTower?.currentFloor ?? 1;
+           const teamAvgLevel = Math.floor(team.reduce((acc, p) => acc + p.level, 0) / team.length);
+           const config = getTowerFloorConfig(floor, teamAvgLevel);
+           
+           // Build enemy team
+           const enemyPokemonIds: number[] = [];
+           for (let i = 0; i < config.enemyCount; i++) {
+             const id = Math.floor(Math.random() * 898) + 1;
+             enemyPokemonIds.push(id);
+           }
+           
+           try {
+             const buildEnemy = async (id: number) => {
+               const data = await api.getPokemon(id);
+               const species = await api.getSpecies(id);
+               const ivs = CatchEngine.generateIVs();
+               const evs = config.useRandomEVs ? generateRandomEVs() : 
+                 { hp: 0, attack: 0, defense: 0, spAtk: 0, spDef: 0, speed: 0 };
+               const baseStats = {
+                 hp: data.stats[0].base_stat, attack: data.stats[1].base_stat,
+                 defense: data.stats[2].base_stat, spAtk: data.stats[3].base_stat,
+                 spDef: data.stats[4].base_stat, speed: data.stats[5].base_stat,
+               };
+               const stats = BattleEngine.calculateStats(
+                 config.enemyLevel, baseStats, ivs, evs, 'Quirky'
+               );
+               const moves = await api.getPokemonMoves(data, config.enemyLevel);
+               return {
+                 id: Math.random().toString(36).substr(2, 9),
+                 pokemonId: data.id,
+                 name: api.getItalianName(species.names),
+                 level: config.enemyLevel,
+                 currentHp: stats.hp,
+                 maxHp: stats.hp,
+                 stats, baseStats, ivs, evs,
+                 nature: 'Quirky',
+                 moves,
+                 rawStats: data.stats,
+                 types: data.types.map((t: any) => t.type.name),
+                 status: null,
+                 isShiny: false,
+                 growthRate: species.growth_rate.name,
+                 trainerName: `Torre - Piano ${floor}`,
+               };
+             };
+             
+             const enemies = await Promise.all(enemyPokemonIds.map(buildEnemy));
+             const [e1, e2, e3, e4] = enemies;
+             setEnemy(e1);
+             enemyRef.current = e1;
+             if (e2) setEnemy2(e2);
+             if (e3) setEnemy3(e3);
+             if (e4) setEnemy4(e4);
+             
+             const floorLabel = config.isEliteMode 
+               ? `⚡ Piano ${floor} — Modalità Elite!` 
+               : config.isBossFloor 
+               ? `🗼 Piano ${floor} — Boss Floor!` 
+               : `🗼 Torre Lotta — Piano ${floor}`;
+             setLogs([floorLabel]);
+             setLoading(false);
+             return;
+           } catch(e) {
+             console.error('Tower battle init error:', e);
+             setLoading(false);
+             return;
+           }
+         }
         // Gen sbloccate progressivamente con le medaglie 
         const getRandomPokemonId = (medals: number): number => {
           const ranges: Array<{min: number, max: number, weight: number}> = [
@@ -453,6 +524,50 @@ export default function BattleScreen() {
       setPlayerFlinch(false);
       clearMasterBattleTeam();
       setMasterBattleResult('win');
+      setIsFinished(true);
+      setIsAnimating(false);
+      return false;
+    }
+
+    if (isTowerBattle) {
+      // Logic for tower multi-enemy phases
+      if (enemyPhase === 1 && enemy2) {
+        addLog(`⚔️ L'avversario lancia il secondo Pokémon!`);
+        setEnemyPhase(2); setEnemy(enemy2); enemyRef.current = enemy2;
+        setEnemyStages({ attack: 0, defense: 0, spAtk: 0, spDef: 0, speed: 0, accuracy: 0, evasion: 0 });
+        setTurn('player'); setIsAnimating(false); return true;
+      }
+      if (enemyPhase === 2 && enemy3) {
+        addLog(`⚔️ L'avversario lancia il terzo Pokémon!`);
+        setEnemyPhase(3); setEnemy(enemy3); enemyRef.current = enemy3;
+        setEnemyStages({ attack: 0, defense: 0, spAtk: 0, spDef: 0, speed: 0, accuracy: 0, evasion: 0 });
+        setTurn('player'); setIsAnimating(false); return true;
+      }
+      if (enemyPhase === 3 && enemy4) {
+        addLog(`⚔️ L'avversario lancia il quarto Pokémon!`);
+        setEnemyPhase(4); setEnemy(enemy4); enemyRef.current = enemy4;
+        setEnemyStages({ attack: 0, defense: 0, spAtk: 0, spDef: 0, speed: 0, accuracy: 0, evasion: 0 });
+        setTurn('player'); setIsAnimating(false); return true;
+      }
+
+      const { advanceBattleTowerFloor, claimBattleTowerReward, battleTower: currentTowerState } = useStore.getState();
+      advanceBattleTowerFloor();
+      const newFloor = currentTowerState.currentFloor + 1;
+      
+      // Check milestone
+      const milestones = [7, 14, 21, 25, 35, 49, 77];
+      if (milestones.includes(newFloor)) {
+        claimBattleTowerReward(newFloor);
+        const milestone = TOWER_MILESTONES[newFloor];
+        if (milestone) addLog(`🎁 ${milestone.label} completato!`);
+      }
+      
+      incrementStat('totalBattles');
+      // No healing in tower
+      setPlayerStages({ attack: 0, defense: 0, spAtk: 0, spDef: 0, speed: 0, accuracy: 0, evasion: 0 });
+      setEnemyStages({ attack: 0, defense: 0, spAtk: 0, spDef: 0, speed: 0, accuracy: 0, evasion: 0 });
+      setEnemyFlinch(false);
+      setPlayerFlinch(false);
       setIsFinished(true);
       setIsAnimating(false);
       return false;
@@ -863,9 +978,16 @@ export default function BattleScreen() {
       const nextAvailable = useStore.getState().team.findIndex((p, i) => p.currentHp > 0 && i !== activeIdx);
       if (nextAvailable === -1) {
         addLog('Hai perso la sfida...');
-        useStore.getState().team.forEach(p => {
-          updatePokemon(p.id, { currentHp: 1, moves: p.moves.map((m: any) => ({ ...m, pp: m.maxPp })) });
-        });
+        if (isTowerBattle) {
+          const { abandonBattleTower, battleTower } = useStore.getState();
+          const finalFloor = battleTower?.currentFloor ?? 0;
+          addLog(`🗼 La tua avventura si ferma al piano ${finalFloor}!`);
+          abandonBattleTower();
+        } else {
+          useStore.getState().team.forEach(p => {
+            updatePokemon(p.id, { currentHp: 1, moves: p.moves.map((m: any) => ({ ...m, pp: m.maxPp })) });
+          });
+        }
         if (wasMasterBattle.current) setMasterBattleResult('lose');
         if (wasLeagueBattle.current) setLeagueBattleResult('lose');
         setIsFinished(true);
@@ -1494,6 +1616,23 @@ export default function BattleScreen() {
       )}
       {/* SFONDO GLOBALE — condizionale per tipo battaglia */}
       <div className="absolute inset-0 z-0">
+        
+        {isTowerBattle && (
+          <div className="absolute top-4 left-1/2 -translate-x-1/2 z-20 
+            bg-black/60 backdrop-blur-sm rounded-full px-4 py-1.5 
+            flex items-center gap-3 border border-white/10 shadow-2xl">
+            <span className="text-xs font-black text-yellow-400 uppercase tracking-tighter">
+              Piano {towerFloor}
+            </span>
+            <div className="w-20 h-2 bg-white/10 rounded-full overflow-hidden">
+              <motion.div 
+                initial={{ width: 0 }}
+                animate={{ width: `${((towerFloor % 7) / 7) * 100}%` }}
+                className="h-full bg-yellow-400 rounded-full shadow-[0_0_8px_rgba(250,204,21,0.5)]"
+              />
+            </div>
+          </div>
+        )}
 
         {/* NORMALE / AMICO — cielo azzurro */}
         {!wasLeagueBattle.current && !wasMasterBattle.current && !isBoss && (
@@ -1932,20 +2071,36 @@ export default function BattleScreen() {
         </div>
 
         {isFinished ? (
-          <button
-            onClick={() => { 
-              clearFriendBattleTeam(); 
-              if (isLeagueBattle) {
-                setScreen('LEAGUE_BATTLE_SCREEN');
-              } else {
-                clearLeagueBattleTeam();
-                setScreen('HUB_SCREEN'); 
-              }
-            }}
-            className="w-full bg-[#e63946] py-4 rounded-2xl font-black text-lg"
-          >
-            TORNA ALL'HUB
-          </button>
+          <div className="space-y-2">
+            <button
+              onClick={() => { 
+                clearFriendBattleTeam(); 
+                if (isLeagueBattle) {
+                  setScreen('LEAGUE_BATTLE_SCREEN');
+                } else if (isTowerBattle) {
+                  // Torna alla Lobby invece di ricaricare subito
+                  setScreen('BATTLE_TOWER_SCREEN');
+                } else {
+                  clearLeagueBattleTeam();
+                  setScreen('HUB_SCREEN'); 
+                }
+              }}
+              className="w-full bg-[#e63946] py-4 rounded-2xl font-black text-lg shadow-lg shadow-red-500/20 active:scale-[0.98] transition-all"
+            >
+              {isTowerBattle ? 'PROSSIMO PIANO →' : "TORNA ALL'HUB"}
+            </button>
+            {isTowerBattle && (
+              <button
+                onClick={() => {
+                  abandonBattleTower();
+                  setScreen('HUB_SCREEN');
+                }}
+                className="w-full bg-white/5 border border-white/10 py-3 rounded-2xl font-bold text-sm text-white/40 hover:bg-white/10 transition-all"
+              >
+                ABBANDONA TORRE
+              </button>
+            )}
+          </div>
         ) : (
           <>
             <div className="grid grid-cols-2 gap-2">

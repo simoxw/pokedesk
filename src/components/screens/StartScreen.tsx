@@ -4,7 +4,8 @@ import { motion } from 'motion/react';
 import { Play, ShoppingBag, User, ArrowLeftRight, Settings, Sword, Trophy } from 'lucide-react';
 
 export default function StartScreen() {
-  const { setScreen, isFirstRun } = useStore();
+  const { setScreen, isFirstRun, leagueProgress } = useStore();
+  const towerUnlocked = leagueProgress.completedRuns >= 1;
 
   return (
     <div className="h-full flex flex-col items-center justify-center p-6 bg-gradient-to-b from-[#0f0f1a] to-[#1a1a2e]">
@@ -26,6 +27,22 @@ export default function StartScreen() {
           onClick={() => setScreen(isFirstRun ? 'STARTER_DRAFT' : 'HUB_SCREEN')}
           primary
         />
+        <div className="relative"> 
+          <MenuButton 
+            icon={<span className="text-lg">🗼</span>} 
+            label="TORRE LOTTA" 
+            onClick={() => setScreen('BATTLE_TOWER_SCREEN')} 
+            primary={false} 
+            disabled={!towerUnlocked} 
+          /> 
+          {!towerUnlocked && ( 
+            <div className="absolute inset-0 flex items-center justify-end pr-4 pointer-events-none"> 
+              <span className="text-[10px] text-white/30 font-bold"> 
+                🔒 Completa la Lega 
+              </span> 
+            </div> 
+          )} 
+        </div>
         <MenuButton 
           icon={<ShoppingBag size={20} />} 
           label="NEGOZIO" 
@@ -61,14 +78,16 @@ export default function StartScreen() {
   );
 }
 
-function MenuButton({ icon, label, onClick, primary = false }: { icon: React.ReactNode, label: string, onClick: () => void, primary?: boolean }) {
+function MenuButton({ icon, label, onClick, primary = false, disabled = false }: { icon: React.ReactNode, label: string, onClick: () => void, primary?: boolean, disabled?: boolean }) {
   return (
     <motion.button
-      whileHover={{ scale: 1.02 }}
-      whileTap={{ scale: 0.98 }}
-      onClick={onClick}
+      whileHover={disabled ? {} : { scale: 1.02 }}
+      whileTap={disabled ? {} : { scale: 0.98 }}
+      onClick={disabled ? undefined : onClick}
       className={`w-full flex items-center gap-4 p-4 rounded-2xl font-bold transition-all ${
-        primary 
+        disabled 
+          ? 'bg-[#1a1a2e]/50 text-white/20 border border-white/5 cursor-not-allowed'
+          : primary 
           ? 'bg-[#e63946] text-white shadow-lg shadow-[#e63946]/20' 
           : 'bg-[#1a1a2e] text-[#f0f0f0] border border-white/5 hover:bg-[#252545]'
       }`}

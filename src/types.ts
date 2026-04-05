@@ -18,7 +18,8 @@ export type ScreenName =
   | 'LEAGUE_BATTLE_SCREEN'
   | 'MASTER_BATTLE_SCREEN'
   | 'ISLAND_SCREEN'
-  | 'ACHIEVEMENT_SCREEN';
+  | 'ACHIEVEMENT_SCREEN'
+  | 'BATTLE_TOWER_SCREEN';
 export type PokemonType = 
   | 'normal' | 'fire' | 'water' | 'electric' | 'grass' | 'ice' 
   | 'fighting' | 'poison' | 'ground' | 'flying' | 'psychic' 
@@ -116,6 +117,14 @@ export interface DailyMission {
   reward: { coins?: number; items?: Record<string, number> };
 }
 
+export interface BattleTowerState {
+  currentFloor: number;
+  bestFloor: number;
+  isActive: boolean;
+  teamSnapshot: Pokemon[];
+  claimedFloorRewards: number[];
+}
+
 export interface GameState {
   player: { name: string; gender: 'M' | 'F'; createdAt: number; playTime: number };
   team: Pokemon[];
@@ -140,6 +149,8 @@ export interface GameState {
   friendBattleTeam: any[] | null;
   leagueBattleTeam: any[] | null;
   leagueBattleResult: 'win' | 'lose' | null;
+  masterBattleTeam: any[] | null;
+  masterBattleResult: 'win' | 'lose' | null;
   isFirstRun: boolean;
   dailyMissions: { date: string; missions: DailyMission[] } | null;
   islandLastCatch: string | null;
@@ -156,82 +167,8 @@ export interface GameState {
   masterProgress: { defeatedIds: string[] };
   claimedPokedexRewards: string[];
   currentScreen: ScreenName;
-}
-
-export interface GameState {
-  player: {
-    name: string;
-    gender: 'M' | 'F';
-    createdAt: number;
-    playTime: number;
-  };
-  team: Pokemon[];
-  box: Pokemon[];
-  inventory: Record<string, number>;
-  coins: number;
-  medals: Medal[];
-  currentBattlePath: {
-    battlesWon: number;
-    nextIsBoss: boolean;
-  };
-  charges: number;
-  lastTickTimestamp: number;
-  safariCharges: number;
-  lastSafariTickTimestamp: number;
-  pokedex: Record<number, 'seen' | 'caught'>;
-  stats: {
-    totalCaught: number;
-    totalBattles: number;
-    shiniesFound: number;
-    pokemonReleased: number;
-  };
-  settings: {
-    audio: boolean;
-    notifications: boolean;
-  };
-  expShareActive: boolean;
-  pendingMedalUnlock: Medal | null;
-  pendingEvolution: {
-    pokemonId: string;
-    newPokemonId: number;
-    newName: string;
-    newTypes?: PokemonType[];
-    newBaseStats?: Stats;
-  } | null;
-  pendingNewMoveQueue: {
-    pokemonId: string;
-    move: Move;
-  }[];
-  eggs: Egg[];
-  favorites: string[];
-  friendBattleTeam: any[] | null;
-  isFirstRun: boolean;
-  dailyMissions: {
-    date: string;
-    missions: DailyMission[];
-  } | null;
-  islandLastCatch: string | null;
-  pendingMissionToast: string | null;
-  streak: number;
-  lastStreakDate: string | null;
-  leagueProgress: {
-    completedRuns: number;
-    completedRegions: string[];
-    trophies: string[];
-    currentRun: {
-      regionId: string;
-      trainerIndex: number;
-      defeatedTrainers: number[];
-    } | null;
-  };
-  masterProgress: { defeatedIds: string[] };
-  leagueBattleTeam: any[] | null;
-  leagueBattleResult: 'win' | 'lose' | null;
-  masterBattleTeam: any[] | null;
-  masterBattleResult: 'win' | 'lose' | null;
-  claimedPokedexRewards: string[];
-  currentScreen: ScreenName;
-  achievements: Achievement[];
+  battleWinStreak: number;
+  battleTower: BattleTowerState;
 }
 
 export interface PokemonSpecies {

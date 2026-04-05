@@ -32,7 +32,21 @@ export default function HubScreen() {
     claimStreak,
     streak,
     lastStreakDate,
+    battleTower,
+    abandonBattleTower,
   } = useStore();
+
+  const handleBattleClick = () => {
+    if (team.length === 0) {
+      alert("Devi avere almeno un Pokémon in squadra per lottare!");
+      return;
+    }
+    // Se c'è una scalata attiva nella torre, la interrompiamo per fare altre lotte
+    if (battleTower?.isActive) {
+      abandonBattleTower();
+    }
+    setScreen('BATTLE_SCREEN');
+  };
 
   const [showMissions, setShowMissions] = useState(false);
   const [showStreak, setShowStreak] = useState(false);
@@ -346,7 +360,7 @@ export default function HubScreen() {
             <motion.button
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}
-              onClick={() => setScreen('BATTLE_SCREEN')}
+              onClick={handleBattleClick}
               className="bg-[#1a1a2e] border border-white/10 py-6 rounded-2xl flex flex-col items-center justify-center gap-2 shadow-xl"
             >
               <Sword size={24} />
