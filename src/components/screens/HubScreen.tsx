@@ -200,6 +200,18 @@ export default function HubScreen() {
       })()}
 
       <div className="relative z-10 flex flex-col items-center gap-2 w-full max-w-sm overflow-y-auto">
+        {battleTower?.isActive && ( 
+          <motion.div 
+            animate={{ opacity: [0.7, 1, 0.7] }} 
+            transition={{ duration: 2, repeat: Infinity }} 
+            className="w-full max-w-sm bg-red-500/10 border border-red-500/30 rounded-2xl px-4 py-2 text-center" 
+          > 
+            <p className="text-red-400 font-black text-xs uppercase tracking-widest"> 
+              🗼 Torre Lotta in corso — Piano {battleTower.currentFloor} 
+            </p> 
+          </motion.div> 
+        )}
+
         {/* Progresso verso Capopalestra */}
         <div className="w-full max-w-sm"> 
           {currentBattlePath.nextIsBoss ? ( 
