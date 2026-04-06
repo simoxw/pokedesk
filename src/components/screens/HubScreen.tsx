@@ -114,7 +114,7 @@ export default function HubScreen() {
       }
     };
     fixMoves();
-  }, [team, box, updatePokemon, eggs, hatchEgg]);
+  }, []);
   
   const nextTick = getTimeToNextTick();
   const minutes = Math.floor(nextTick / 60000);
