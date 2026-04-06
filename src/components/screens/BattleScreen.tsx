@@ -557,9 +557,9 @@ export default function BattleScreen() {
       
       // Check milestone
       const milestones = [7, 14, 21, 25, 35, 49, 77];
-      if (milestones.includes(newFloor)) {
-        claimBattleTowerReward(newFloor);
-        const milestone = TOWER_MILESTONES[newFloor];
+      if (milestones.includes(newFloor - 1)) {
+        claimBattleTowerReward(newFloor - 1);
+        const milestone = TOWER_MILESTONES[newFloor - 1];
         if (milestone) addLog(`🎁 ${milestone.label} completato!`);
       }
       
@@ -653,7 +653,7 @@ export default function BattleScreen() {
     const validMoves = liveEnemy.moves.filter((m: any) => m.pp > 0);
 
     // Boss/Lega/Master usano Iperpozione se HP < 30%
-    const isEliteBattle = isBoss || isLeagueBattle || isMasterBattle;
+    const isEliteBattle = isBoss || isLeagueBattle || isMasterBattle || wasTowerBattle.current;
     if (isEliteBattle && liveEnemy.currentHp / liveEnemy.maxHp < 0.30 && Math.random() < 0.30) {
       const heal = Math.floor(liveEnemy.maxHp * 0.60);
       const newHp = Math.min(liveEnemy.maxHp, liveEnemy.currentHp + heal);
@@ -1655,8 +1655,8 @@ export default function BattleScreen() {
 
         {/* TORRE — cielo tecnologico/notturno */}
         {wasTowerBattle.current && !wasLeagueBattle.current && !wasMasterBattle.current && (
-          <div className="absolute inset-0 bg-[#0a0a1a]">
-            <div className="absolute inset-0 opacity-20" style={{
+          <div className="absolute inset-0 bg-[#1a1a3a]">
+            <div className="absolute inset-0 opacity-40" style={{
               backgroundImage: 'radial-gradient(circle at 50% 20%, #4a90e2 0%, transparent 70%)'
             }} />
             {/* Piccole luci tipo stelle/data-center */}
@@ -1808,17 +1808,17 @@ export default function BattleScreen() {
         {/* TORRE — pavimento tecnologico/arena futuristica */}
         {wasTowerBattle.current && !wasLeagueBattle.current && !wasMasterBattle.current && (
           <>
-            <div className="absolute inset-0 bg-[#12122b]" />
-            <div className="absolute inset-0 opacity-20" style={{
-              backgroundImage: 'linear-gradient(rgba(74, 144, 226, 0.3) 1px, transparent 1px), linear-gradient(90deg, rgba(74, 144, 226, 0.3) 1px, transparent 1px)',
+            <div className="absolute inset-0 bg-[#252545]" />
+            <div className="absolute inset-0 opacity-30" style={{
+              backgroundImage: 'linear-gradient(rgba(74, 144, 226, 0.4) 1px, transparent 1px), linear-gradient(90deg, rgba(74, 144, 226, 0.4) 1px, transparent 1px)',
               backgroundSize: '40px 30px',
             }} />
             {/* Esagoni decorativi o linee tech */}
-            <div className="absolute inset-0 opacity-5" style={{
+            <div className="absolute inset-0 opacity-10" style={{
               backgroundImage: 'radial-gradient(circle at 2px 2px, #4a90e2 1px, transparent 0)',
               backgroundSize: '20px 20px'
             }} />
-            <div className="absolute top-0 left-0 right-0 h-[2px] bg-blue-500/30 shadow-[0_0_10px_rgba(59,130,246,0.5)]" />
+            <div className="absolute top-0 left-0 right-0 h-[3px] bg-blue-400/40 shadow-[0_0_15px_rgba(96,165,250,0.6)]" />
           </>
         )}
 
@@ -2127,7 +2127,7 @@ export default function BattleScreen() {
                   <>
                     <div className="bg-yellow-500/10 border border-yellow-500/30 rounded-2xl p-3 text-center">
                       <p className="text-yellow-400 font-black text-sm">
-                        🗼 Piano {wasTowerFloor.current} completato!
+                        🗼 Piano {(useStore.getState().battleTower?.currentFloor ?? 1) - 1} completato!
                       </p>
                     </div>
                     <button
