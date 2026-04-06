@@ -85,6 +85,9 @@ export default function MasterBattleScreen() {
           };
         })
       );
+      const { battleTower, abandonBattleTower } = useStore.getState(); 
+      if (battleTower?.isActive) abandonBattleTower();
+
       setBuiltTeam(built);
       setMasterBattleTeam(built);
       setPhase('intro');

@@ -550,9 +550,8 @@ export default function BattleScreen() {
         setTurn('player'); setIsAnimating(false); return true;
       }
 
-      const { advanceBattleTowerFloor, claimBattleTowerReward, battleTower: currentTowerState } = useStore.getState();
       advanceBattleTowerFloor();
-      const newFloor = currentTowerState.currentFloor + 1;
+      const newFloor = useStore.getState().battleTower.currentFloor;
       
       // Check milestone
       const milestones = [7, 14, 21, 25, 35, 49, 77];
@@ -978,16 +977,18 @@ export default function BattleScreen() {
       const nextAvailable = useStore.getState().team.findIndex((p, i) => p.currentHp > 0 && i !== activeIdx);
       if (nextAvailable === -1) {
         addLog('Hai perso la sfida...');
+        
         if (isTowerBattle) {
-          const { abandonBattleTower, battleTower } = useStore.getState();
-          const finalFloor = battleTower?.currentFloor ?? 0;
-          addLog(`🗼 La tua avventura si ferma al piano ${finalFloor}!`);
+          const { abandonBattleTower, battleTower: towerState } = useStore.getState();
+          const finalFloor = towerState?.currentFloor ?? 0;
+          addLog(`🗼 Scalata terminata al piano ${finalFloor}!`);
           abandonBattleTower();
         } else {
           useStore.getState().team.forEach(p => {
             updatePokemon(p.id, { currentHp: 1, moves: p.moves.map((m: any) => ({ ...m, pp: m.maxPp })) });
           });
         }
+        
         if (wasMasterBattle.current) setMasterBattleResult('lose');
         if (wasLeagueBattle.current) setLeagueBattleResult('lose');
         setIsFinished(true);
@@ -1580,9 +1581,18 @@ export default function BattleScreen() {
       const nextAvailable = useStore.getState().team.findIndex((p, i) => p.currentHp > 0 && i !== activeIdx);
       if (nextAvailable === -1) {
         addLog('Hai perso la sfida...');
-        useStore.getState().team.forEach(p => {
-          updatePokemon(p.id, { currentHp: 1, moves: p.moves.map((m: any) => ({ ...m, pp: m.maxPp })) });
-        });
+        
+        if (isTowerBattle) {
+          const { abandonBattleTower, battleTower: towerState } = useStore.getState();
+          const finalFloor = towerState?.currentFloor ?? 0;
+          addLog(`🗼 Scalata terminata al piano ${finalFloor}!`);
+          abandonBattleTower();
+        } else {
+          useStore.getState().team.forEach(p => {
+            updatePokemon(p.id, { currentHp: 1, moves: p.moves.map((m: any) => ({ ...m, pp: m.maxPp })) });
+          });
+        }
+        
         if (wasMasterBattle.current) setMasterBattleResult('lose');
         if (wasLeagueBattle.current) setLeagueBattleResult('lose');
         setIsFinished(true);
@@ -1617,20 +1627,13 @@ export default function BattleScreen() {
       {/* SFONDO GLOBALE — condizionale per tipo battaglia */}
       <div className="absolute inset-0 z-0">
         
-        {isTowerBattle && (
+        {isTowerBattle && !wasLeagueBattle.current && !wasMasterBattle.current && !isFriendBattle && (
           <div className="absolute top-4 left-1/2 -translate-x-1/2 z-20 
             bg-black/60 backdrop-blur-sm rounded-full px-4 py-1.5 
             flex items-center gap-3 border border-white/10 shadow-2xl">
             <span className="text-xs font-black text-yellow-400 uppercase tracking-tighter">
-              Piano {towerFloor}
+              🗼 Piano {towerFloor}
             </span>
-            <div className="w-20 h-2 bg-white/10 rounded-full overflow-hidden">
-              <motion.div 
-                initial={{ width: 0 }}
-                animate={{ width: `${((towerFloor % 7) / 7) * 100}%` }}
-                className="h-full bg-yellow-400 rounded-full shadow-[0_0_8px_rgba(250,204,21,0.5)]"
-              />
-            </div>
           </div>
         )}
 
@@ -2072,32 +2075,65 @@ export default function BattleScreen() {
 
         {isFinished ? (
           <div className="space-y-2">
-            <button
-              onClick={() => { 
-                clearFriendBattleTeam(); 
-                if (isLeagueBattle) {
-                  setScreen('LEAGUE_BATTLE_SCREEN');
-                } else if (isTowerBattle) {
-                  // Torna alla Lobby invece di ricaricare subito
-                  setScreen('BATTLE_TOWER_SCREEN');
-                } else {
-                  clearLeagueBattleTeam();
-                  setScreen('HUB_SCREEN'); 
-                }
-              }}
-              className="w-full bg-[#e63946] py-4 rounded-2xl font-black text-lg shadow-lg shadow-red-500/20 active:scale-[0.98] transition-all"
-            >
-              {isTowerBattle ? 'PROSSIMO PIANO →' : "TORNA ALL'HUB"}
-            </button>
-            {isTowerBattle && (
+            {/* TORRE: mostra riepilogo diverso per vittoria vs sconfitta */}
+            {isTowerBattle ? (
+              <>
+                {/* Controlla se è vittoria (battleTower.isActive ancora true) 
+                    o sconfitta (abandonBattleTower già chiamato, isActive=false) */}
+                {useStore.getState().battleTower?.isActive ? (
+                  // VITTORIA piano torre
+                  <>
+                    <div className="bg-yellow-500/10 border border-yellow-500/30 rounded-2xl p-3 text-center">
+                      <p className="text-yellow-400 font-black text-sm">
+                        🗼 Piano {useStore.getState().battleTower?.currentFloor} completato!
+                      </p>
+                    </div>
+                    <button
+                      onClick={() => setScreen('BATTLE_TOWER_SCREEN')}
+                      className="w-full bg-[#e63946] py-4 rounded-2xl font-black text-lg shadow-lg active:scale-[0.98] transition-all"
+                    >
+                      PROSSIMO PIANO →
+                    </button>
+                    <button
+                      onClick={() => { abandonBattleTower(); setScreen('BATTLE_TOWER_SCREEN'); }}
+                      className="w-full bg-white/5 border border-white/10 py-3 rounded-2xl font-bold text-sm text-white/40"
+                    >
+                      ABBANDONA TORRE
+                    </button>
+                  </>
+                ) : (
+                  // SCONFITTA torre
+                  <>
+                    <div className="bg-red-500/10 border border-red-500/30 rounded-2xl p-4 text-center space-y-1">
+                      <p className="text-red-400 font-black text-lg">💀 SCONFITTA</p>
+                      <p className="text-white/50 text-sm">
+                        Record: Piano {useStore.getState().battleTower?.bestFloor ?? 0}
+                      </p>
+                    </div>
+                    <button
+                      onClick={() => setScreen('BATTLE_TOWER_SCREEN')}
+                      className="w-full bg-[#e63946] py-4 rounded-2xl font-black text-lg shadow-lg active:scale-[0.98] transition-all"
+                    >
+                      TORNA ALLA TORRE
+                    </button>
+                  </>
+                )}
+              </>
+            ) : (
+              // Tutte le altre battaglie — comportamento invariato
               <button
-                onClick={() => {
-                  abandonBattleTower();
-                  setScreen('HUB_SCREEN');
+                onClick={() => { 
+                  clearFriendBattleTeam(); 
+                  if (isLeagueBattle) {
+                    setScreen('LEAGUE_BATTLE_SCREEN');
+                  } else {
+                    clearLeagueBattleTeam();
+                    setScreen('HUB_SCREEN'); 
+                  }
                 }}
-                className="w-full bg-white/5 border border-white/10 py-3 rounded-2xl font-bold text-sm text-white/40 hover:bg-white/10 transition-all"
+                className="w-full bg-[#e63946] py-4 rounded-2xl font-black text-lg shadow-lg shadow-red-500/20 active:scale-[0.98] transition-all"
               >
-                ABBANDONA TORRE
+                TORNA ALL'HUB
               </button>
             )}
           </div>

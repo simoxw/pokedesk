@@ -169,6 +169,9 @@ export default function LeagueBattleScreen() {
 
   const handleWinDialogComplete = () => {
     if (!activeRegion) return;
+    const { battleTower, abandonBattleTower } = useStore.getState(); 
+    if (battleTower?.isActive) abandonBattleTower();
+
     const nextIndex = trainerIndex + 1;
     const totalTrainers = activeRegion.elite4.length + 1; // +1 campione
 
@@ -188,6 +191,9 @@ export default function LeagueBattleScreen() {
   };
 
   const handleLoseDialogComplete = () => {
+    const { battleTower, abandonBattleTower } = useStore.getState(); 
+    if (battleTower?.isActive) abandonBattleTower();
+
     clearLeagueBattleTeam();
     abandonLeagueRun();
     setScreen('HUB_SCREEN');
@@ -225,6 +231,9 @@ export default function LeagueBattleScreen() {
           trainerSprite={activeTrainer?.spriteUrl ?? ''}
           variant="intro"
           onComplete={() => {
+            const { battleTower, abandonBattleTower } = useStore.getState(); 
+            if (battleTower?.isActive) abandonBattleTower();
+
             setBattleStarted(false);
             setLeagueBattleTeam(builtTeam); // inietta PRIMA del render di BattleScreen
             setPhase('battle');

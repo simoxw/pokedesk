@@ -73,6 +73,9 @@ export default function FriendBattleScreen() {
 
   const handleStartBattle = () => {
     if (!previewTeam) return;
+    const { battleTower, abandonBattleTower } = useStore.getState(); 
+    if (battleTower?.isActive) abandonBattleTower();
+
     setFriendBattleTeam(previewTeam.map(p => ({ ...p, trainerName: previewName })));
     setScreen('BATTLE_SCREEN');
   };

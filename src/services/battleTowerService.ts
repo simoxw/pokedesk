@@ -19,37 +19,44 @@ export function generateRandomEVs(): Stats {
   return evs;
 }
 
-export function getTowerFloorConfig(floor: number, teamAvgLevel: number): {
-  enemyCount: number;
-  enemyLevel: number;
-  isBossFloor: boolean;
-  isEliteMode: boolean;  // floor >= 25
-  useRandomEVs: boolean; // floor >= 25
-} {
-  const isBossFloor = floor % 7 === 0 && floor < 25;
-  const isEliteMode = floor >= 25;
-  
-  if (isEliteMode) {
-    return {
-      enemyCount: 4,
-      enemyLevel: 100,
-      isBossFloor: false,
-      isEliteMode: true,
-      useRandomEVs: true,
-    };
-  }
-  
-  const levelBonus = Math.floor(floor / 7) * 3;
-  const enemyLevel = Math.min(99, teamAvgLevel + levelBonus);
-  
-  return {
-    enemyCount: isBossFloor ? 3 : 1,
-    enemyLevel,
-    isBossFloor,
-    isEliteMode: false,
-    useRandomEVs: false,
-  };
-}
+export function getTowerFloorConfig(floor: number, teamAvgLevel: number): { 
+  enemyCount: number; 
+  enemyLevel: number; 
+  isBossFloor: boolean; 
+  isEliteMode: boolean; 
+  useRandomEVs: boolean; 
+} { 
+  const isEliteMode = floor >= 25; 
+
+  if (isEliteMode) { 
+    return { 
+      enemyCount: 4, 
+      enemyLevel: 100, 
+      isBossFloor: false, 
+      isEliteMode: true, 
+      useRandomEVs: true, 
+    }; 
+  } 
+
+  // Scaling nemici per fascia di piani (1-24) 
+  let enemyCount: number; 
+  if (floor <= 5) enemyCount = 1; 
+  else if (floor <= 10) enemyCount = 2; 
+  else if (floor <= 15) enemyCount = 3; 
+  else enemyCount = 4; // piani 16-24 
+
+  // Livello scalato: +1 ogni 3 piani, clamped a 99 
+  const levelBonus = Math.floor(floor / 3) * 2; 
+  const enemyLevel = Math.min(99, teamAvgLevel + levelBonus); 
+
+  return { 
+    enemyCount, 
+    enemyLevel, 
+    isBossFloor: false,  // boss floor rimosso 
+    isEliteMode: false, 
+    useRandomEVs: false, 
+  }; 
+} 
 
 export const TOWER_MILESTONES: Record<number, {
   coins: number;
