@@ -54,6 +54,8 @@ export default function BattleScreen() {
   const isMasterBattle = !!masterBattleTeam;
   const wasLeagueBattle = React.useRef(isLeagueBattle);
   const wasMasterBattle = React.useRef(isMasterBattle);
+  const wasTowerBattle = React.useRef(isTowerBattle);
+  const wasTowerFloor = React.useRef(towerFloor);
   const isBoss = !isFriendBattle && !isLeagueBattle && !isMasterBattle && currentBattlePath.nextIsBoss;
   const friendTrainerName = friendBattleTeam?.[0]?.trainerName ?? 'Amico';
   const leagueTrainerName = leagueBattleTeam?.[0]?.trainerName ?? 'Trainer';
@@ -1627,18 +1629,18 @@ export default function BattleScreen() {
       {/* SFONDO GLOBALE — condizionale per tipo battaglia */}
       <div className="absolute inset-0 z-0">
         
-        {isTowerBattle && !wasLeagueBattle.current && !wasMasterBattle.current && !isFriendBattle && (
+        {wasTowerBattle.current && !wasLeagueBattle.current && !wasMasterBattle.current && !isFriendBattle && (
           <div className="absolute top-4 right-4 z-20 
             bg-black/60 backdrop-blur-sm rounded-full px-4 py-1.5 
             flex items-center gap-3 border border-white/10 shadow-2xl">
             <span className="text-xs font-black text-yellow-400 uppercase tracking-tighter">
-              🗼 Piano {towerFloor}
+              🗼 Piano {wasTowerFloor.current}
             </span>
           </div>
         )}
 
         {/* NORMALE / AMICO — cielo azzurro */}
-        {!wasLeagueBattle.current && !wasMasterBattle.current && !isBoss && (
+        {!wasLeagueBattle.current && !wasMasterBattle.current && !isBoss && !wasTowerBattle.current && (
           <> 
             <div className="absolute inset-0" style={{ 
               background: 'linear-gradient(180deg, #1562b8 0%, #3a9ae8 30%, #72c1f2 55%, #b0dcf5 78%, #c8efc0 100%)' 
@@ -1649,6 +1651,29 @@ export default function BattleScreen() {
               boxShadow: '0 0 0 8px rgba(255,220,60,0.16), 0 0 0 20px rgba(255,200,40,0.08), 0 0 50px 20px rgba(255,180,30,0.18)', 
             }} /> 
           </> 
+        )}
+
+        {/* TORRE — cielo tecnologico/notturno */}
+        {wasTowerBattle.current && !wasLeagueBattle.current && !wasMasterBattle.current && (
+          <div className="absolute inset-0 bg-[#0a0a1a]">
+            <div className="absolute inset-0 opacity-20" style={{
+              backgroundImage: 'radial-gradient(circle at 50% 20%, #4a90e2 0%, transparent 70%)'
+            }} />
+            {/* Piccole luci tipo stelle/data-center */}
+            {Array.from({ length: 20 }).map((_, i) => (
+              <motion.div
+                key={i}
+                className="absolute bg-blue-400/40 rounded-full blur-[1px]"
+                animate={{ opacity: [0.2, 0.6, 0.2] }}
+                transition={{ duration: 2 + Math.random() * 2, repeat: Infinity, delay: Math.random() * 2 }}
+                style={{
+                  width: 2, height: 2,
+                  top: `${Math.random() * 40}%`,
+                  left: `${Math.random() * 100}%`
+                }}
+              />
+            ))}
+          </div>
         )}
 
         {/* BOSS — cielo temporalesco viola */}
@@ -1705,7 +1730,7 @@ export default function BattleScreen() {
 </div>
 
       {/* NUVOLE — solo normale e amico */}
-      {!wasLeagueBattle.current && !wasMasterBattle.current && !isBoss && (
+      {!wasLeagueBattle.current && !wasMasterBattle.current && !isBoss && !wasTowerBattle.current && (
         <div className="absolute inset-x-0 top-0 z-0 pointer-events-none" style={{ height: '22%' }}>
           {[1, 2, 3].map(i => (
             <motion.div
@@ -1762,7 +1787,7 @@ export default function BattleScreen() {
       <div className="absolute inset-x-0 bottom-0 z-0" style={{ height: '78%' }}>
 
         {/* NORMALE / AMICO — prato chiaro */}
-        {!wasLeagueBattle.current && !wasMasterBattle.current && !isBoss && (
+        {!wasLeagueBattle.current && !wasMasterBattle.current && !isBoss && !wasTowerBattle.current && (
           <>
             <div className="absolute inset-0" style={{
               background: 'linear-gradient(180deg, #5db533 0%, #4a9a20 100%)',
@@ -1777,6 +1802,23 @@ export default function BattleScreen() {
             <div className="absolute top-0 left-0 right-0 h-[4px]" style={{
               background: 'linear-gradient(180deg, rgba(0,0,0,0.1), transparent)',
             }} />
+          </>
+        )}
+
+        {/* TORRE — pavimento tecnologico/arena futuristica */}
+        {wasTowerBattle.current && !wasLeagueBattle.current && !wasMasterBattle.current && (
+          <>
+            <div className="absolute inset-0 bg-[#12122b]" />
+            <div className="absolute inset-0 opacity-20" style={{
+              backgroundImage: 'linear-gradient(rgba(74, 144, 226, 0.3) 1px, transparent 1px), linear-gradient(90deg, rgba(74, 144, 226, 0.3) 1px, transparent 1px)',
+              backgroundSize: '40px 30px',
+            }} />
+            {/* Esagoni decorativi o linee tech */}
+            <div className="absolute inset-0 opacity-5" style={{
+              backgroundImage: 'radial-gradient(circle at 2px 2px, #4a90e2 1px, transparent 0)',
+              backgroundSize: '20px 20px'
+            }} />
+            <div className="absolute top-0 left-0 right-0 h-[2px] bg-blue-500/30 shadow-[0_0_10px_rgba(59,130,246,0.5)]" />
           </>
         )}
 
@@ -2076,7 +2118,7 @@ export default function BattleScreen() {
         {isFinished ? (
           <div className="space-y-2">
             {/* TORRE: mostra riepilogo diverso per vittoria vs sconfitta */}
-            {isTowerBattle ? (
+            {wasTowerBattle.current ? (
               <>
                 {/* Controlla se è vittoria (battleTower.isActive ancora true) 
                     o sconfitta (abandonBattleTower già chiamato, isActive=false) */}
@@ -2085,7 +2127,7 @@ export default function BattleScreen() {
                   <>
                     <div className="bg-yellow-500/10 border border-yellow-500/30 rounded-2xl p-3 text-center">
                       <p className="text-yellow-400 font-black text-sm">
-                        🗼 Piano {useStore.getState().battleTower?.currentFloor} completato!
+                        🗼 Piano {wasTowerFloor.current} completato!
                       </p>
                     </div>
                     <button
@@ -2107,6 +2149,9 @@ export default function BattleScreen() {
                     <div className="bg-red-500/10 border border-red-500/30 rounded-2xl p-4 text-center space-y-1">
                       <p className="text-red-400 font-black text-lg">💀 SCONFITTA</p>
                       <p className="text-white/50 text-sm">
+                        Scalata terminata al piano {wasTowerFloor.current}
+                      </p>
+                      <p className="text-white/30 text-[10px] font-bold uppercase tracking-widest">
                         Record: Piano {useStore.getState().battleTower?.bestFloor ?? 0}
                       </p>
                     </div>

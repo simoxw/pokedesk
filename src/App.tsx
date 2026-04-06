@@ -147,7 +147,7 @@ export default function App() {
       <main className="flex-1 relative">
         <AnimatePresence mode="sync">
           <motion.div
-            key={currentScreen === 'BATTLE_SCREEN' && battleTower?.isActive ? `BATTLE_TOWER_FLOOR_${battleTower.currentFloor}` : currentScreen}
+            key={currentScreen}
             initial={{ opacity: 0, x: 20 }}
             animate={{ opacity: 1, x: 0 }}
             exit={{ opacity: 0, x: -20 }}
