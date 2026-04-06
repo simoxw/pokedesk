@@ -1628,7 +1628,7 @@ export default function BattleScreen() {
       <div className="absolute inset-0 z-0">
         
         {isTowerBattle && !wasLeagueBattle.current && !wasMasterBattle.current && !isFriendBattle && (
-          <div className="absolute top-4 left-1/2 -translate-x-1/2 z-20 
+          <div className="absolute top-4 right-4 z-20 
             bg-black/60 backdrop-blur-sm rounded-full px-4 py-1.5 
             flex items-center gap-3 border border-white/10 shadow-2xl">
             <span className="text-xs font-black text-yellow-400 uppercase tracking-tighter">

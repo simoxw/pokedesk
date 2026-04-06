@@ -149,7 +149,7 @@ const BattleTowerScreen: React.FC = () => {
                 exit={{ height: 0, opacity: 0 }}
                 className="overflow-hidden"
               >
-                <div className="bg-[#1a1a2e]/50 border border-white/5 rounded-2xl p-4 space-y-3">
+                <div className="bg-[#1a1a2e]/50 border border-white/5 rounded-2xl p-4 space-y-3 max-h-64 overflow-y-auto no-scrollbar">
                   {Object.entries(TOWER_MILESTONES).map(([floor, reward]) => {
                     const isClaimed = battleTower.claimedFloorRewards.includes(Number(floor));
                     return (
