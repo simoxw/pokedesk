@@ -253,17 +253,22 @@ export default function BagScreen() {
                       const evolution = await api.getEvolutionByItem(species, itemNameForApi);
                       
                       if (evolution) {
-                        useStore.getState().updatePlayer({}); // trigger refresh? no, meglio evolution modal
-                        useStore.setState({ 
+                        // Usa setState direttamente per impostare pendingEvolution con TUTTI i dati necessari
+                        useStore.setState((state) => ({ 
                           pendingEvolution: { 
                             pokemonId: p.id, 
                             newPokemonId: evolution.newId, 
                             newName: evolution.newName,
                             newBaseStats: evolution.newBaseStats,
                             newTypes: evolution.newTypes as any
-                          } 
-                        });
-                        useItem(pendingItem.id);
+                          },
+                          // Decrementa anche l'item qui per evitare conflitti con useItem
+                          inventory: { 
+                            ...state.inventory, 
+                            [pendingItem.id]: Math.max(0, (state.inventory[pendingItem.id] || 0) - 1) 
+                          }
+                        }));
+                        
                         setPendingItem(null);
                       } else {
                         alert(`${p.name} non può evolversi con questa pietra!`);

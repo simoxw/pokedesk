@@ -292,13 +292,15 @@ export const api = {
           const nextPokemon = await this.getPokemon(evolution.species.name);
           const nextSpecies = await this.getSpecies(evolution.species.name);
           
+          const getStat = (name: string) => nextPokemon.stats.find((s: any) => s.stat.name === name)?.base_stat || 0;
+          
           const newBaseStats = {
-            hp: nextPokemon.stats[0].base_stat,
-            attack: nextPokemon.stats[1].base_stat,
-            defense: nextPokemon.stats[2].base_stat,
-            spAtk: nextPokemon.stats[3].base_stat,
-            spDef: nextPokemon.stats[4].base_stat,
-            speed: nextPokemon.stats[5].base_stat,
+            hp: getStat('hp'),
+            attack: getStat('attack'),
+            defense: getStat('defense'),
+            spAtk: getStat('special-attack'),
+            spDef: getStat('special-defense'),
+            speed: getStat('speed'),
           };
 
           return {

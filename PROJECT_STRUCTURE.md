@@ -26,8 +26,9 @@ Pokedesk è un'app web avanzata che simula l'esperienza Pokémon, sviluppata con
 - **CatchEngine.ts**: Gestisce le probabilità di cattura, generazione di Nature, Shiny rate e sistema di Breeding (ereditarietà IV).
 - **store.ts**: Stato globale centralizzato con **Zustand**. Include:
     - Persistenza automatica sul `localStorage`.
-    - Sistema di **Missioni Giornaliere** rigenerate ogni 24h.
-    - Gestione energia (Cariche) e progressione (Leghe/Master).
+    - **Missioni Giornaliere**: Sistema di obiettivi quotidiani rigenerati ogni 24h con supporto a diverse categorie (Cattura, Lotta, Torre, Oggetti).
+    - **Sistema di Achievement**: Obiettivi a lungo termine con tracciamento retroattivo dei progressi.
+    - **Battle Tower**: Gestione della scalata infinita, piani boss e modalità Elite.
 - **TickSystem.ts**: Loop temporizzato che gestisce la rigenerazione HP, cariche e timer schiusa uova in background.
 
 ### Schermate (components/screens/)
@@ -37,6 +38,8 @@ Pokedesk è un'app web avanzata che simula l'esperienza Pokémon, sviluppata con
 - **BoxScreen.tsx / TeamScreen.tsx**: Organizzazione della propria collezione e squadra tramite Drag & Drop.
 - **CatchScreen.tsx / SafariScreen.tsx**: Diverse modalità di incontro e cattura Pokémon selvatici.
 - **LeagueSelectScreen.tsx / LeagueBattleScreen.tsx**: Sistema di sfide a catena basato sulle regioni classiche.
+- **BattleTowerScreen.tsx**: Interfaccia per la scalata della torre, con riepilogo ricompense e milestones.
+- **AchievementScreen.tsx**: Visualizzazione e riscatto degli obiettivi sbloccati.
 - **MasterBattleScreen.tsx**: Sfide "end-game" contro allenatori d'élite.
 - **IslandScreen.tsx**: Evento giornaliero con un leggendario speciale (sbloccato dopo una run Lega).
 - **PokedexScreen.tsx**: Visualizzazione dettagliata dei Pokémon incontrati/catturati.
