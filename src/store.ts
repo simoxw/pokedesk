@@ -509,7 +509,17 @@ export const useStore = create<GameStore>()(
         if (!pending) return {};
         const updatePkmn = (p: Pokemon) => {
           if (p.id !== pending.pokemonId) return p;
-          const newBaseStats = pending.newBaseStats!;
+
+          if (!pending.newBaseStats) {
+            return {
+              ...p,
+              pokemonId: pending.newPokemonId,
+              name: pending.newName,
+              types: pending.newTypes ?? p.types,
+            };
+          }
+
+          const newBaseStats = pending.newBaseStats;
           const newStats = BattleEngine.calculateStats(
             p.level, newBaseStats, p.ivs,
             p.evs ?? { hp:0, attack:0, defense:0, spAtk:0, spDef:0, speed:0 },
