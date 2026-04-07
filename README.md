@@ -1,4 +1,7 @@
 # PokéDesk - PWA Pokémon Web App
+Pokedesk è un progetto fan-made completamente gratuito e senza scopo di lucro.
+Non è affiliato, sponsorizzato o approvato da The Pokémon Company, Nintendo, Game Freak o Creatures Inc.
+Tutti i diritti sui personaggi, nomi, immagini e musica di Pokémon appartengono ai rispettivi proprietari.
 
 Un simulatore di battaglie e cattura Pokémon moderno, sviluppato come Progressive Web App (PWA) con React, TypeScript e Tailwind CSS.
 
