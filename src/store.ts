@@ -77,7 +77,7 @@ interface GameStore extends GameState {
 }
 
 type MissionTemplate = {
-  type: 'catch' | 'battleWin' | 'defeatGym' | 'useItem' | 'catchShiny' | 'defeatLeague' | 'defeatMaster';
+  type: 'catch' | 'battleWin' | 'defeatGym' | 'useItem' | 'catchShiny' | 'defeatLeague' | 'defeatMaster' | 'battleTower';
   target: number;
   description: string;
   reward: { coins?: number; items?: Record<string, number> };
@@ -102,13 +102,13 @@ const MISSION_POOL: MissionTemplate[] = [
   { type: 'defeatLeague', target: 3, description: 'Sconfiggi 3 membri della Lega', reward: { coins: 3000, items: { rare_candy: 2, ultraball: 2 } } },
   { type: 'defeatMaster', target: 1, description: 'Sconfiggi un Master Trainer', reward: { coins: 2500, items: { rare_candy: 2, masterball: 1 } } },
   { 
-    type: 'battleTower' as any, 
+    type: 'battleTower', 
     target: 7, 
     description: 'Raggiungi il piano 7 della Torre Lotta', 
     reward: { coins: 1500, items: { rare_candy: 1 } } 
   }, 
   { 
-    type: 'battleTower' as any, 
+    type: 'battleTower', 
     target: 25, 
     description: 'Raggiungi il piano 25 della Torre', 
     reward: { coins: 5000, items: { rare_candy: 2, masterball: 1 } } 
@@ -158,14 +158,15 @@ function generateDailyMissions(state: GameState | undefined): { date: string; mi
 
 function updateMissionProgress(
   state: GameState,
-  type: DailyMission['type']
+  type: DailyMission['type'],
+  value?: number
 ): Partial<GameState> {
   if (!state.dailyMissions) return {};
   const today = new Date().toISOString().split('T')[0];
   if (state.dailyMissions.date !== today) return {};
   const updated = state.dailyMissions.missions.map(m => {
     if (m.type === type && !m.completed) {
-      const newCurrent = m.current + 1;
+      const newCurrent = value !== undefined ? value : m.current + 1;
       return { ...m, current: newCurrent, completed: newCurrent >= m.target };
     }
     return m;
@@ -693,12 +694,15 @@ export const useStore = create<GameStore>()(
           if (nextMedal) {
             newMedals = state.medals.map(m => m.id === nextMedal.id ? { ...m, isUnlocked: true } : m);
           }
+          const gymUpdates = updateMissionProgress(state, 'defeatGym');
+          const winUpdates = updateMissionProgress({ ...state, ...gymUpdates }, 'battleWin');
           return {
             currentBattlePath: { battlesWon: 0, nextIsBoss: false },
             battleWinStreak: 0,
             medals: newMedals,
             pendingMedalUnlock: nextMedal ? { ...nextMedal, isUnlocked: true } : null,
-            ...updateMissionProgress(state, 'defeatGym'),
+            ...gymUpdates,
+            ...winUpdates,
           };
         }
       }),
@@ -779,12 +783,22 @@ export const useStore = create<GameStore>()(
       abandonLeagueRun: () => set((state) => ({
         leagueProgress: { ...state.leagueProgress, currentRun: null }
       })),
-      incrementLeagueMission: () => set((state) => ({
-        ...updateMissionProgress(state, 'defeatLeague')
-      })),
-      incrementMasterMission: () => set((state) => ({
-        ...updateMissionProgress(state, 'defeatMaster')
-      })),
+      incrementLeagueMission: () => set((state) => {
+        const leagueUpdates = updateMissionProgress(state, 'defeatLeague');
+        const winUpdates = updateMissionProgress({ ...state, ...leagueUpdates }, 'battleWin');
+        return {
+          ...leagueUpdates,
+          ...winUpdates
+        };
+      }),
+      incrementMasterMission: () => set((state) => {
+        const masterUpdates = updateMissionProgress(state, 'defeatMaster');
+        const winUpdates = updateMissionProgress({ ...state, ...masterUpdates }, 'battleWin');
+        return {
+          ...masterUpdates,
+          ...winUpdates
+        };
+      }),
       setIslandLastCatch: (date: string) => set({ islandLastCatch: date }),
       dismissMissionToast: () => set({ pendingMissionToast: null }),
       removePokemon: (id: string) => set((state) => ({
@@ -970,13 +984,19 @@ export const useStore = create<GameStore>()(
            get().updateAchievementProgress('tower_floor_49', newBest); 
            get().updateAchievementProgress('tower_floor_77', newBest);
            
+           // Update missions
+           const towerMissionUpdates = updateMissionProgress(state, 'battleTower', nextFloor);
+           const winMissionUpdates = updateMissionProgress({ ...state, ...towerMissionUpdates }, 'battleWin');
+           
            return {
              team: restoredTeam,
              battleTower: {
                ...state.battleTower,
                currentFloor: nextFloor,
                bestFloor: newBest,
-             }
+             },
+             ...towerMissionUpdates,
+             ...winMissionUpdates
            };
          });
        },
