@@ -260,7 +260,12 @@ export const api = {
     }
   },
 
-  async getEvolutionByItem(speciesData: any, itemName: string): Promise<{ newId: number; newName: string } | null> {
+  async getEvolutionByItem(speciesData: any, itemName: string): Promise<{ 
+    newId: number; 
+    newName: string;
+    newBaseStats?: any;
+    newTypes?: string[];
+  } | null> {
     try {
       const chain = await this.getEvolutionChain(speciesData.evolution_chain.url);
       
@@ -286,9 +291,21 @@ export const api = {
         if (details) {
           const nextPokemon = await this.getPokemon(evolution.species.name);
           const nextSpecies = await this.getSpecies(evolution.species.name);
+          
+          const newBaseStats = {
+            hp: nextPokemon.stats[0].base_stat,
+            attack: nextPokemon.stats[1].base_stat,
+            defense: nextPokemon.stats[2].base_stat,
+            spAtk: nextPokemon.stats[3].base_stat,
+            spDef: nextPokemon.stats[4].base_stat,
+            speed: nextPokemon.stats[5].base_stat,
+          };
+
           return {
             newId: nextPokemon.id,
-            newName: this.getItalianName(nextSpecies.names)
+            newName: this.getItalianName(nextSpecies.names),
+            newBaseStats,
+            newTypes: nextPokemon.types.map((t: any) => t.type.name)
           };
         }
       }

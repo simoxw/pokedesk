@@ -258,7 +258,9 @@ export default function BagScreen() {
                           pendingEvolution: { 
                             pokemonId: p.id, 
                             newPokemonId: evolution.newId, 
-                            newName: evolution.newName 
+                            newName: evolution.newName,
+                            newBaseStats: evolution.newBaseStats,
+                            newTypes: evolution.newTypes as any
                           } 
                         });
                         useItem(pendingItem.id);
