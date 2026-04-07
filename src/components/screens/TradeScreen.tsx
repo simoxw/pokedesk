@@ -533,11 +533,23 @@ export default function TradeScreen() {
                                   { hp: 0, attack: 0, defense: 0, spAtk: 0, spDef: 0, speed: 0 }, nature);
                                 const moves = await api.getPokemonMoves(data, level);
                                 const baseSpeciesId = await api.getBaseSpeciesId(species);
+                                
+                                const startExp = (() => { 
+                                  const l = level; 
+                                  switch (species.growth_rate.name) { 
+                                    case 'slow': return Math.floor(5 * l ** 3 / 4); 
+                                    case 'medium-slow': return Math.max(0, Math.floor(6/5 * l**3 - 15*l**2 + 100*l - 140)); 
+                                    case 'fast': return Math.floor(4 * l ** 3 / 5); 
+                                    default: return Math.floor(l ** 3); 
+                                  } 
+                                })();
+
                                 const newPokemon = {
                                   id: Math.random().toString(36).substr(2, 9),
                                   pokemonId: data.id,
                                   name: api.getItalianName(species.names),
-                                  level, exp: Math.floor(level ** 3),
+                                  level: level,
+                                  exp: startExp,
                                   types: data.types.map((t: any) => t.type.name),
                                   baseStats, ivs,
                                   evs: { hp: 0, attack: 0, defense: 0, spAtk: 0, spDef: 0, speed: 0 },
