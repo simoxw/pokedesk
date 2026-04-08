@@ -11,7 +11,8 @@ Un simulatore di battaglie e cattura Pokémon moderno, sviluppato come Progressi
 - **Missioni Giornaliere**: Sistema di obiettivi quotidiani, incluse sfide specifiche per la Torre Lotta, con ricompense in monete e strumenti.
 - **Achievement**: Sistema di obiettivi a lungo termine con ricompense speciali per catture, lotte e completamento Pokédex.
 - **Toast di missione**: Notifica visiva al completamento missione e auto-dismiss a 3 secondi.
-- **Isole Leggendarie**: Nuova modalità giornaliera per catturare un leggendario (sbloccata dopo una run Lega).
+- **Sincronizzazione Pokédex**: Registrazione automatica delle nuove specie nel Pokédex durante l'evoluzione e il livellamento.
+- **Isole Leggendarie**: Nuova modalità giornaliera per catturare un leggendario (sbloccata dopo una run Lega) con esperienza e IV corretti.
 - **Breeding e Uova**: Possibilità di far accoppiare Pokémon (incluso Ditto) per ottenere uova con IV ereditati.
 - **Gestione Squadra**: Team attivo (fino a 4 Pokémon), PC Box illimitato, strumenti curativi e caramelle rare.
 - **Sistema di Cariche**: Energia temporizzata rigenerativa per limitare le azioni di Cattura, Lotta e Safari.
