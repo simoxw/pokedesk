@@ -303,6 +303,9 @@ export const useStore = create<GameStore>()(
           // Evolution and Move learning check (non-blocking)
           checkLevelUp(p, newLevel, p.moves, get, set).catch(console.error);
 
+          // Registra la specie nel Pokédex (sincronizzazione retroattiva)
+          get().updatePokedex(p.pokemonId, 'caught');
+
           const newCurrentHp = Math.min(newStats.hp, Math.max(0, p.currentHp + (newStats.hp - p.stats.hp)));
           const expForNewLevel = (() => {
             const gr = p.growthRate ?? 'medium';
@@ -338,6 +341,9 @@ export const useStore = create<GameStore>()(
 
           // Evolution and Move learning check (non-blocking)
           checkLevelUp(p, newLevel, p.moves, get, set).catch(console.error);
+
+          // Registra la specie nel Pokédex (sincronizzazione retroattiva)
+          get().updatePokedex(p.pokemonId, 'caught');
 
           const newCurrentHp = Math.min(newStats.hp, Math.max(0, p.currentHp + (newStats.hp - p.stats.hp)));
           const expForNewLevel = (() => {
@@ -454,6 +460,8 @@ export const useStore = create<GameStore>()(
         // Evolution and Move learning check (non-blocking)
         if (newLevel > pokemon.level) {
           checkLevelUp(pokemon, newLevel, pokemon.moves, get, set).catch(console.error);
+          // Registra comunque la specie attuale nel Pokédex (sincronizzazione retroattiva)
+          get().updatePokedex(pokemon.pokemonId, 'caught');
         }
 
         return {
@@ -535,9 +543,15 @@ export const useStore = create<GameStore>()(
             currentHp: Math.min(newStats.hp, p.currentHp + (newStats.hp - p.stats.hp)),
           };
         };
+        const updatedTeam = state.team.map(updatePkmn);
+        const updatedBox = state.box.map(updatePkmn);
+
+        // Registra nel Pokédex la nuova forma
+        get().updatePokedex(pending.newPokemonId, 'caught');
+
         return {
-          team: state.team.map(updatePkmn),
-          box: state.box.map(updatePkmn),
+          team: updatedTeam,
+          box: updatedBox,
           pendingEvolution: null,
         };
       }),
