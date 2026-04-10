@@ -13,6 +13,27 @@ interface PokemonCardProps {
   onToggleSelect: (id: string) => void;
 }
 
+const TYPE_COLORS: Record<string, { bg: string; border: string }> = {
+  fire:     { bg: 'rgba(238,129,48,0.28)',  border: '#EE8130' },
+  water:    { bg: 'rgba(99,144,240,0.28)',  border: '#6390F0' },
+  grass:    { bg: 'rgba(122,199,76,0.28)',  border: '#7AC74C' },
+  electric: { bg: 'rgba(247,208,44,0.28)',  border: '#F7D02C' },
+  psychic:  { bg: 'rgba(249,85,135,0.28)', border: '#F95587' },
+  ice:      { bg: 'rgba(150,217,214,0.28)', border: '#96D9D6' },
+  dragon:   { bg: 'rgba(111,53,252,0.28)', border: '#6F35FC' },
+  dark:     { bg: 'rgba(112,87,70,0.28)',  border: '#705746' },
+  fairy:    { bg: 'rgba(214,133,173,0.28)', border: '#D685AD' },
+  fighting: { bg: 'rgba(194,46,40,0.28)',  border: '#C22E28' },
+  poison:   { bg: 'rgba(163,62,161,0.28)', border: '#A33EA1' },
+  ground:   { bg: 'rgba(226,191,101,0.28)', border: '#E2BF65' },
+  rock:     { bg: 'rgba(182,161,54,0.28)', border: '#B6A136' },
+  ghost:    { bg: 'rgba(115,87,151,0.28)', border: '#735797' },
+  steel:    { bg: 'rgba(183,183,206,0.28)', border: '#B7B7CE' },
+  bug:      { bg: 'rgba(166,185,26,0.28)', border: '#A6B91A' },
+  flying:   { bg: 'rgba(169,143,243,0.28)', border: '#A98FF3' },
+  normal:   { bg: 'rgba(168,167,122,0.28)', border: '#A8A77A' },
+};
+
 const PokemonCard = React.memo(({
   pokemon,
   viewMode,
@@ -34,10 +55,15 @@ const PokemonCard = React.memo(({
     return (
       <button
         onClick={handleClick}
-        className={`relative aspect-square bg-[#1a1a2e] rounded-xl border-2 flex flex-col items-center justify-center p-2 transition-all overflow-hidden ${
+        style={!multiSelectMode || !isSelected ? {
+          background: `linear-gradient(135deg, ${TYPE_COLORS[pokemon.types[0]]?.bg ?? 'rgba(255,255,255,0.05)'} 0%, #13132a 70%)`,
+          borderColor: TYPE_COLORS[pokemon.types[0]]?.border ?? '#ffffff15',
+          borderWidth: 2,
+        } : undefined}
+        className={`relative aspect-square rounded-xl flex flex-col items-center justify-center p-2 transition-all overflow-hidden ${
           multiSelectMode && isSelected
-            ? 'border-[#e63946] bg-[#e63946]/20'
-            : 'border-white/5 active:border-[#e63946]'
+            ? 'border-2 border-[#e63946] bg-[#e63946]/20'
+            : ''
         }`}
       >
         {multiSelectMode && (

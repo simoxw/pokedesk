@@ -1,4 +1,4 @@
-import React, { useState } from 'react'; 
+import React, { useState, useEffect } from 'react'; 
 import { useStore } from '../../store'; 
 import { api } from '../../api'; 
 import { motion, AnimatePresence } from 'motion/react'; 
@@ -15,6 +15,27 @@ const STAT_META: Record<string, { label: string; icon: React.ReactNode; color: s
   speed:   { label: 'VEL',      icon: <Activity size={12} />, color: '#facc15' }, 
 }; 
  
+const POKEDEX_TYPE_COLORS: Record<string, { bg: string; border: string }> = {
+  fire:     { bg: 'rgba(238,129,48,0.28)',  border: '#EE8130' },
+  water:    { bg: 'rgba(99,144,240,0.28)',  border: '#6390F0' },
+  grass:    { bg: 'rgba(122,199,76,0.28)',  border: '#7AC74C' },
+  electric: { bg: 'rgba(247,208,44,0.28)',  border: '#F7D02C' },
+  psychic:  { bg: 'rgba(249,85,135,0.28)', border: '#F95587' },
+  ice:      { bg: 'rgba(150,217,214,0.28)', border: '#96D9D6' },
+  dragon:   { bg: 'rgba(111,53,252,0.28)', border: '#6F35FC' },
+  dark:     { bg: 'rgba(112,87,70,0.28)',  border: '#705746' },
+  fairy:    { bg: 'rgba(214,133,173,0.28)', border: '#D685AD' },
+  fighting: { bg: 'rgba(194,46,40,0.28)',  border: '#C22E28' },
+  poison:   { bg: 'rgba(163,62,161,0.28)', border: '#A33EA1' },
+  ground:   { bg: 'rgba(226,191,101,0.28)', border: '#E2BF65' },
+  rock:     { bg: 'rgba(182,161,54,0.28)', border: '#B6A136' },
+  ghost:    { bg: 'rgba(115,87,151,0.28)', border: '#735797' },
+  steel:    { bg: 'rgba(183,183,206,0.28)', border: '#B7B7CE' },
+  bug:      { bg: 'rgba(166,185,26,0.28)', border: '#A6B91A' },
+  flying:   { bg: 'rgba(169,143,243,0.28)', border: '#A98FF3' },
+  normal:   { bg: 'rgba(168,167,122,0.28)', border: '#A8A77A' },
+};
+
 function extractEvolutions(chain: any): { name: string; id: number }[] { 
   const result: { name: string; id: number }[] = []; 
   const traverse = (node: any) => { 
@@ -28,7 +49,7 @@ function extractEvolutions(chain: any): { name: string; id: number }[] {
 } 
  
 export default function PokedexScreen() { 
-  const { pokedex, setScreen, claimPokedexReward, claimedPokedexRewards, inventory, coins } = useStore(); 
+  const { pokedex, setScreen, claimPokedexReward, claimedPokedexRewards, inventory, coins, team, box } = useStore(); 
   const [selected, setSelected] = useState<any>(null); 
   const [loadingModal, setLoadingModal] = useState(false); 
   const [tab, setTab] = useState<'info' | 'stats' | 'moves' | 'evo'>('info'); 
@@ -40,6 +61,15 @@ export default function PokedexScreen() {
   const [showTypeCalc, setShowTypeCalc] = useState(false);
   const [showRegional, setShowRegional] = useState(false);
   const [calcAttackType, setCalcAttackType] = useState<string | null>(null);
+
+  const caughtTypesMap = React.useMemo(() => {
+    const map: Record<number, string> = {};
+    [...team, ...box].forEach(p => {
+      map[p.pokemonId] = p.types[0];
+    });
+    return map;
+  }, [team, box]);
+
 
   const GEN_RANGES = [
     { id: 1, label: 'Gen 1', range: [1, 151] },
@@ -113,6 +143,31 @@ export default function PokedexScreen() {
       return true;
     })
     .sort((a, b) => a.id - b.id);
+
+  const [pokedexEntryTypes, setPokedexEntryTypes] = useState<Record<number, string>>({});
+
+  useEffect(() => {
+    const fetchMissingTypes = async () => {
+      const missingEntries = filteredEntries.filter(
+        ({ id }) => !caughtTypesMap[id] && !pokedexEntryTypes[id]
+      );
+
+      if (missingEntries.length > 0) {
+        const newTypes: Record<number, string> = {};
+        const promises = missingEntries.map(async ({ id }) => {
+          try {
+            const data = await api.getPokemon(id);
+            newTypes[id] = data.types[0].type.name;
+          } catch (error) {
+            console.error(`Failed to fetch type for Pokemon ID ${id}:`, error);
+          }
+        });
+        await Promise.all(promises);
+        setPokedexEntryTypes(prev => ({ ...prev, ...newTypes }));
+      }
+    };
+    fetchMissingTypes();
+  }, [filteredEntries, caughtTypesMap, pokedexEntryTypes]);
 
   return ( 
     <div className="h-full flex flex-col bg-[#0f0f1a]"> 
@@ -267,12 +322,19 @@ export default function PokedexScreen() {
           <div className="grid grid-cols-4 gap-3"> 
             {filteredEntries.map(({ id, status }) => {
                 const isSeen = status === 'seen';
+                const primaryType = caughtTypesMap[id] || pokedexEntryTypes[id];
+                const typeStyle = primaryType ? {
+                  background: `linear-gradient(135deg, ${POKEDEX_TYPE_COLORS[primaryType]?.bg ?? 'rgba(255,255,255,0.05)'} 0%, #13132a 70%)`,
+                  borderColor: POKEDEX_TYPE_COLORS[primaryType]?.border ?? '#ffffff15',
+                  borderWidth: 2,
+                } : {};
                 return ( 
                   <button 
                     key={id} 
                     onClick={() => !isSeen ? handleSelect(id) : undefined}
                     disabled={isSeen}
-                    className={`bg-[#1a1a2e] border border-white/10 rounded-2xl p-2 flex flex-col items-center gap-1 transition-all ${isSeen ? 'cursor-default' : 'active:border-[#e63946]'}`}
+                    style={typeStyle}
+                    className={`rounded-2xl p-2 flex flex-col items-center gap-1 transition-all ${!primaryType ? 'bg-[#1a1a2e] border border-white/10' : ''} ${isSeen ? 'cursor-default' : 'active:border-[#e63946]'}`}
                   > 
                     <img 
                       src={`https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/${id}.png`} 
