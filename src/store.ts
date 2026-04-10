@@ -37,7 +37,7 @@ interface GameStore extends GameState {
   consumeCharge: () => void;
   consumeSafariCharge: () => void;
   addSafariCharge: (amount: number) => void;
-  updatePokedex: (pokemonId: number, status: 'seen' | 'caught') => void;
+  updatePokedex: (pokemonId: number, status: 'seen' | 'caught', primaryType?: string) => void;
   incrementStat: (key: keyof GameState['stats']) => void;
   updatePlayTime: (seconds: number) => void;
   gainExp: (pokemonId: string, amount: number) => void;
@@ -67,6 +67,7 @@ interface GameStore extends GameState {
   removePokemon: (id: string) => void;
   claimStreak: () => void;
   claimPokedexReward: (genId: string) => void;
+  savePokedexTypes: (types: Record<number, string>) => void;
   initializeAchievements: () => void;
   updateAchievementProgress: (achievementId: string, progress: number) => void;
   unlockAchievement: (achievementId: string) => void;
@@ -211,6 +212,7 @@ export const useStore = create<GameStore>()(
       safariCharges: 0,
       lastSafariTickTimestamp: Date.now(),
       pokedex: {},
+      pokedexTypes: {},
       stats: { totalCaught: 0, totalBattles: 0, shiniesFound: 0, pokemonReleased: 0 },
       settings: { audio: true, notifications: true },
       expShareActive: false,
@@ -253,10 +255,14 @@ export const useStore = create<GameStore>()(
       addPokemon: (pokemon: Pokemon) => set((state) => { 
         const missionUpdates = updateMissionProgress(state, 'catch'); 
         const shinyUpdates = pokemon.isShiny ? updateMissionProgress({ ...state, ...missionUpdates }, 'catchShiny') : {}; 
+        const newPokedexTypes = pokemon.types?.[0] 
+          ? { ...state.pokedexTypes, [pokemon.pokemonId]: pokemon.types[0] } 
+          : state.pokedexTypes; 
         if (state.team.length < 4) { 
           return { 
             team: [...state.team, pokemon], 
             pokedex: { ...state.pokedex, [pokemon.pokemonId]: 'caught' }, 
+            pokedexTypes: newPokedexTypes,
             ...missionUpdates, 
             ...shinyUpdates, 
           }; 
@@ -264,6 +270,7 @@ export const useStore = create<GameStore>()(
         return { 
           box: [...state.box, pokemon], 
           pokedex: { ...state.pokedex, [pokemon.pokemonId]: 'caught' }, 
+          pokedexTypes: newPokedexTypes,
           ...missionUpdates, 
           ...shinyUpdates, 
         }; 
@@ -304,7 +311,7 @@ export const useStore = create<GameStore>()(
           checkLevelUp(p, newLevel, p.moves, get, set).catch(console.error);
 
           // Registra la specie nel Pokédex (sincronizzazione retroattiva)
-          get().updatePokedex(p.pokemonId, 'caught');
+          get().updatePokedex(p.pokemonId, 'caught', p.types[0]);
 
           const newCurrentHp = Math.min(newStats.hp, Math.max(0, p.currentHp + (newStats.hp - p.stats.hp)));
           const expForNewLevel = (() => {
@@ -343,7 +350,7 @@ export const useStore = create<GameStore>()(
           checkLevelUp(p, newLevel, p.moves, get, set).catch(console.error);
 
           // Registra la specie nel Pokédex (sincronizzazione retroattiva)
-          get().updatePokedex(p.pokemonId, 'caught');
+          get().updatePokedex(p.pokemonId, 'caught', p.types[0]);
 
           const newCurrentHp = Math.min(newStats.hp, Math.max(0, p.currentHp + (newStats.hp - p.stats.hp)));
           const expForNewLevel = (() => {
@@ -417,10 +424,13 @@ export const useStore = create<GameStore>()(
         safariCharges: Math.min(8, state.safariCharges + amount),
         lastSafariTickTimestamp: Date.now(),
       })),
-      updatePokedex: (pokemonId: number, status: 'seen' | 'caught') => set((state) => {
+      updatePokedex: (pokemonId: number, status: 'seen' | 'caught', primaryType?: string) => set((state) => {
         const current = state.pokedex[pokemonId];
         if (current === 'caught') return {}; // Don't downgrade caught to seen
-        return { pokedex: { ...state.pokedex, [pokemonId]: status } };
+        return { 
+          pokedex: { ...state.pokedex, [pokemonId]: status },
+          ...(primaryType ? { pokedexTypes: { ...state.pokedexTypes, [pokemonId]: primaryType } } : {}),
+        };
       }),
       incrementStat: (key: keyof GameState['stats']) => set((state) => ({
         stats: { ...state.stats, [key]: state.stats[key] + 1 }
@@ -461,7 +471,7 @@ export const useStore = create<GameStore>()(
         if (newLevel > pokemon.level) {
           checkLevelUp(pokemon, newLevel, pokemon.moves, get, set).catch(console.error);
           // Registra comunque la specie attuale nel Pokédex (sincronizzazione retroattiva)
-          get().updatePokedex(pokemon.pokemonId, 'caught');
+          get().updatePokedex(pokemon.pokemonId, 'caught', pokemon.types[0]);
         }
 
         return {
@@ -486,6 +496,7 @@ export const useStore = create<GameStore>()(
         safariCharges: 0,
         lastSafariTickTimestamp: Date.now(),
         pokedex: {},
+        pokedexTypes: {},
         stats: { totalCaught: 0, totalBattles: 0, shiniesFound: 0, pokemonReleased: 0 },
         isFirstRun: true,
         dailyMissions: null,
@@ -547,7 +558,7 @@ export const useStore = create<GameStore>()(
         const updatedBox = state.box.map(updatePkmn);
 
         // Registra nel Pokédex la nuova forma
-        get().updatePokedex(pending.newPokemonId, 'caught');
+        get().updatePokedex(pending.newPokemonId, 'caught', pending.newTypes?.[0]);
 
         return {
           team: updatedTeam,
@@ -687,7 +698,7 @@ export const useStore = create<GameStore>()(
           }));
 
           // Aggiorna Pokedex dopo il set
-          get().updatePokedex(newPokemon.pokemonId, 'caught');
+          get().updatePokedex(newPokemon.pokemonId, 'caught', newPokemon.types[0]);
 
           const currentBreed = get().achievements.find(a => a.id === 'breed_10')?.progress ?? 0;
           get().updateAchievementProgress('breed_10', currentBreed + 1);
@@ -868,6 +879,9 @@ export const useStore = create<GameStore>()(
           };
         });
       },
+      savePokedexTypes: (types: Record<number, string>) => set((state) => ({
+        pokedexTypes: { ...state.pokedexTypes, ...types }
+      })),
        initializeAchievements: (): void => {
          set((state) => {
            const allPokemon = [...state.team, ...state.box];
@@ -1076,6 +1090,15 @@ export const useStore = create<GameStore>()(
         state.pendingEvolution = null;
         state.pendingNewMoveQueue = [];
         if (!state.eggs) state.eggs = [];
+        if (!state.pokedexTypes) state.pokedexTypes = {};
+
+        // Sincronizzazione retroattiva: se pokedexTypes è incompleto, popolalo dai Pokémon posseduti
+        [...state.team, ...state.box].forEach(p => {
+          if (p.pokemonId && p.types?.[0] && !state.pokedexTypes[p.pokemonId]) {
+            state.pokedexTypes[p.pokemonId] = p.types[0];
+          }
+        });
+
         state.leagueBattleTeam = null;
         state.leagueBattleResult = null;
         state.masterBattleTeam = null;

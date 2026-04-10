@@ -138,6 +138,7 @@ export interface GameState {
   safariCharges: number;
   lastSafariTickTimestamp: number;
   pokedex: Record<number, 'seen' | 'caught'>;
+  pokedexTypes: Record<number, string>;
   stats: { totalCaught: number; totalBattles: number; shiniesFound: number; pokemonReleased: number };
   settings: { audio: boolean; notifications: boolean };
   expShareActive: boolean;

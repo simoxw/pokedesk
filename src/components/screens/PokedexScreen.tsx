@@ -49,7 +49,7 @@ function extractEvolutions(chain: any): { name: string; id: number }[] {
 } 
  
 export default function PokedexScreen() { 
-  const { pokedex, setScreen, claimPokedexReward, claimedPokedexRewards, inventory, coins, team, box } = useStore(); 
+  const { pokedex, pokedexTypes, savePokedexTypes, setScreen, claimPokedexReward, claimedPokedexRewards, inventory, coins, team, box } = useStore(); 
   const [selected, setSelected] = useState<any>(null); 
   const [loadingModal, setLoadingModal] = useState(false); 
   const [tab, setTab] = useState<'info' | 'stats' | 'moves' | 'evo'>('info'); 
@@ -61,15 +61,6 @@ export default function PokedexScreen() {
   const [showTypeCalc, setShowTypeCalc] = useState(false);
   const [showRegional, setShowRegional] = useState(false);
   const [calcAttackType, setCalcAttackType] = useState<string | null>(null);
-
-  const caughtTypesMap = React.useMemo(() => {
-    const map: Record<number, string> = {};
-    [...team, ...box].forEach(p => {
-      map[p.pokemonId] = p.types[0];
-    });
-    return map;
-  }, [team, box]);
-
 
   const GEN_RANGES = [
     { id: 1, label: 'Gen 1', range: [1, 151] },
@@ -149,7 +140,7 @@ export default function PokedexScreen() {
   useEffect(() => {
     const fetchMissingTypes = async () => {
       const missingEntries = filteredEntries.filter(
-        ({ id }) => !caughtTypesMap[id] && !pokedexEntryTypes[id]
+        ({ id }) => !pokedexTypes[id] && !pokedexEntryTypes[id]
       );
 
       if (missingEntries.length > 0) {
@@ -164,10 +155,12 @@ export default function PokedexScreen() {
         });
         await Promise.all(promises);
         setPokedexEntryTypes(prev => ({ ...prev, ...newTypes }));
+        // Salva permanentemente nello store globale i tipi appena scaricati
+        savePokedexTypes(newTypes);
       }
     };
     fetchMissingTypes();
-  }, [filteredEntries, caughtTypesMap, pokedexEntryTypes]);
+  }, [filteredEntries, pokedexTypes, pokedexEntryTypes]);
 
   return ( 
     <div className="h-full flex flex-col bg-[#0f0f1a]"> 
@@ -322,7 +315,7 @@ export default function PokedexScreen() {
           <div className="grid grid-cols-4 gap-3"> 
             {filteredEntries.map(({ id, status }) => {
                 const isSeen = status === 'seen';
-                const primaryType = caughtTypesMap[id] || pokedexEntryTypes[id];
+                const primaryType = pokedexTypes[id] || pokedexEntryTypes[id];
                 const typeStyle = primaryType ? {
                   background: `linear-gradient(135deg, ${POKEDEX_TYPE_COLORS[primaryType]?.bg ?? 'rgba(255,255,255,0.05)'} 0%, #13132a 70%)`,
                   borderColor: POKEDEX_TYPE_COLORS[primaryType]?.border ?? '#ffffff15',
