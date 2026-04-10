@@ -4,8 +4,29 @@ import { motion } from 'motion/react';
 import { ArrowLeft, Trophy, Target, Sparkles, Trash2, Sword, Edit2, Check, Star } from 'lucide-react';
 
 export default function ProfileScreen() {
-  const { player, stats, medals, setScreen, updatePlayer, leagueProgress } = useStore();
+  const { player, stats, medals, achievements, leagueProgress, masterProgress, setScreen, updatePlayer } = useStore();
   const medalsWon = medals.filter(m => m.isUnlocked).length;
+  const achievementsWon = achievements.filter(a => a.unlocked).length;
+  const playerScore =
+    stats.totalBattles * 1 +
+    stats.totalCaught * 2 +
+    stats.shiniesFound * 50 +
+    medalsWon * 25 +
+    achievementsWon * 100 +
+    leagueProgress.completedRegions.length * 200 +
+    leagueProgress.completedRuns * 500 +
+    (masterProgress?.defeatedIds?.length ?? 0) * 150;
+  const playerLevel = Math.floor(playerScore / 100);
+  const playerProgress = playerScore % 100;
+  const getPlayerRank = (lvl: number) => {
+    if (lvl >= 200) return { label: '👑 Leggenda', color: 'text-yellow-300' };
+    if (lvl >= 101) return { label: '⭐ Maestro', color: 'text-purple-400' };
+    if (lvl >= 51)  return { label: '🏆 Campione', color: 'text-blue-400' };
+    if (lvl >= 26)  return { label: '🔥 Esperto', color: 'text-orange-400' };
+    if (lvl >= 11)  return { label: '⚔️ Allenatore', color: 'text-green-400' };
+    return { label: '🌱 Novizio', color: 'text-white/50' };
+  };
+  const rank = getPlayerRank(playerLevel);
   const [isEditingName, setIsEditingName] = React.useState(false);
   const [tempName, setTempName] = React.useState(player.name);
 
@@ -25,48 +46,77 @@ export default function ProfileScreen() {
         <h2 className="text-2xl font-black">PROFILO</h2>
       </header>
 
-      <div className="bg-[#1a1a2e] rounded-[28px] p-6 mb-8 border border-white/5 flex flex-col items-center">
-        <div className="relative inline-block mb-3">
-          <div className="w-20 h-20 bg-[#e63946] rounded-full flex items-center justify-center overflow-hidden shadow-xl shadow-[#e63946]/20">
-            <img
-              src={`https://play.pokemonshowdown.com/sprites/trainers/${player.gender === 'M' ? 'brendan-gen3' : 'may-gen3'}.png`}
-              alt="Trainer"
-              className="w-full h-full object-cover"
-            />
+      <div className="flex gap-3 mb-8">
+        {/* Profilo - metà sinistra */}
+        <div className="bg-[#1a1a2e] rounded-[28px] p-4 border border-white/5 flex flex-col items-center flex-1">
+          <div className="relative inline-block mb-2">
+            <div className="w-24 h-24 bg-[#e63946] rounded-full flex items-center justify-center overflow-hidden shadow-xl shadow-[#e63946]/20">
+              <img
+                src={`https://play.pokemonshowdown.com/sprites/trainers/${player.gender === 'M' ? 'brendan-gen3' : 'may-gen3'}.png`}
+                alt="Trainer"
+                className="w-full h-full object-cover"
+              />
+            </div>
+            <button
+              onClick={() => updatePlayer({ gender: player.gender === 'M' ? 'F' : 'M' })}
+              className="absolute -top-1 -right-1 p-2 bg-[#1a1a2e] rounded-full border border-white/10 text-white/50 shadow-lg"
+            >
+              <ArrowLeft size={12} className="rotate-180" />
+            </button>
           </div>
-          <button
-            onClick={() => updatePlayer({ gender: player.gender === 'M' ? 'F' : 'M' })}
-            className="absolute -top-3 -right-3 p-2 bg-[#1a1a2e] rounded-full border border-white/10 text-white/50 hover:text-white transition-colors shadow-lg hover:bg-[#2a2a3e]"
-            title="Cambia genere"
-          >
-            <ArrowLeft size={12} className="rotate-180" />
-          </button>
+          {isEditingName ? (
+            <div className="flex items-center gap-1">
+              <input
+                autoFocus
+                type="text"
+                value={tempName}
+                onChange={(e) => setTempName(e.target.value)}
+                onKeyDown={(e) => e.key === 'Enter' && handleSaveName()}
+                className="bg-white/5 border border-white/10 rounded-xl px-2 py-1 text-base font-black uppercase text-center w-28 focus:outline-none focus:border-[#e63946]"
+              />
+              <button onClick={handleSaveName} className="p-1.5 bg-green-500/20 text-green-400 rounded-lg">
+                <Check size={16} />
+              </button>
+            </div>
+          ) : (
+            <div className="flex items-center gap-1">
+              <h3 className="text-2xl font-black uppercase tracking-tighter">{player.name}</h3>
+              <button onClick={() => { setIsEditingName(true); setTempName(player.name); }} className="p-1.5 bg-white/5 rounded-lg text-white/30">
+                <Edit2 size={14} />
+              </button>
+            </div>
+          )}
+          <p className="text-white/30 text-sm mt-1">dal {new Date(player.createdAt).toLocaleDateString()}</p>
         </div>
-        
-        {isEditingName ? (
-          <div className="flex items-center gap-2">
-            <input
-              autoFocus
-              type="text"
-              value={tempName}
-              onChange={(e) => setTempName(e.target.value)}
-              onKeyDown={(e) => e.key === 'Enter' && handleSaveName()}
-              className="bg-white/5 border border-white/10 rounded-xl px-4 py-2 text-2xl font-black uppercase text-center w-48 focus:outline-none focus:border-[#e63946]"
-            />
-            <button onClick={handleSaveName} className="p-2 bg-green-500/20 text-green-400 rounded-xl">
-              <Check size={20} />
-            </button>
+
+        {/* Stats destra */}
+        <div className="flex flex-col gap-3 flex-1">
+          <div className="bg-[#1a1a2e] rounded-2xl p-3 border border-white/5 flex-1 flex flex-col justify-center">
+            <div className="flex items-center gap-2 text-white/40 mb-1">
+              <Trophy size={14} className="text-yellow-400" />
+              <span className="text-[9px] font-bold uppercase tracking-widest">Achievement</span>
+            </div>
+            <div className="text-2xl font-black">{achievementsWon}</div>
+            <div className="text-[9px] text-white/30">{achievements.length} totali</div>
           </div>
-        ) : (
-          <div className="flex items-center gap-3">
-            <h3 className="text-3xl font-black uppercase tracking-tighter">{player.name}</h3>
-            <button onClick={() => { setIsEditingName(true); setTempName(player.name); }} className="p-1.5 bg-white/5 rounded-lg text-white/30 hover:text-white transition-colors">
-              <Edit2 size={16} />
-            </button>
+          <div className="bg-[#1a1a2e] rounded-2xl p-3 border border-yellow-500/20 flex-1 flex flex-col justify-center">
+            <div className="flex items-center gap-2 text-white/40 mb-1">
+              <Star size={14} className="text-yellow-400" />
+              <span className="text-[9px] font-bold uppercase tracking-widest">Livello</span>
+            </div>
+            <div className="flex items-baseline gap-1">
+              <div className="text-2xl font-black text-yellow-400">{playerLevel}</div>
+              <span className={`text-[10px] font-black ${rank.color}`}>{rank.label}</span>
+            </div>
+            <div className="w-full bg-white/10 rounded-full h-1.5 my-1">
+              <div
+                className="h-1.5 rounded-full bg-yellow-400 transition-all"
+                style={{ width: `${playerProgress}%` }}
+              />
+            </div>
+            <div className="text-[9px] text-white/30">{playerProgress}/100 al prossimo lv.</div>
           </div>
-        )}
-        
-        <p className="text-white/30 text-xs mt-1">Allenatore dal {new Date(player.createdAt).toLocaleDateString()}</p>
+        </div>
       </div>
 
       <div className="grid grid-cols-2 gap-3 mb-8">
