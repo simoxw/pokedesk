@@ -5,6 +5,7 @@ import { BattleEngine } from '../../BattleEngine';
 import { motion, AnimatePresence } from 'motion/react';
 import { Zap, Target, Sword, TreePine, X, Trophy } from 'lucide-react';
 import PokemonSprite from '../ui/PokemonSprite';
+import { LEGENDARY_IDS, GEN_RANGES } from '../../data/legendaryIds';
 
 export default function HubScreen() {
   const { 
@@ -20,8 +21,11 @@ export default function HubScreen() {
     lastTickTimestamp, 
     lastSafariTickTimestamp,
     dailyMissions,
+    genChallenges,
+    activePresetCategory,
     checkDailyMissions,
     claimMission,
+    claimGenMission,
     leagueProgress,
     eggs,
     startIncubation,
@@ -49,6 +53,7 @@ export default function HubScreen() {
   };
 
   const [showMissions, setShowMissions] = useState(false);
+  const [missionTab, setMissionTab] = useState<'daily' | 'gen'>('daily');
   const [showStreak, setShowStreak] = useState(false);
   const [streakClaimed, setStreakClaimed] = useState(false);
   const [showIncubator, setShowIncubator] = useState(false);
@@ -147,6 +152,16 @@ export default function HubScreen() {
     14: '2000¢ + 1× Masterball + 2× Caramelle Rare',
   };
   const nextStreakReward = STREAK_REWARDS[streak + 1] ?? '100¢';
+  const isTeamValidForActiveCategory = (() => {
+    if (!activePresetCategory || team.length === 0) return false;
+    return team.every((p) => {
+      if (activePresetCategory === 'favorite') return true;
+      if (activePresetCategory === 'legendary') return LEGENDARY_IDS.has(p.pokemonId);
+      const range = GEN_RANGES[activePresetCategory];
+      if (!range) return false;
+      return p.pokemonId >= range[0] && p.pokemonId <= range[1];
+    });
+  })();
 
   return (
     <div className="h-full relative overflow-hidden overflow-x-hidden flex flex-col items-center justify-evenly py-3 px-6">
@@ -507,13 +522,27 @@ export default function HubScreen() {
               onClick={e => e.stopPropagation()}
             >
               <div className="flex items-center justify-between mb-2">
-                <h3 className="font-black text-lg">MISSIONI GIORNALIERE</h3>
+                <h3 className="font-black text-lg">{missionTab === 'daily' ? 'MISSIONI GIORNALIERE' : 'GEN CHALLENGE'}</h3>
                 <button onClick={() => setShowMissions(false)} className="p-2 bg-white/10 rounded-xl">
                   <X size={18} />
                 </button>
               </div>
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={() => setMissionTab('daily')}
+                  className={`flex-1 py-2 rounded-xl text-xs font-black ${missionTab === 'daily' ? 'bg-[#e63946]' : 'bg-[#0f0f1a] text-white/60'}`}
+                >
+                  GIORNALIERE
+                </button>
+                <button
+                  onClick={() => setMissionTab('gen')}
+                  className={`flex-1 py-2 rounded-xl text-xs font-black ${missionTab === 'gen' ? 'bg-[#e63946]' : 'bg-[#0f0f1a] text-white/60'}`}
+                >
+                  GEN CHALLENGE
+                </button>
+              </div>
 
-              {(dailyMissions?.missions ?? []).map(mission => (
+              {missionTab === 'daily' && (dailyMissions?.missions ?? []).map(mission => (
                 <div
                   key={mission.id}
                   className={`bg-[#0f0f1a] rounded-2xl p-4 border transition-all ${
@@ -561,6 +590,67 @@ export default function HubScreen() {
                   </div>
                 </div>
               ))}
+
+              {missionTab === 'gen' && (
+                <>
+                  {!activePresetCategory && (
+                    <p className="text-white/40 text-sm text-center py-4">
+                      Carica un preset dal Box per sbloccare le sfide GEN CHALLENGE.
+                    </p>
+                  )}
+                  {activePresetCategory && !isTeamValidForActiveCategory && (
+                    <p className="text-white/40 text-sm text-center py-4">
+                      Il team attuale non rispetta la categoria attiva. Carica il preset corretto per progredire.
+                    </p>
+                  )}
+                  {activePresetCategory && (genChallenges?.missions ?? []).map((mission) => (
+                    <div
+                      key={mission.id}
+                      className={`bg-[#0f0f1a] rounded-2xl p-4 border transition-all ${
+                        mission.claimed
+                          ? 'border-white/5 opacity-50'
+                          : mission.completed
+                          ? 'border-yellow-500/40 bg-yellow-500/5'
+                          : 'border-white/5'
+                      }`}
+                    >
+                      <div className="flex items-center justify-between mb-2">
+                        <span className="text-sm font-bold">{mission.description}</span>
+                        <span className="text-xs text-white/40">
+                          {Math.min(mission.current, mission.target)}/{mission.target}
+                        </span>
+                      </div>
+                      <div className="w-full bg-white/10 rounded-full h-1.5 mb-2">
+                        <div
+                          className={`h-1.5 rounded-full transition-all ${
+                            mission.completed ? 'bg-yellow-400' : 'bg-[#e63946]'
+                          }`}
+                          style={{ width: `${Math.min(100, (mission.current / mission.target) * 100)}%` }}
+                        />
+                      </div>
+                      <div className="flex items-center justify-between">
+                        <p className="text-[10px] text-yellow-400">
+                          🎁 {mission.reward.coins ? `${mission.reward.coins}¢` : ''}
+                          {mission.reward.items
+                            ? ' + ' + Object.entries(mission.reward.items).map(([k, v]) => `${v}x ${k}`).join(', ')
+                            : ''}
+                        </p>
+                        {mission.completed && !mission.claimed && (
+                          <button
+                            onClick={() => claimGenMission(mission.id)}
+                            className="px-3 py-1 bg-yellow-500 text-black text-xs font-black rounded-xl"
+                          >
+                            RITIRA
+                          </button>
+                        )}
+                        {mission.claimed && (
+                          <span className="text-[10px] text-white/30 font-bold">✓ ritirato</span>
+                        )}
+                      </div>
+                    </div>
+                  ))}
+                </>
+              )}
 
               <p className="text-[10px] text-white/30 text-center italic">
                 Le missioni si rinnovano ogni giorno

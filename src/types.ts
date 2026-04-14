@@ -117,6 +117,17 @@ export interface DailyMission {
   reward: { coins?: number; items?: Record<string, number> };
 }
 
+export interface GenMission {
+  id: string;
+  description: string;
+  type: 'genBattleWin' | 'genCatch' | 'genEvolve' | 'genNoFaint' | 'genSoloWin';
+  target: number;
+  current: number;
+  completed: boolean;
+  claimed: boolean;
+  reward: { coins?: number; items?: Record<string, number> };
+}
+
 export interface BattleTowerState {
   currentFloor: number;
   bestFloor: number;
@@ -161,6 +172,8 @@ export interface GameState {
   masterBattleResult: 'win' | 'lose' | null;
   isFirstRun: boolean;
   dailyMissions: { date: string; missions: DailyMission[] } | null;
+  genChallenges: { date: string; category: TeamPreset['category'] | null; missions: GenMission[] } | null;
+  activePresetCategory: TeamPreset['category'] | null;
   islandLastCatch: string | null;
   pendingMissionToast: string | null;
   streak: number;

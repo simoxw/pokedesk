@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
-import { GameState, Pokemon, ScreenName, Medal, Item, Move, DailyMission, Egg, Achievement, TeamPreset } from './types';
+import { GameState, Pokemon, ScreenName, Medal, Item, Move, DailyMission, Egg, Achievement, TeamPreset, GenMission } from './types';
 import { LEGENDARY_IDS, GEN_RANGES } from './data/legendaryIds';
 import { api } from './api';
 import { BattleEngine } from './BattleEngine';
@@ -57,6 +57,9 @@ interface GameStore extends GameState {
   toggleExpShare: () => void;
   checkDailyMissions: () => void;
   claimMission: (id: string) => void;
+  claimGenMission: (id: string) => void;
+  setActivePresetCategory: (category: TeamPreset['category'] | null) => void;
+  reportGenBattleResult: (result: { win: boolean; noFaint?: boolean; solo?: boolean }) => void;
   startLeagueRun: (regionId: string) => void;
   advanceLeagueTrainer: (trainerIndex: number) => void;
   completeLeagueRegion: (regionId: string, trophyLabel: string) => void;
@@ -119,6 +122,121 @@ const MISSION_POOL: MissionTemplate[] = [
     reward: { coins: 5000, items: { rare_candy: 2, masterball: 1 } } 
   },
 ];
+
+const GEN_CHALLENGE_REWARDS: Record<TeamPreset['category'], number> = {
+  gen1: 300,
+  gen2: 400,
+  gen3: 500,
+  gen4: 600,
+  gen5: 700,
+  gen6: 800,
+  gen7: 850,
+  gen8: 900,
+  legendary: 1500,
+  favorite: 700,
+};
+
+function isPokemonInPresetCategory(pokemon: Pokemon, category: TeamPreset['category']): boolean {
+  if (category === 'favorite') return true;
+  if (category === 'legendary') return LEGENDARY_IDS.has(pokemon.pokemonId);
+  const range = GEN_RANGES[category];
+  if (!range) return false;
+  return pokemon.pokemonId >= range[0] && pokemon.pokemonId <= range[1] && !LEGENDARY_IDS.has(pokemon.pokemonId);
+}
+
+function isTeamValidForPresetCategory(team: Pokemon[], category: TeamPreset['category'] | null): boolean {
+  if (!category || team.length === 0) return false;
+  return team.every((p) => isPokemonInPresetCategory(p, category));
+}
+
+function buildGenChallengeMissions(category: TeamPreset['category']): GenMission[] {
+  const rewardCoins = GEN_CHALLENGE_REWARDS[category] ?? 500;
+  const base = [
+    {
+      id: `gen_${category}_win`,
+      description: `Vinci 3 battaglie con team ${category.toUpperCase()}`,
+      type: 'genBattleWin' as const,
+      target: 3,
+      reward: { coins: rewardCoins },
+    },
+    {
+      id: `gen_${category}_catch`,
+      description: `Cattura 2 Pokémon ${category.toUpperCase()}`,
+      type: 'genCatch' as const,
+      target: 2,
+      reward: { coins: Math.floor(rewardCoins * 0.6) },
+    },
+    {
+      id: `gen_${category}_evolve`,
+      description: `Fai evolvere 1 Pokémon ${category.toUpperCase()}`,
+      type: 'genEvolve' as const,
+      target: 1,
+      reward: { coins: Math.floor(rewardCoins * 0.8) },
+    },
+  ];
+  const skillMission = (['gen6', 'gen7', 'gen8', 'legendary'] as TeamPreset['category'][]).includes(category)
+    ? (Math.random() < 0.5
+      ? {
+          id: `gen_${category}_nofaint`,
+          description: `Vinci senza perdere Pokémon (${category.toUpperCase()})`,
+          type: 'genNoFaint' as const,
+          target: 1,
+          reward: { coins: rewardCoins, items: category === 'legendary' ? { rare_candy: 1 } : undefined },
+        }
+      : {
+          id: `gen_${category}_solo`,
+          description: `Vinci con un solo Pokémon in squadra (${category.toUpperCase()})`,
+          type: 'genSoloWin' as const,
+          target: 1,
+          reward: { coins: rewardCoins },
+        })
+    : {
+        id: `gen_${category}_win_plus`,
+        description: `Vinci 1 battaglia extra con team ${category.toUpperCase()}`,
+        type: 'genBattleWin' as const,
+        target: 1,
+        reward: { coins: Math.floor(rewardCoins * 0.5) },
+      };
+
+  return [...base, skillMission].map((m) => ({
+    ...m,
+    current: 0,
+    completed: false,
+    claimed: false,
+  }));
+}
+
+function generateGenChallenges(category: TeamPreset['category'] | null): GameState['genChallenges'] {
+  if (!category) return null;
+  const today = new Date().toISOString().split('T')[0];
+  return {
+    date: today,
+    category,
+    missions: buildGenChallengeMissions(category),
+  };
+}
+
+function updateGenMissionProgress(
+  state: GameState,
+  type: GenMission['type'],
+  increment = 1
+): Partial<GameState> {
+  if (!state.genChallenges || !state.activePresetCategory) return {};
+  const today = new Date().toISOString().split('T')[0];
+  if (state.genChallenges.date !== today) return {};
+  if (state.genChallenges.category !== state.activePresetCategory) return {};
+  if (!isTeamValidForPresetCategory(state.team, state.activePresetCategory)) return {};
+  const updated = state.genChallenges.missions.map((m) => {
+    if (m.type !== type || m.completed) return m;
+    const nextCurrent = Math.min(m.target, m.current + increment);
+    return { ...m, current: nextCurrent, completed: nextCurrent >= m.target };
+  });
+  const justCompleted = updated.find((m, i) => m.completed && !state.genChallenges!.missions[i].completed);
+  return {
+    genChallenges: { ...state.genChallenges, missions: updated },
+    ...(justCompleted ? { pendingMissionToast: justCompleted.description } : {}),
+  };
+}
 
 function generateDailyMissions(state: GameState | undefined): { date: string; missions: DailyMission[] } {
   const today = new Date().toISOString().split('T')[0];
@@ -238,6 +356,8 @@ export const useStore = create<GameStore>()(
       masterBattleResult: null,
       isFirstRun: true,
       dailyMissions: null,
+      genChallenges: null,
+      activePresetCategory: null,
       pendingMissionToast: null,
       streak: 0,
       battleWinStreak: 0,
@@ -260,6 +380,12 @@ export const useStore = create<GameStore>()(
       addPokemon: (pokemon: Pokemon) => set((state) => { 
         const missionUpdates = updateMissionProgress(state, 'catch'); 
         const shinyUpdates = pokemon.isShiny ? updateMissionProgress({ ...state, ...missionUpdates }, 'catchShiny') : {}; 
+        const genCatchUpdates =
+          state.activePresetCategory &&
+          isPokemonInPresetCategory(pokemon, state.activePresetCategory) &&
+          isTeamValidForPresetCategory(state.team, state.activePresetCategory)
+            ? updateGenMissionProgress({ ...state, ...missionUpdates, ...shinyUpdates }, 'genCatch')
+            : {};
         const newPokedexTypes = pokemon.types?.[0] 
           ? { ...state.pokedexTypes, [pokemon.pokemonId]: pokemon.types[0] } 
           : state.pokedexTypes; 
@@ -270,6 +396,7 @@ export const useStore = create<GameStore>()(
             pokedexTypes: newPokedexTypes,
             ...missionUpdates, 
             ...shinyUpdates, 
+            ...genCatchUpdates,
           }; 
         } 
         return { 
@@ -278,6 +405,7 @@ export const useStore = create<GameStore>()(
           pokedexTypes: newPokedexTypes,
           ...missionUpdates, 
           ...shinyUpdates, 
+          ...genCatchUpdates,
         }; 
       }),
       updatePokemon: (id: string, updates: Partial<Pokemon>) => set((state) => ({
@@ -505,6 +633,8 @@ export const useStore = create<GameStore>()(
         stats: { totalCaught: 0, totalBattles: 0, shiniesFound: 0, pokemonReleased: 0 },
         isFirstRun: true,
         dailyMissions: null,
+        genChallenges: null,
+        activePresetCategory: null,
         leagueProgress: { currentRun: null, completedRegions: [], trophies: [], completedRuns: 0 },
         masterProgress: { defeatedIds: [] },
         currentScreen: 'START_SCREEN' as ScreenName,
@@ -566,10 +696,20 @@ export const useStore = create<GameStore>()(
         // Registra nel Pokédex la nuova forma
         get().updatePokedex(pending.newPokemonId, 'caught', pending.newTypes?.[0]);
 
+        const evolvedPokemon = [...updatedTeam, ...updatedBox].find((p) => p.id === pending.pokemonId);
+        const genEvolveUpdates =
+          evolvedPokemon &&
+          state.activePresetCategory &&
+          isPokemonInPresetCategory(evolvedPokemon, state.activePresetCategory) &&
+          isTeamValidForPresetCategory(state.team, state.activePresetCategory)
+            ? updateGenMissionProgress(state, 'genEvolve')
+            : {};
+
         return {
           team: updatedTeam,
           box: updatedBox,
           pendingEvolution: null,
+          ...genEvolveUpdates,
         };
       }),
       dismissEvolution: () => set({ pendingEvolution: null }),
@@ -724,10 +864,13 @@ export const useStore = create<GameStore>()(
           if (battlesWon % 15 === 0) {
             nextIsBoss = true;
           }
+          const dailyUpdates = updateMissionProgress(state, 'battleWin');
+          const genWinUpdates = updateGenMissionProgress({ ...state, ...dailyUpdates }, 'genBattleWin');
           return { 
             currentBattlePath: { battlesWon, nextIsBoss }, 
             battleWinStreak: (state.battleWinStreak ?? 0) + 1,
-            ...updateMissionProgress(state, 'battleWin') 
+            ...dailyUpdates,
+            ...genWinUpdates,
           };
         } else {
           const nextMedal = state.medals.find(m => !m.isUnlocked);
@@ -737,6 +880,7 @@ export const useStore = create<GameStore>()(
           }
           const gymUpdates = updateMissionProgress(state, 'defeatGym');
           const winUpdates = updateMissionProgress({ ...state, ...gymUpdates }, 'battleWin');
+          const genWinUpdates = updateGenMissionProgress({ ...state, ...gymUpdates, ...winUpdates }, 'genBattleWin');
           return {
             currentBattlePath: { battlesWon: 0, nextIsBoss: false },
             battleWinStreak: 0,
@@ -744,18 +888,26 @@ export const useStore = create<GameStore>()(
             pendingMedalUnlock: nextMedal ? { ...nextMedal, isUnlocked: true } : null,
             ...gymUpdates,
             ...winUpdates,
+            ...genWinUpdates,
           };
         }
       }),
       resetBattleStreak: () => set({ battleWinStreak: 0 }),
       toggleExpShare: () => set((state) => ({ expShareActive: !state.expShareActive })),
       checkDailyMissions: () => set((state) => {
-        if (!state.dailyMissions) {
-          return { dailyMissions: generateDailyMissions(state) };
-        }
         const today = new Date().toISOString().split('T')[0];
-        if (state.dailyMissions.date === today) return {};
-        return { dailyMissions: generateDailyMissions(state) };
+        const next: Partial<GameState> = {};
+        if (!state.dailyMissions) {
+          next.dailyMissions = generateDailyMissions(state);
+        } else if (state.dailyMissions.date !== today) {
+          next.dailyMissions = generateDailyMissions(state);
+        }
+        if (state.activePresetCategory) {
+          if (!state.genChallenges || state.genChallenges.date !== today || state.genChallenges.category !== state.activePresetCategory) {
+            next.genChallenges = generateGenChallenges(state.activePresetCategory);
+          }
+        }
+        return next;
       }),
       claimMission: (id: string) => set((state) => {
         if (!state.dailyMissions) return {};
@@ -777,6 +929,39 @@ export const useStore = create<GameStore>()(
             ),
           },
         };
+      }),
+      claimGenMission: (id: string) => set((state) => {
+        if (!state.genChallenges) return {};
+        const mission = state.genChallenges.missions.find((m) => m.id === id);
+        if (!mission || mission.claimed || !mission.completed) return {};
+        const newInventory = { ...state.inventory };
+        if (mission.reward.items) {
+          Object.entries(mission.reward.items).forEach(([itemId, amount]) => {
+            newInventory[itemId] = (newInventory[itemId] || 0) + amount;
+          });
+        }
+        return {
+          coins: state.coins + (mission.reward.coins || 0),
+          inventory: newInventory,
+          genChallenges: {
+            ...state.genChallenges,
+            missions: state.genChallenges.missions.map((m) => (m.id === id ? { ...m, claimed: true } : m)),
+          },
+        };
+      }),
+      setActivePresetCategory: (category) => set((state) => {
+        const nextChallenges = generateGenChallenges(category);
+        return {
+          activePresetCategory: category,
+          genChallenges: nextChallenges ?? state.genChallenges,
+        };
+      }),
+      reportGenBattleResult: (result) => set((state) => {
+        if (!result.win) return {};
+        let merged: Partial<GameState> = updateGenMissionProgress(state, 'genBattleWin');
+        if (result.noFaint) merged = { ...merged, ...updateGenMissionProgress({ ...state, ...merged }, 'genNoFaint') };
+        if (result.solo) merged = { ...merged, ...updateGenMissionProgress({ ...state, ...merged }, 'genSoloWin') };
+        return merged;
       }),
       startLeagueRun: (regionId: string) => set((state) => ({
         leagueProgress: {
@@ -1045,6 +1230,12 @@ export const useStore = create<GameStore>()(
         return {
           team: validPokemon,
           box: newBox,
+          activePresetCategory: category,
+          genChallenges:
+            state.genChallenges?.date === new Date().toISOString().split('T')[0] &&
+            state.genChallenges?.category === category
+              ? state.genChallenges
+              : generateGenChallenges(category),
         };
       }),
       deleteTeamPreset: (category) => set((state) => {
@@ -1177,6 +1368,8 @@ export const useStore = create<GameStore>()(
           };
         }
         if (!state.teamPresets) state.teamPresets = {};
+        if (state.activePresetCategory === undefined) state.activePresetCategory = null;
+        if (state.genChallenges === undefined) state.genChallenges = null;
       }
     }
   )

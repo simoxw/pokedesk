@@ -13,7 +13,7 @@ import confetti from 'canvas-confetti';
 import { generateRandomEVs, getTowerFloorConfig, TOWER_MILESTONES } from '../../services/battleTowerService';
 
 export default function BattleScreen() {
-  const { team, setScreen, incrementStat, addCoins, addItem, updatePokemon, inventory, useItem, gainExp, currentBattlePath, recordBattleWin, medals, expShareActive, friendBattleTeam, clearFriendBattleTeam, leagueBattleTeam, clearLeagueBattleTeam, setLeagueBattleResult, masterBattleTeam, clearMasterBattleTeam, setMasterBattleResult, battleTower, startBattleTower, advanceBattleTowerFloor, abandonBattleTower, claimBattleTowerReward } = useStore();
+  const { team, setScreen, incrementStat, addCoins, addItem, updatePokemon, inventory, useItem, gainExp, currentBattlePath, recordBattleWin, medals, expShareActive, friendBattleTeam, clearFriendBattleTeam, leagueBattleTeam, clearLeagueBattleTeam, setLeagueBattleResult, masterBattleTeam, clearMasterBattleTeam, setMasterBattleResult, battleTower, startBattleTower, advanceBattleTowerFloor, abandonBattleTower, claimBattleTowerReward, reportGenBattleResult } = useStore();
   const isFriendBattle = !!friendBattleTeam;
   const isTowerBattle = !!battleTower?.isActive;
   const towerFloor = battleTower?.currentFloor ?? 0;
@@ -595,6 +595,7 @@ export default function BattleScreen() {
     }
 
     recordBattleWin(); 
+    reportGenBattleResult({ win: true, noFaint: team.every((p) => p.currentHp > 0), solo: team.length === 1 });
     // Achievement: Invincibile 
     if (!playerTookDamage) { 
       useStore.getState().updateAchievementProgress('no_damage', 1); 
