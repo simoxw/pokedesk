@@ -354,7 +354,6 @@ export default function BoxScreen() {
 
       {/* Strip preset */}
       <div className="px-3 py-2 border-t border-white/5">
-        <p className="text-[9px] font-black text-white/30 uppercase tracking-widest mb-2">Team Preset</p>
         <div className="flex gap-2 overflow-x-auto no-scrollbar pb-1">
           {([
             { key: 'gen1', label: 'Gen 1', icon: '🗾' },
