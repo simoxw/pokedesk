@@ -37,6 +37,7 @@ export default function BoxScreen() {
   const [presetFavoritesOnly, setPresetFavoritesOnly] = useState(false);
 
   const selectedForCompare = useMemo(() => box.filter(p => selectedIds.has(p.id)), [box, selectedIds]); 
+  const allOwnedPokemon = useMemo(() => [...team, ...box], [team, box]);
 
   const toggleSelect = (id: string) => { 
     setSelectedIds(prev => { 
@@ -369,7 +370,7 @@ export default function BoxScreen() {
           ] as { key: TeamPreset['category']; label: string; icon: string }[]).map(({ key, label, icon }) => {
             const preset = teamPresets[key];
             const validCount = preset
-              ? preset.pokemonIds.filter(id => box.some(p => p.id === id)).length
+              ? preset.pokemonIds.filter(id => allOwnedPokemon.some(p => p.id === id)).length
               : 0;
             return (
               <button
@@ -533,9 +534,13 @@ export default function BoxScreen() {
             >
               {(() => {
                 const preset = teamPresets[activePreset];
+                const allOwnedById = new Map(allOwnedPokemon.map((p) => [p.id, p]));
                 const validPokemon = preset
-                  ? preset.pokemonIds.map(id => box.find(p => p.id === id)).filter(Boolean)
+                  ? preset.pokemonIds.map(id => allOwnedById.get(id)).filter(Boolean)
                   : [];
+                const inTeamCount = preset
+                  ? preset.pokemonIds.filter((id) => team.some((p) => p.id === id)).length
+                  : 0;
 
                 // Filtro Pokémon disponibili per questa categoria
                 const range = GEN_RANGES[activePreset];
@@ -640,6 +645,11 @@ export default function BoxScreen() {
                       </button>
                     </div>
                     <p className="text-[10px] text-white/40">{presetSelected.length}/4 selezionati</p>
+                    {inTeamCount > 0 && (
+                      <p className="text-[10px] text-white/40">
+                        {inTeamCount} Pokémon del preset sono già in squadra.
+                      </p>
+                    )}
                     <div className="flex items-center gap-2">
                       {([
                         { key: 'iv', label: 'IV' },

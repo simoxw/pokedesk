@@ -1,6 +1,7 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import { GameState, Pokemon, ScreenName, Medal, Item, Move, DailyMission, Egg, Achievement, TeamPreset } from './types';
+import { LEGENDARY_IDS, GEN_RANGES } from './data/legendaryIds';
 import { api } from './api';
 import { BattleEngine } from './BattleEngine';
 import { CatchEngine } from './CatchEngine';
@@ -1001,30 +1002,46 @@ export const useStore = create<GameStore>()(
           return newState;
          });
        },
-      saveTeamPreset: (category, pokemonIds) => set((state) => ({
-        teamPresets: {
-          ...state.teamPresets,
-          [category]: {
-            label: category,
-            category,
-            pokemonIds,
-            updatedAt: Date.now(),
+      saveTeamPreset: (category, pokemonIds) => set((state) => {
+        const ownedById = new Map([...state.team, ...state.box].map((p) => [p.id, p]));
+        const isValidForCategory = (pokemon: Pokemon) => {
+          if (category === 'favorite') return true;
+          if (category === 'legendary') return LEGENDARY_IDS.has(pokemon.pokemonId);
+          const range = GEN_RANGES[category];
+          if (!range) return true;
+          return pokemon.pokemonId >= range[0] && pokemon.pokemonId <= range[1] && !LEGENDARY_IDS.has(pokemon.pokemonId);
+        };
+        const uniqueIds = [...new Set(pokemonIds)];
+        const validatedIds = uniqueIds
+          .map((id) => ownedById.get(id))
+          .filter((p): p is Pokemon => Boolean(p))
+          .filter((p) => isValidForCategory(p))
+          .map((p) => p.id)
+          .slice(0, 4);
+        return {
+          teamPresets: {
+            ...state.teamPresets,
+            [category]: {
+              label: category,
+              category,
+              pokemonIds: validatedIds,
+              updatedAt: Date.now(),
+            }
           }
-        }
-      })),
+        };
+      }),
       loadTeamPreset: (category) => set((state) => {
         const preset = state.teamPresets[category];
         if (!preset) return {};
-        // Filtra solo IDs ancora esistenti nel box (non nel team)
-        const validPokemon = preset.pokemonIds
-          .map(id => state.box.find(p => p.id === id))
-          .filter(Boolean) as Pokemon[];
+        const allPokemon = [...state.team, ...state.box];
+        const byId = new Map(allPokemon.map((p) => [p.id, p]));
+        const validPokemon = [...new Set(preset.pokemonIds)]
+          .map((id) => byId.get(id))
+          .filter((p): p is Pokemon => Boolean(p))
+          .slice(0, 4);
         if (validPokemon.length === 0) return {};
-        // Tutto il team corrente torna al box
-        const newBox = [
-          ...state.box.filter(p => !validPokemon.some(vp => vp.id === p.id)),
-          ...state.team,
-        ];
+        const teamIds = new Set(validPokemon.map((p) => p.id));
+        const newBox = allPokemon.filter((p) => !teamIds.has(p.id));
         return {
           team: validPokemon,
           box: newBox,
