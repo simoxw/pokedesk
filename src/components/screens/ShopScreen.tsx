@@ -4,6 +4,15 @@ import { motion } from 'motion/react';
 import { ArrowLeft, Coins, ShoppingCart } from 'lucide-react';
 import { useSoundEffects } from '../../useSoundEffects';
 
+type ShopItem = {
+  id: string;
+  name: string;
+  cost: number;
+  icon: string;
+  description: string;
+  unlock?: number;
+};
+
 const SHOP_ITEMS = [ 
   { id: 'pokeball',    name: 'Pokéball',       cost: 200,  icon: '🔴', description: 'Pokéball base' }, 
   { id: 'potion',      name: 'Pozione',         cost: 300,  icon: '🧪', description: 'Cura 30 HP' }, 
@@ -30,17 +39,28 @@ export default function ShopScreen() {
   const medalsCount = medals.filter(m => m.isUnlocked).length;
   const { playSound } = useSoundEffects(settings.audio);
   const [toast, setToast] = React.useState<string | null>(null);
+  const [quantities, setQuantities] = React.useState<Record<string, number>>(() =>
+    SHOP_ITEMS.reduce((acc, item) => {
+      acc[item.id] = 1;
+      return acc;
+    }, {} as Record<string, number>)
+  );
   const showToast = (msg: string) => {
     setToast(msg);
     setTimeout(() => setToast(null), 1000);
   };
 
-  const handleBuy = (item: any) => {
-    if (coins >= item.cost) {
-      addCoins(-item.cost);
-      addItem(item.id, 1);
+  const setItemQuantity = (itemId: string, nextQty: number) => {
+    setQuantities((prev) => ({ ...prev, [itemId]: Math.max(1, Math.min(99, nextQty)) }));
+  };
+
+  const handleBuy = (item: ShopItem, quantity: number) => {
+    const totalCost = item.cost * quantity;
+    if (coins >= totalCost) {
+      addCoins(-totalCost);
+      addItem(item.id, quantity);
       playSound('money');
-      showToast(`+1 ${item.name}`);
+      showToast(`+${quantity} ${item.name}`);
     } else {
       alert("Monete insufficienti!");
     }
@@ -68,6 +88,9 @@ export default function ShopScreen() {
       <div className="flex-1 overflow-y-auto space-y-3 no-scrollbar pb-24">
         {SHOP_ITEMS.map(item => {
           const isLocked = item.unlock && medalsCount < item.unlock;
+          const quantity = quantities[item.id] || 1;
+          const totalCost = item.cost * quantity;
+          const canIncrease = totalCost + item.cost <= coins && quantity < 99;
           return (
             <div 
               key={item.id}
@@ -86,13 +109,32 @@ export default function ShopScreen() {
                   {isLocked && <span className="text-[10px] text-white/30">🔒 {item.unlock} medaglie</span>}
                 </div>
               </div>
-              <button 
-                disabled={isLocked || coins < item.cost}
-                onClick={() => handleBuy(item)}
-                className="bg-[#e63946] disabled:opacity-50 px-4 py-2 rounded-xl text-xs font-bold flex items-center gap-2"
-              >
-                <ShoppingCart size={14} /> ACQUISTA
-              </button>
+              <div className="flex flex-col items-end gap-2">
+                <div className="flex items-center gap-2">
+                  <button
+                    disabled={isLocked || quantity <= 1}
+                    onClick={() => setItemQuantity(item.id, quantity - 1)}
+                    className="w-7 h-7 rounded-lg bg-white/10 disabled:opacity-40 font-black"
+                  >
+                    -
+                  </button>
+                  <span className="min-w-8 text-center text-xs font-black">{quantity}</span>
+                  <button
+                    disabled={isLocked || !canIncrease}
+                    onClick={() => setItemQuantity(item.id, quantity + 1)}
+                    className="w-7 h-7 rounded-lg bg-white/10 disabled:opacity-40 font-black"
+                  >
+                    +
+                  </button>
+                </div>
+                <button 
+                  disabled={isLocked || coins < totalCost}
+                  onClick={() => handleBuy(item, quantity)}
+                  className="bg-[#e63946] disabled:opacity-50 px-4 py-2 rounded-xl text-xs font-bold flex items-center gap-2"
+                >
+                  <ShoppingCart size={14} /> ACQUISTA ({totalCost}¢)
+                </button>
+              </div>
             </div>
           );
         })}

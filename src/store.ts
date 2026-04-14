@@ -349,13 +349,20 @@ function updateMissionProgress(
 }
 
 const STREAK_REWARDS = [
-  { coins: 50, item: 'pokeball', qty: 3 },
-  { coins: 50, item: 'potion', qty: 3 },
-  { coins: 200, item: 'superpotion', qty: 1 },
-  { coins: 300, item: 'hyperpotion', qty: 1 },
-  { coins: 500, item: 'rare_candy', qty: 1 },
-  { coins: 750, item: 'rare_candy', qty: 1 },
-  { coins: 1000, item: 'ultraball', qty: 2 },
+  { coins: 50, item: 'pokeball', qty: 3 },      // day 1
+  { coins: 50, item: 'potion', qty: 3 },        // day 2
+  { coins: 200, item: 'superpotion', qty: 1 },  // day 3
+  { coins: 300, item: 'hyperpotion', qty: 1 },  // day 4
+  { coins: 500, item: 'rare_candy', qty: 1 },   // day 5
+  { coins: 750, item: 'rare_candy', qty: 1 },   // day 6
+  { coins: 1000, item: 'ultraball', qty: 2 },   // day 7
+  { coins: 1100, item: 'ultraball', qty: 2 },   // day 8
+  { coins: 1200, item: 'rare_candy', qty: 1 },  // day 9
+  { coins: 1300, item: 'ultraball', qty: 3 },   // day 10
+  { coins: 1500, item: 'hyperpotion', qty: 2 }, // day 11
+  { coins: 1600, item: 'rare_candy', qty: 2 },  // day 12
+  { coins: 1800, item: 'ultraball', qty: 4 },   // day 13
+  { coins: 2000, item: 'masterball', qty: 1 },  // day 14
 ];
 
 const INITIAL_MEDALS: Medal[] = Array.from({ length: 40 }, (_, i) => ({
@@ -573,13 +580,15 @@ export const useStore = create<GameStore>()(
       addItem: (itemId: string, amount: number) => set((state) => ({
         inventory: { ...state.inventory, [itemId]: (state.inventory[itemId] || 0) + amount }
       })),
-      useItem: (itemId: string) => set((state) => { 
-        const healItems = new Set(['potion', 'superpotion', 'hyperpotion', 'full_heal']); 
-        const missionUpdates = healItems.has(itemId) ? updateMissionProgress(state, 'useItem') : {}; 
-        return { 
-          inventory: { ...state.inventory, [itemId]: Math.max(0, (state.inventory[itemId] || 0) - 1) }, 
-          ...missionUpdates, 
-        }; 
+      useItem: (itemId: string) => set((state) => {
+        const availableQty = state.inventory[itemId] || 0;
+        if (availableQty <= 0) return {};
+        const healItems = new Set(['potion', 'superpotion', 'hyperpotion', 'full_heal']);
+        const missionUpdates = healItems.has(itemId) ? updateMissionProgress(state, 'useItem') : {};
+        return {
+          inventory: { ...state.inventory, [itemId]: availableQty - 1 },
+          ...missionUpdates,
+        };
       }),
       unlockMedal: (id: number) => set((state) => ({
         medals: state.medals.map(m => m.id === id ? { ...m, isUnlocked: true } : m)
@@ -1082,8 +1091,9 @@ export const useStore = create<GameStore>()(
         const today = new Date().toLocaleDateString('en-CA');
         if (state.lastStreakDate === today) return {};
         const yesterday = new Date(Date.now() - 86400000).toLocaleDateString('en-CA');
-        const streak = state.lastStreakDate === yesterday ? (state.streak || 0) + 1 : 1;
-        const reward = streak <= 7 ? STREAK_REWARDS[streak - 1] : STREAK_REWARDS[6];
+        const nextStreak = state.lastStreakDate === yesterday ? (state.streak || 0) + 1 : 1;
+        const streak = ((nextStreak - 1) % STREAK_REWARDS.length) + 1;
+        const reward = STREAK_REWARDS[streak - 1];
         return {
           lastStreakDate: today,
           streak,

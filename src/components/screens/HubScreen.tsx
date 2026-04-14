@@ -144,14 +144,24 @@ export default function HubScreen() {
   const islandMins = Math.floor((msToMidnight % 3600000) / 60000);
 
   const STREAK_REWARDS: Record<number, string> = {
-    1: '3× Pokéball',
-    2: '3× Pozioni',
+    1: '50¢ + 3× Pokéball',
+    2: '50¢ + 3× Pozioni',
     3: '200¢ + 1× Superpozione',
+    4: '300¢ + 1× Iperpozione',
     5: '500¢ + 1× Caramella Rara',
-    7: '1000¢ + 2× Ultraball + 1× Caramella Rara',
-    14: '2000¢ + 1× Masterball + 2× Caramelle Rare',
+    6: '750¢ + 1× Caramella Rara',
+    7: '1000¢ + 2× Ultraball',
+    8: '1100¢ + 2× Ultraball',
+    9: '1200¢ + 1× Caramella Rara',
+    10: '1300¢ + 3× Ultraball',
+    11: '1500¢ + 2× Iperpozioni',
+    12: '1600¢ + 2× Caramelle Rare',
+    13: '1800¢ + 4× Ultraball',
+    14: '2000¢ + 1× Masterball',
   };
-  const nextStreakReward = STREAK_REWARDS[streak + 1] ?? '100¢';
+  const streakDay = (streak % 14) + 1;
+  const tomorrowStreakDay = (streakDay % 14) + 1;
+  const nextStreakReward = STREAK_REWARDS[streakDay] ?? '100¢';
   const CATEGORY_LABELS: Record<string, string> = {
     gen1: 'Gen 1',
     gen2: 'Gen 2',
@@ -485,7 +495,7 @@ export default function HubScreen() {
               </motion.div>
               <div className="text-center">
                 <p className="text-white/50 text-xs font-bold uppercase tracking-widest mb-1">Streak giornaliera</p>
-                <p className="text-5xl font-black text-[#e63946]">{streak + 1}</p>
+                <p className="text-5xl font-black text-[#e63946]">{streakDay}</p>
                 <p className="text-white/40 text-xs mt-1">
                   {streak === 0 ? 'Primo accesso!' : `${streak} giorni consecutivi!`}
                 </p>
@@ -493,12 +503,12 @@ export default function HubScreen() {
               <div className="w-full bg-[#e63946]/10 border border-[#e63946]/30 rounded-2xl p-4 text-center">
                 <p className="text-[10px] font-black text-white/40 uppercase tracking-widest mb-1">Ricompensa di oggi</p>
                 <p className="text-sm font-black text-[#e63946]">
-                  {STREAK_REWARDS[streak + 1] ?? '100¢'}
+                  {nextStreakReward}
                 </p>
               </div>
-              {STREAK_REWARDS[streak + 2] && (
+              {STREAK_REWARDS[tomorrowStreakDay] && (
                 <p className="text-[10px] text-white/30 italic text-center">
-                  Domani: {STREAK_REWARDS[streak + 2]}
+                  Domani: {STREAK_REWARDS[tomorrowStreakDay]}
                 </p>
               )}
               <button
