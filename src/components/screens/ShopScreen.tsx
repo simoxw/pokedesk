@@ -10,7 +10,7 @@ const SHOP_ITEMS = [
   { id: 'full_heal',   name: 'Cura Totale',     cost: 300,  icon: '💊', description: 'Cura qualsiasi stato' }, 
   { id: 'megaball',    name: 'Megaball',        cost: 600,  icon: '🔵', unlock: 5,  description: '1.8x cattura' }, 
   { id: 'superpotion', name: 'Superpozione',    cost: 700,  icon: '🧪', unlock: 4,  description: 'Cura 80 HP' }, 
-  { id: 'rare_candy',  name: 'Caramella Rara',  cost: 2500, icon: '🍬', unlock: 8,  description: '+1 livello' }, 
+  { id: 'rare_candy',  name: 'Caramella Rara',  cost: 4000, icon: '🍬', unlock: 8,  description: '+1 livello' }, 
   { id: 'ultraball',   name: 'Ultraball',       cost: 1200, icon: '🟡', unlock: 6,  description: '3x cattura' }, 
   { id: 'hyperpotion', name: 'Iperpozione',     cost: 1500, icon: '💊', unlock: 6,  description: 'Cura 200 HP' }, 
   { id: 'masterball',  name: 'Masterball',      cost: 9999, icon: '🟣', unlock: 3,  description: 'Cattura garantita' }, 

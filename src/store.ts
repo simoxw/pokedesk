@@ -136,6 +136,65 @@ const GEN_CHALLENGE_REWARDS: Record<TeamPreset['category'], number> = {
   favorite: 700,
 };
 
+type GenMissionTemplate = {
+  type: GenMission['type'];
+  target: number;
+  description: (category: TeamPreset['category']) => string;
+  rewardFactor: number;
+  legendaryItem?: Record<string, number>;
+};
+
+const GEN_COMMON_POOL: GenMissionTemplate[] = [
+  {
+    type: 'genBattleWin',
+    target: 2,
+    description: (c) => `Vinci 2 battaglie con team ${c.toUpperCase()}`,
+    rewardFactor: 0.7,
+  },
+  {
+    type: 'genBattleWin',
+    target: 3,
+    description: (c) => `Vinci 3 battaglie con team ${c.toUpperCase()}`,
+    rewardFactor: 1,
+  },
+  {
+    type: 'genCatch',
+    target: 2,
+    description: (c) => `Cattura 2 Pokémon ${c.toUpperCase()}`,
+    rewardFactor: 0.6,
+  },
+  {
+    type: 'genCatch',
+    target: 3,
+    description: (c) => `Cattura 3 Pokémon ${c.toUpperCase()}`,
+    rewardFactor: 0.85,
+  },
+  {
+    type: 'genEvolve',
+    target: 1,
+    description: (c) => `Fai evolvere 1 Pokémon ${c.toUpperCase()}`,
+    rewardFactor: 0.8,
+  },
+];
+
+const GEN_SKILL_POOL: GenMissionTemplate[] = [
+  {
+    type: 'genNoFaint',
+    target: 1,
+    description: (c) => `Vinci senza perdere Pokémon (${c.toUpperCase()})`,
+    rewardFactor: 1,
+    legendaryItem: { rare_candy: 1 },
+  },
+  {
+    type: 'genSoloWin',
+    target: 1,
+    description: (c) => `Vinci con un solo Pokémon in squadra (${c.toUpperCase()})`,
+    rewardFactor: 1,
+  },
+];
+
+const SKILL_ENABLED_CATEGORIES: TeamPreset['category'][] = ['gen6', 'gen7', 'gen8', 'legendary'];
+
 function isPokemonInPresetCategory(pokemon: Pokemon, category: TeamPreset['category']): boolean {
   if (category === 'favorite') return true;
   if (category === 'legendary') return LEGENDARY_IDS.has(pokemon.pokemonId);
@@ -149,61 +208,49 @@ function isTeamValidForPresetCategory(team: Pokemon[], category: TeamPreset['cat
   return team.every((p) => isPokemonInPresetCategory(p, category));
 }
 
-function buildGenChallengeMissions(category: TeamPreset['category']): GenMission[] {
-  const rewardCoins = GEN_CHALLENGE_REWARDS[category] ?? 500;
-  const base = [
-    {
-      id: `gen_${category}_win`,
-      description: `Vinci 3 battaglie con team ${category.toUpperCase()}`,
-      type: 'genBattleWin' as const,
-      target: 3,
-      reward: { coins: rewardCoins },
-    },
-    {
-      id: `gen_${category}_catch`,
-      description: `Cattura 2 Pokémon ${category.toUpperCase()}`,
-      type: 'genCatch' as const,
-      target: 2,
-      reward: { coins: Math.floor(rewardCoins * 0.6) },
-    },
-    {
-      id: `gen_${category}_evolve`,
-      description: `Fai evolvere 1 Pokémon ${category.toUpperCase()}`,
-      type: 'genEvolve' as const,
-      target: 1,
-      reward: { coins: Math.floor(rewardCoins * 0.8) },
-    },
-  ];
-  const skillMission = (['gen6', 'gen7', 'gen8', 'legendary'] as TeamPreset['category'][]).includes(category)
-    ? (Math.random() < 0.5
-      ? {
-          id: `gen_${category}_nofaint`,
-          description: `Vinci senza perdere Pokémon (${category.toUpperCase()})`,
-          type: 'genNoFaint' as const,
-          target: 1,
-          reward: { coins: rewardCoins, items: category === 'legendary' ? { rare_candy: 1 } : undefined },
-        }
-      : {
-          id: `gen_${category}_solo`,
-          description: `Vinci con un solo Pokémon in squadra (${category.toUpperCase()})`,
-          type: 'genSoloWin' as const,
-          target: 1,
-          reward: { coins: rewardCoins },
-        })
-    : {
-        id: `gen_${category}_win_plus`,
-        description: `Vinci 1 battaglia extra con team ${category.toUpperCase()}`,
-        type: 'genBattleWin' as const,
-        target: 1,
-        reward: { coins: Math.floor(rewardCoins * 0.5) },
-      };
-
-  return [...base, skillMission].map((m) => ({
-    ...m,
+function buildGenMissionFromTemplate(
+  category: TeamPreset['category'],
+  template: GenMissionTemplate,
+  suffix: string
+): GenMission {
+  const baseReward = GEN_CHALLENGE_REWARDS[category] ?? 500;
+  return {
+    id: `gen_${category}_${template.type}_${template.target}${suffix ? `_${suffix}` : ''}`,
+    description: template.description(category),
+    type: template.type,
+    target: template.target,
     current: 0,
     completed: false,
     claimed: false,
-  }));
+    reward: {
+      coins: Math.floor(baseReward * template.rewardFactor),
+      ...(category === 'legendary' && template.legendaryItem ? { items: template.legendaryItem } : {}),
+    },
+  };
+}
+
+function pickRandomUniqueTemplates(pool: GenMissionTemplate[], count: number): GenMissionTemplate[] {
+  const copy = [...pool];
+  const picked: GenMissionTemplate[] = [];
+  const seen = new Set<string>();
+  while (copy.length > 0 && picked.length < count) {
+    const idx = Math.floor(Math.random() * copy.length);
+    const [candidate] = copy.splice(idx, 1);
+    const key = `${candidate.type}:${candidate.target}`;
+    if (seen.has(key)) continue;
+    seen.add(key);
+    picked.push(candidate);
+  }
+  return picked;
+}
+
+function buildGenChallengeMissions(category: TeamPreset['category']): GenMission[] {
+  const commonPicked = pickRandomUniqueTemplates(GEN_COMMON_POOL, SKILL_ENABLED_CATEGORIES.includes(category) ? 3 : 4);
+  const missions = commonPicked.map((t, i) => buildGenMissionFromTemplate(category, t, `c${i}`));
+  if (!SKILL_ENABLED_CATEGORIES.includes(category)) return missions.slice(0, 4);
+  const [skillTemplate] = pickRandomUniqueTemplates(GEN_SKILL_POOL, 1);
+  if (!skillTemplate) return missions.slice(0, 4);
+  return [...missions, buildGenMissionFromTemplate(category, skillTemplate, 's0')].slice(0, 4);
 }
 
 function generateGenChallenges(category: TeamPreset['category'] | null): GameState['genChallenges'] {

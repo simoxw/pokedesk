@@ -2,7 +2,6 @@ import React, { useState, useEffect } from 'react';
 import { useStore } from '../../store';
 import { api } from '../../api';
 import { BattleEngine } from '../../BattleEngine';
-import { CatchEngine } from '../../CatchEngine';
 import { motion, AnimatePresence } from 'motion/react';
 import { ArrowLeft } from 'lucide-react';
 import {
@@ -14,6 +13,22 @@ import GameboyDialog from '../ui/GameboyDialog';
 import BattleScreen from './BattleScreen';
 
 type Phase = 'intro' | 'battle' | 'win' | 'lose' | 'region_complete';
+
+const randomIv = (min: number, max: number) => Math.floor(Math.random() * (max - min + 1)) + min;
+const generateEliteIvs = () => ({
+  hp: randomIv(24, 31),
+  attack: randomIv(24, 31),
+  defense: randomIv(24, 31),
+  spAtk: randomIv(24, 31),
+  spDef: randomIv(24, 31),
+  speed: randomIv(24, 31),
+});
+const generateEliteEvs = () => {
+  const focusPhysical = Math.random() < 0.5;
+  return focusPhysical
+    ? { hp: 120, attack: 200, defense: 60, spAtk: 0, spDef: 60, speed: 68 }
+    : { hp: 120, attack: 0, defense: 60, spAtk: 200, spDef: 60, speed: 68 };
+};
 
 export default function LeagueBattleScreen() {
   const {
@@ -81,7 +96,8 @@ export default function LeagueBattleScreen() {
             const scaledLevel = scaleLeagueLevel(entry.level, completedRuns);
             const data = await api.getPokemon(entry.id);
             const species = await api.getSpecies(entry.id);
-            const ivs = CatchEngine.generateIVs();
+            const ivs = generateEliteIvs();
+            const evs = generateEliteEvs();
             const baseStats = {
               hp:      data.stats[0].base_stat,
               attack:  data.stats[1].base_stat,
@@ -92,7 +108,7 @@ export default function LeagueBattleScreen() {
             };
             const stats = BattleEngine.calculateStats(
               scaledLevel, baseStats, ivs,
-              { hp:0, attack:0, defense:0, spAtk:0, spDef:0, speed:0 },
+              evs,
               'Quirky'
             );
             const moves = await api.getPokemonMoves(data, scaledLevel);
@@ -106,7 +122,7 @@ export default function LeagueBattleScreen() {
               stats,
               baseStats,
               ivs,
-              evs: { hp:0, attack:0, defense:0, spAtk:0, spDef:0, speed:0 },
+              evs,
               nature: 'Quirky',
               moves,
               rawStats: data.stats,

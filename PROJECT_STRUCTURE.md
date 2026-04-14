@@ -102,3 +102,23 @@ pokedesk/
 - **BattleStages.test.ts / StatsFormula.test.ts**: Validazione calcoli motore di lotta.
 - **CatchEngine.test.ts / ExpSystem.test.ts**: Test su cattura ed esperienza.
 - **TypeChart.test.ts**: Verifica correttezza debolezze e resistenze.
+
+## Aggiornamenti Funzionali Recenti
+
+- **Preset Team (BoxScreen + store)**
+  - introdotti preset per categorie (`gen1..gen8`, `legendary`, `favorite`).
+  - persistenza robusta: caricamento preset risolto su Pokémon posseduti (`team + box`), evitando preset "svuotati".
+  - UI preset estesa con strip categorie, modal gestione, selezione fino a 4 con badge `Lv` e `IV Tot`, ordinamento (`IV/Lv/#`) e filtro preferiti.
+
+- **Missioni GEN CHALLENGE (store + HubScreen + BattleScreen)**
+  - aggiunta seconda linea missioni giornaliere separata dalle daily standard.
+  - nuovo stato globale: categoria preset attiva e missioni challenge giornaliere dedicate.
+  - tab dedicata in `HubScreen` con claim indipendente e messaggi guidati quando il team non è valido.
+  - integrazione progresso su eventi gameplay (vittoria, cattura, evoluzione, condizioni no-faint/solo).
+  - pool giornaliero missioni esteso con estrazione random senza duplicati e slot skill per categorie avanzate.
+
+- **Bilanciamento e Combat**
+  - fix danno immunità in `BattleEngine`: mosse `0x` non infliggono più 1 HP.
+  - IA nemica in `BattleScreen` migliorata nella scelta mosse (KO, superefficace a danno atteso, meno status inutili).
+  - buff team avversari Lega/Master con IV/EV più competitivi.
+  - `Caramella Rara` in negozio bilanciata con costo aumentato (`4000`).

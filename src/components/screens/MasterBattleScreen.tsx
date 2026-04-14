@@ -2,7 +2,6 @@ import React, { useState, useEffect } from 'react';
 import { useStore } from '../../store';
 import { api } from '../../api';
 import { BattleEngine } from '../../BattleEngine';
-import { CatchEngine } from '../../CatchEngine';
 import { motion } from 'motion/react';
 import { ArrowLeft, Lock, Star } from 'lucide-react';
 import { MASTER_TRAINERS, MasterTrainer } from '../../data/leagueData';
@@ -10,6 +9,22 @@ import GameboyDialog from '../ui/GameboyDialog';
 import BattleScreen from './BattleScreen';
 
 type Phase = 'select' | 'intro' | 'battle' | 'win' | 'lose';
+
+const randomIv = (min: number, max: number) => Math.floor(Math.random() * (max - min + 1)) + min;
+const generateMasterIvs = () => ({
+  hp: randomIv(28, 31),
+  attack: randomIv(28, 31),
+  defense: randomIv(28, 31),
+  spAtk: randomIv(28, 31),
+  spDef: randomIv(28, 31),
+  speed: randomIv(28, 31),
+});
+const generateMasterEvs = () => {
+  const focusPhysical = Math.random() < 0.5;
+  return focusPhysical
+    ? { hp: 120, attack: 252, defense: 68, spAtk: 0, spDef: 0, speed: 68 }
+    : { hp: 120, attack: 0, defense: 68, spAtk: 252, spDef: 0, speed: 68 };
+};
 
 export default function MasterBattleScreen() {
   const {
@@ -46,7 +61,8 @@ export default function MasterBattleScreen() {
         trainer.pokemon.map(async (entry) => {
           const data = await api.getPokemon(entry.id);
           const species = await api.getSpecies(entry.id);
-          const ivs = CatchEngine.generateIVs();
+          const ivs = generateMasterIvs();
+          const evs = generateMasterEvs();
           const baseStats = {
             hp: data.stats[0].base_stat,
             attack: data.stats[1].base_stat,
@@ -59,7 +75,7 @@ export default function MasterBattleScreen() {
             entry.level,
             baseStats,
             ivs,
-            { hp: 0, attack: 0, defense: 0, spAtk: 0, spDef: 0, speed: 0 },
+            evs,
             'Quirky'
           );
           const moves = await api.getPokemonMoves(data, entry.level);
@@ -73,7 +89,7 @@ export default function MasterBattleScreen() {
             stats,
             baseStats,
             ivs,
-            evs: { hp: 0, attack: 0, defense: 0, spAtk: 0, spDef: 0, speed: 0 },
+            evs,
             nature: 'Quirky',
             moves,
             rawStats: data.stats,

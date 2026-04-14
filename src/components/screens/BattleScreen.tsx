@@ -716,6 +716,18 @@ export default function BattleScreen() {
         m.category !== 'status' &&
         BattleEngine.getTypeEffectiveness(m.type, currentPlayerPkmn.types) >= 2
       );
+      const offensiveMoves = validMoves.filter((m: any) => m.category !== 'status');
+      const getExpectedDamage = (move: any) => {
+        const dmg = BattleEngine.calculateDamage(effEnemyAtkTemp as any, effPlayerDefTemp as any, move, false);
+        const acc = Math.max(0.5, (move.accuracy ?? 100) / 100);
+        return dmg * acc;
+      };
+      const bestSuperEffective = superEffective
+        .slice()
+        .sort((a: any, b: any) => getExpectedDamage(b) - getExpectedDamage(a))[0];
+      const bestOffensive = offensiveMoves
+        .slice()
+        .sort((a: any, b: any) => getExpectedDamage(b) - getExpectedDamage(a))[0];
 
       // Priorità 3: mossa di stato se player non ha status e nemico ha >50% HP
       const statusMoves = validMoves.filter((m: any) =>
@@ -724,21 +736,19 @@ export default function BattleScreen() {
         !currentPlayerPkmn.status &&
         !isImmuneToStatus(currentPlayerPkmn.types, m.statusEffect)
       );
+      const isEliteAI = isLeagueBattle || isMasterBattle;
+      const healChance = isEliteAI ? 0.8 : 0.7;
+      const superEffectiveChance = isEliteAI ? 0.92 : 0.75;
+      const statusChance = isEliteAI ? 0.2 : 0.4;
 
-      if (healMove && Math.random() < 0.7) {
-        // 70% chance di curarsi se disponibile e vita bassa
+      if (healMove && Math.random() < healChance) {
         enemyMove = healMove;
-      } else if (superEffective.length > 0 && Math.random() < 0.75) {
-        // 75% chance di usare superefficace se disponibile
-        enemyMove = superEffective[Math.floor(Math.random() * superEffective.length)];
-      } else if (statusMoves.length > 0 && liveEnemy.currentHp / liveEnemy.maxHp > 0.5 && Math.random() < 0.40) {
-        // 40% chance di usare stato se nemico ha vita alta e player non ha status
+      } else if (bestSuperEffective && Math.random() < superEffectiveChance) {
+        enemyMove = bestSuperEffective;
+      } else if (statusMoves.length > 0 && liveEnemy.currentHp / liveEnemy.maxHp > 0.5 && Math.random() < statusChance) {
         enemyMove = statusMoves[Math.floor(Math.random() * statusMoves.length)];
       } else {
-        // Priorità 4: random tra offensive
-        const offensiveMoves = validMoves.filter((m: any) => m.category !== 'status');
-        const pool = offensiveMoves.length > 0 ? offensiveMoves : validMoves;
-        enemyMove = pool[Math.floor(Math.random() * pool.length)];
+        enemyMove = bestOffensive ?? validMoves[Math.floor(Math.random() * validMoves.length)];
       }
     }
 

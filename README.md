@@ -49,3 +49,17 @@ Un simulatore di battaglie e cattura Pokémon moderno, sviluppato come Progressi
 ## 📝 Note Tecniche
 
 Il progetto implementa un `TickSystem.ts` robusto per la rigenerazione dello stato in background (cariche, schiusa uova) e utilizza un sistema di routing basato su stati in `App.tsx` per una transizione fluida tra le schermate stile app nativa.
+
+## Aggiornamenti Recenti
+
+- **Preset squadra persistenti**: i preset nel Box restano validi anche se i Pokémon passano da team a box (lookup su posseduti `team + box`).
+- **Preset per categoria**: supporto categorie `gen1..gen8`, `legendary`, `favorite` con validazione al salvataggio.
+- **Ordinamento Box per data**: aggiunto filtro `date` nel PC Box usando `caughtAt`.
+- **Fix danno immunità tipo**: mosse con moltiplicatore `0x` ora infliggono correttamente `0` danni.
+- **GEN CHALLENGE**: seconda linea missioni giornaliere separata dalle daily classiche, con tab dedicata in Hub.
+- **Categoria attiva visiva**: etichetta in Hub (`Categoria attiva: ...`) con stato `progresso attivo/sospeso`.
+- **Pool giornaliero GEN CHALLENGE**: 4 missioni pescate da pool più ampio, con slot skill garantito per `gen6+` e `legendary`.
+- **Bilanciamento iniziale**:
+  - costo `Caramella Rara` in shop aumentato a `4000`.
+  - IA mosse nemica migliorata (preferenza KO/superefficaci a danno atteso).
+  - Team avversari Lega/Master potenziati con IV/EV migliori.
