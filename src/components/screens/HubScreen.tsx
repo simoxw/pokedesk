@@ -152,6 +152,18 @@ export default function HubScreen() {
     14: '2000¢ + 1× Masterball + 2× Caramelle Rare',
   };
   const nextStreakReward = STREAK_REWARDS[streak + 1] ?? '100¢';
+  const CATEGORY_LABELS: Record<string, string> = {
+    gen1: 'Gen 1',
+    gen2: 'Gen 2',
+    gen3: 'Gen 3',
+    gen4: 'Gen 4',
+    gen5: 'Gen 5',
+    gen6: 'Gen 6',
+    gen7: 'Gen 7',
+    gen8: 'Gen 8',
+    legendary: 'Leggendari',
+    favorite: 'Preferita',
+  };
   const isTeamValidForActiveCategory = (() => {
     if (!activePresetCategory || team.length === 0) return false;
     return team.every((p) => {
@@ -593,6 +605,19 @@ export default function HubScreen() {
 
               {missionTab === 'gen' && (
                 <>
+                  {activePresetCategory && (
+                    <div
+                      className={`rounded-xl px-3 py-2 border text-xs font-bold ${
+                        isTeamValidForActiveCategory
+                          ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-300'
+                          : 'bg-amber-500/10 border-amber-500/30 text-amber-300'
+                      }`}
+                    >
+                      Categoria attiva: {CATEGORY_LABELS[activePresetCategory] ?? activePresetCategory}
+                      {' · '}
+                      {isTeamValidForActiveCategory ? 'progresso attivo' : 'progresso sospeso'}
+                    </div>
+                  )}
                   {!activePresetCategory && (
                     <p className="text-white/40 text-sm text-center py-4">
                       Carica un preset dal Box per sbloccare le sfide GEN CHALLENGE.
