@@ -6,7 +6,9 @@ import TypeBadge from '../ui/TypeBadge';
 import PokemonCard from '../ui/PokemonCard';
 import PokemonSprite from '../ui/PokemonSprite';
 import { VirtuosoGrid } from 'react-virtuoso';
-import { ArrowLeft, Search, ChevronLeft, ChevronRight, Sparkles, Users, Trash2, Info, SlidersHorizontal, X, CheckSquare, Square } from 'lucide-react'; 
+import { ArrowLeft, Search, ChevronLeft, ChevronRight, Sparkles, Users, Trash2, Info, SlidersHorizontal, X, CheckSquare, Square, BookmarkPlus, BookmarkCheck } from 'lucide-react'; 
+import { LEGENDARY_IDS, GEN_RANGES } from '../../data/legendaryIds';
+import { TeamPreset } from '../../types';
 
 const BOX_SIZE = 30; 
 const TYPE_LIST = ['fire','water','grass','electric','ice','fighting','poison','ground','flying','psychic','bug','rock','ghost','dragon','steel','dark','fairy','normal']; 
@@ -14,7 +16,7 @@ const TYPE_LIST = ['fire','water','grass','electric','ice','fighting','poison','
 type SortKey = 'name' | 'level' | 'number' | 'type' | 'iv' | 'date'; 
 
 export default function BoxScreen() { 
-  const { box, setScreen, addToTeam, releasePokemon, team, inventory, useSpeciesCandy, favorites } = useStore(); 
+  const { box, setScreen, addToTeam, releasePokemon, team, inventory, useSpeciesCandy, favorites, teamPresets, saveTeamPreset, loadTeamPreset, deleteTeamPreset } = useStore(); 
   const [currentBox, setCurrentBox] = useState(0); 
   const [showFavoritesOnly, setShowFavoritesOnly] = React.useState(false); 
   const [showShinyOnly, setShowShinyOnly] = useState(false);
@@ -28,6 +30,11 @@ export default function BoxScreen() {
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [showCompareModal, setShowCompareModal] = useState(false);
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
+  const [activePreset, setActivePreset] = useState<TeamPreset['category'] | null>(null);
+  const [presetSelecting, setPresetSelecting] = useState(false);
+  const [presetSelected, setPresetSelected] = useState<string[]>([]);
+  const [presetSortBy, setPresetSortBy] = useState<'iv' | 'level' | 'number'>('iv');
+  const [presetFavoritesOnly, setPresetFavoritesOnly] = useState(false);
 
   const selectedForCompare = useMemo(() => box.filter(p => selectedIds.has(p.id)), [box, selectedIds]); 
 
@@ -130,6 +137,10 @@ export default function BoxScreen() {
     if (a < b) return 'text-rose-400';
     return 'text-white/70';
   }; 
+
+  const getIvTotal = (pkmn: any) => {
+    return pkmn.ivs.hp + pkmn.ivs.attack + pkmn.ivs.defense + pkmn.ivs.spAtk + pkmn.ivs.spDef + pkmn.ivs.speed;
+  };
 
   const handleAddToTeam = useCallback((pkmn: any) => { 
     if (team.length < 4) { addToTeam(pkmn, team.length); setSelectedPkmn(null); } 
@@ -340,6 +351,47 @@ export default function BoxScreen() {
         )} 
       </div> 
 
+      {/* Strip preset */}
+      <div className="px-3 py-2 border-t border-white/5">
+        <p className="text-[9px] font-black text-white/30 uppercase tracking-widest mb-2">Team Preset</p>
+        <div className="flex gap-2 overflow-x-auto no-scrollbar pb-1">
+          {([
+            { key: 'gen1', label: 'Gen 1', icon: '🗾' },
+            { key: 'gen2', label: 'Gen 2', icon: '🌸' },
+            { key: 'gen3', label: 'Gen 3', icon: '🌊' },
+            { key: 'gen4', label: 'Gen 4', icon: '❄️' },
+            { key: 'gen5', label: 'Gen 5', icon: '🗽' },
+            { key: 'gen6', label: 'Gen 6', icon: '🗼' },
+            { key: 'gen7', label: 'Gen 7', icon: '🌺' },
+            { key: 'gen8', label: 'Gen 8', icon: '⚔️' },
+            { key: 'legendary', label: 'Leggendari', icon: '⭐' },
+            { key: 'favorite', label: 'Preferita', icon: '❤️' },
+          ] as { key: TeamPreset['category']; label: string; icon: string }[]).map(({ key, label, icon }) => {
+            const preset = teamPresets[key];
+            const validCount = preset
+              ? preset.pokemonIds.filter(id => box.some(p => p.id === id)).length
+              : 0;
+            return (
+              <button
+                key={key}
+                onClick={() => setActivePreset(key)}
+                className={`flex-shrink-0 flex flex-col items-center gap-1 px-3 py-2 rounded-xl border transition-all ${
+                  preset && validCount > 0
+                    ? 'bg-[#e63946]/10 border-[#e63946]/40 text-white'
+                    : 'bg-[#1a1a2e] border-white/10 text-white/50'
+                }`}
+              >
+                <span className="text-lg">{icon}</span>
+                <span className="text-[9px] font-black uppercase">{label}</span>
+                {preset && validCount > 0 && (
+                  <span className="text-[8px] text-[#e63946] font-bold">{validCount}/4</span>
+                )}
+              </button>
+            );
+          })}
+        </div>
+      </div>
+
       <AnimatePresence>
         {selectedPkmn && (
           <motion.div
@@ -461,6 +513,208 @@ export default function BoxScreen() {
           </button> 
         </div> 
       )}
+
+      {/* Modal Preset */}
+      <AnimatePresence>
+        {activePreset && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex flex-col justify-end"
+            onClick={() => { setActivePreset(null); setPresetSelecting(false); setPresetSelected([]); }}
+          >
+            <motion.div
+              initial={{ y: '100%' }}
+              animate={{ y: 0 }}
+              exit={{ y: '100%' }}
+              className="bg-[#1a1a2e] rounded-t-[32px] p-6 flex flex-col gap-4 max-h-[80vh]"
+              onClick={e => e.stopPropagation()}
+            >
+              {(() => {
+                const preset = teamPresets[activePreset];
+                const validPokemon = preset
+                  ? preset.pokemonIds.map(id => box.find(p => p.id === id)).filter(Boolean)
+                  : [];
+
+                // Filtro Pokémon disponibili per questa categoria
+                const range = GEN_RANGES[activePreset];
+                const availableInBox = box.filter(p => {
+                  if (activePreset === 'legendary') return LEGENDARY_IDS.has(p.pokemonId);
+                  if (activePreset === 'favorite') return true;
+                  if (range) return p.pokemonId >= range[0] && p.pokemonId <= range[1] && !LEGENDARY_IDS.has(p.pokemonId);
+                  return true;
+                });
+
+                const LABELS: Record<string, string> = {
+                  gen1:'Gen 1',gen2:'Gen 2',gen3:'Gen 3',gen4:'Gen 4',
+                  gen5:'Gen 5',gen6:'Gen 6',gen7:'Gen 7',gen8:'Gen 8',
+                  legendary:'Leggendari',favorite:'Preferita'
+                };
+
+                if (!presetSelecting) {
+                  return (
+                    <>
+                      <div className="flex items-center justify-between">
+                        <h3 className="font-black text-lg">Preset {LABELS[activePreset]}</h3>
+                        <button onClick={() => { setActivePreset(null); }} className="p-2 bg-white/10 rounded-xl">
+                          <X size={18} />
+                        </button>
+                      </div>
+
+                      {validPokemon.length > 0 ? (
+                        <>
+                          <div className="flex gap-3">
+                            {validPokemon.map((p: any) => (
+                              <div key={p.id} className="flex flex-col items-center gap-1">
+                                <PokemonSprite pokemonId={p.pokemonId} isShiny={p.isShiny} className="w-16 h-16 object-contain" />
+                                <span className="text-[9px] font-bold uppercase text-white/70">{p.name}</span>
+                                <span className="text-[8px] text-[#e63946]">Lv.{p.level}</span>
+                              </div>
+                            ))}
+                          </div>
+                          <button
+                            onClick={() => {
+                              const validIds = validPokemon.map((p: any) => p.id);
+                              const msg = `Caricare il preset ${LABELS[activePreset]}? Il tuo team attuale andrà nel box.`;
+                              if (confirm(msg)) {
+                                loadTeamPreset(activePreset);
+                                setActivePreset(null);
+                              }
+                            }}
+                            className="w-full bg-[#e63946] py-3 rounded-2xl font-black"
+                          >
+                            CARICA IN SQUADRA
+                          </button>
+                          <div className="flex gap-2">
+                            <button
+                              onClick={() => { setPresetSelecting(true); setPresetSelected(preset?.pokemonIds ?? []); }}
+                              className="flex-1 bg-white/5 border border-white/10 py-2 rounded-xl font-bold text-sm"
+                            >
+                              MODIFICA
+                            </button>
+                            <button
+                              onClick={() => { if (confirm('Eliminare questo preset?')) { deleteTeamPreset(activePreset); setActivePreset(null); } }}
+                              className="px-4 bg-red-500/10 border border-red-500/20 text-red-400 py-2 rounded-xl font-bold text-sm"
+                            >
+                              ELIMINA
+                            </button>
+                          </div>
+                        </>
+                      ) : (
+                        <>
+                          <p className="text-white/40 text-sm text-center py-4">
+                            {availableInBox.length === 0
+                              ? 'Non hai Pokémon di questa categoria nel box.'
+                              : 'Nessun preset salvato. Creane uno!'}
+                          </p>
+                          {availableInBox.length > 0 && (
+                            <button
+                              onClick={() => { setPresetSelecting(true); setPresetSelected([]); }}
+                              className="w-full bg-[#e63946] py-3 rounded-2xl font-black"
+                            >
+                              CREA PRESET
+                            </button>
+                          )}
+                        </>
+                      )}
+                    </>
+                  );
+                }
+
+                const filteredAndSortedAvailable = [...availableInBox]
+                  .filter((p) => !presetFavoritesOnly || favorites.includes(p.id))
+                  .sort((a, b) => {
+                    if (presetSortBy === 'iv') return getIvTotal(b) - getIvTotal(a);
+                    if (presetSortBy === 'level') return b.level - a.level;
+                    return a.pokemonId - b.pokemonId;
+                  });
+
+                // Modalità selezione
+                return (
+                  <>
+                    <div className="flex items-center justify-between">
+                      <h3 className="font-black text-lg">Seleziona fino a 4</h3>
+                      <button onClick={() => { setPresetSelecting(false); setPresetSelected([]); }} className="p-2 bg-white/10 rounded-xl">
+                        <X size={18} />
+                      </button>
+                    </div>
+                    <p className="text-[10px] text-white/40">{presetSelected.length}/4 selezionati</p>
+                    <div className="flex items-center gap-2">
+                      {([
+                        { key: 'iv', label: 'IV' },
+                        { key: 'level', label: 'Lv' },
+                        { key: 'number', label: '#' },
+                      ] as { key: 'iv' | 'level' | 'number'; label: string }[]).map(({ key, label }) => (
+                        <button
+                          key={key}
+                          onClick={() => setPresetSortBy(key)}
+                          className={`px-3 py-1.5 rounded-lg text-[10px] font-black border transition-all ${
+                            presetSortBy === key ? 'bg-[#e63946] border-[#e63946]' : 'bg-white/5 border-white/10 text-white/70'
+                          }`}
+                        >
+                          {label}
+                        </button>
+                      ))}
+                      <button
+                        onClick={() => setPresetFavoritesOnly(v => !v)}
+                        className={`ml-auto p-2 rounded-lg border transition-all ${
+                          presetFavoritesOnly ? 'bg-yellow-500/20 border-yellow-500/50 text-yellow-300' : 'bg-white/5 border-white/10 text-white/50'
+                        }`}
+                        title="Solo preferiti"
+                      >
+                        {presetFavoritesOnly ? <BookmarkCheck size={14} /> : <BookmarkPlus size={14} />}
+                      </button>
+                    </div>
+                    <div className="flex-1 overflow-y-auto grid grid-cols-5 gap-2 no-scrollbar">
+                      {filteredAndSortedAvailable.map(p => {
+                        const sel = presetSelected.includes(p.id);
+                        return (
+                          <button
+                            key={p.id}
+                            onClick={() => {
+                              if (sel) setPresetSelected(prev => prev.filter(id => id !== p.id));
+                              else if (presetSelected.length < 4) setPresetSelected(prev => [...prev, p.id]);
+                            }}
+                            className={`relative aspect-square bg-[#111122] rounded-xl border flex flex-col items-center justify-center p-1 transition-all ${
+                              sel ? 'border-[#e63946] bg-[#e63946]/20' : 'border-white/5'
+                            }`}
+                          >
+                            <PokemonSprite pokemonId={p.pokemonId} isShiny={p.isShiny} className="w-full h-full object-contain" alt={p.name} />
+                            <span className="absolute bottom-0.5 left-0.5 text-[8px] font-black bg-black/60 px-1 rounded">
+                              Lv.{p.level}
+                            </span>
+                            <span className="absolute bottom-0.5 right-0.5 text-[8px] font-black bg-black/60 px-1 rounded text-[#e63946]">
+                              IV {getIvTotal(p)}
+                            </span>
+                            {sel && <div className="absolute top-0.5 right-0.5 w-3 h-3 bg-[#e63946] rounded-full" />}
+                          </button>
+                        );
+                      })}
+                    </div>
+                    {filteredAndSortedAvailable.length === 0 && (
+                      <p className="text-center text-xs text-white/40 py-2">
+                        Nessun Pokémon corrisponde ai filtri selezionati.
+                      </p>
+                    )}
+                    <button
+                      disabled={presetSelected.length === 0}
+                      onClick={() => {
+                        saveTeamPreset(activePreset, presetSelected);
+                        setPresetSelecting(false);
+                        setPresetSelected([]);
+                      }}
+                      className="w-full bg-[#e63946] disabled:opacity-30 py-3 rounded-2xl font-black"
+                    >
+                      SALVA PRESET ({presetSelected.length}/4)
+                    </button>
+                  </>
+                );
+              })()}
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       <AnimatePresence>
         {showCompareModal && selectedForCompare.length === 2 && (

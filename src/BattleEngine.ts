@@ -226,7 +226,7 @@ export const BattleEngine = {
       damage = Math.floor(damage * 0.5);
     }
 
-    if (typeMultiplier === 0) return 0; 
+    if (typeMultiplier === 0) return 0;
     return Math.max(1, damage);
   },
 

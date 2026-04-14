@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
-import { GameState, Pokemon, ScreenName, Medal, Item, Move, DailyMission, Egg, Achievement } from './types';
+import { GameState, Pokemon, ScreenName, Medal, Item, Move, DailyMission, Egg, Achievement, TeamPreset } from './types';
 import { api } from './api';
 import { BattleEngine } from './BattleEngine';
 import { CatchEngine } from './CatchEngine';
@@ -71,6 +71,9 @@ interface GameStore extends GameState {
   initializeAchievements: () => void;
   updateAchievementProgress: (achievementId: string, progress: number) => void;
   unlockAchievement: (achievementId: string) => void;
+  saveTeamPreset: (category: TeamPreset['category'], pokemonIds: string[]) => void;
+  loadTeamPreset: (category: TeamPreset['category']) => void;
+  deleteTeamPreset: (category: TeamPreset['category']) => void;
   startBattleTower: () => void;
   advanceBattleTowerFloor: () => void;
   abandonBattleTower: () => void;
@@ -238,6 +241,7 @@ export const useStore = create<GameStore>()(
       streak: 0,
       battleWinStreak: 0,
       achievements: [],
+      teamPresets: {},
       battleTower: { 
         currentFloor: 0, 
         bestFloor: 0, 
@@ -522,6 +526,7 @@ export const useStore = create<GameStore>()(
         streak: 0,
         battleWinStreak: 0,
         achievements: [],
+        teamPresets: {},
       }),
       confirmEvolution: () => set((state) => {
         const pending = state.pendingEvolution;
@@ -996,6 +1001,40 @@ export const useStore = create<GameStore>()(
           return newState;
          });
        },
+      saveTeamPreset: (category, pokemonIds) => set((state) => ({
+        teamPresets: {
+          ...state.teamPresets,
+          [category]: {
+            label: category,
+            category,
+            pokemonIds,
+            updatedAt: Date.now(),
+          }
+        }
+      })),
+      loadTeamPreset: (category) => set((state) => {
+        const preset = state.teamPresets[category];
+        if (!preset) return {};
+        // Filtra solo IDs ancora esistenti nel box (non nel team)
+        const validPokemon = preset.pokemonIds
+          .map(id => state.box.find(p => p.id === id))
+          .filter(Boolean) as Pokemon[];
+        if (validPokemon.length === 0) return {};
+        // Tutto il team corrente torna al box
+        const newBox = [
+          ...state.box.filter(p => !validPokemon.some(vp => vp.id === p.id)),
+          ...state.team,
+        ];
+        return {
+          team: validPokemon,
+          box: newBox,
+        };
+      }),
+      deleteTeamPreset: (category) => set((state) => {
+        const next = { ...state.teamPresets };
+        delete next[category];
+        return { teamPresets: next };
+      }),
        startBattleTower: () => {
          set((state) => ({
            battleTower: {
@@ -1120,6 +1159,7 @@ export const useStore = create<GameStore>()(
             claimedFloorRewards: [],
           };
         }
+        if (!state.teamPresets) state.teamPresets = {};
       }
     }
   )

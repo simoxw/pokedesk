@@ -125,6 +125,13 @@ export interface BattleTowerState {
   claimedFloorRewards: number[];
 }
 
+export interface TeamPreset {
+  label: string;
+  category: 'gen1'|'gen2'|'gen3'|'gen4'|'gen5'|'gen6'|'gen7'|'gen8'|'legendary'|'favorite';
+  pokemonIds: string[];
+  updatedAt: number;
+}
+
 export interface GameState {
   player: { name: string; gender: 'M' | 'F'; createdAt: number; playTime: number };
   team: Pokemon[];
@@ -170,6 +177,7 @@ export interface GameState {
   currentScreen: ScreenName;
   battleWinStreak: number;
   battleTower: BattleTowerState;
+  teamPresets: Record<string, TeamPreset>;
 }
 
 export interface PokemonSpecies {
