@@ -12,11 +12,15 @@ if (import.meta.env.PROD && 'serviceWorker' in navigator) {
       const expectedSwUrl = new URL(swUrl, window.location.href).href;
       const registrations = await navigator.serviceWorker.getRegistrations();
 
+      const getRegistrationScriptUrl = (registration: ServiceWorkerRegistration): string | undefined =>
+        registration.active?.scriptURL ?? registration.installing?.scriptURL ?? registration.waiting?.scriptURL;
+
       for (const registration of registrations) {
-        if (registration.scriptURL && registration.scriptURL !== expectedSwUrl) {
+        const registrationScriptUrl = getRegistrationScriptUrl(registration);
+        if (registrationScriptUrl && registrationScriptUrl !== expectedSwUrl) {
           await registration.unregister();
           if (import.meta.env.DEV) {
-            console.info('SW obsoleto disinstallato:', registration.scriptURL);
+            console.info('SW obsoleto disinstallato:', registrationScriptUrl);
           }
         }
       }
