@@ -5,35 +5,54 @@ Pokedesk è un'app web avanzata che simula l'esperienza Pokémon, sviluppata con
 ## Albero del Progetto
 ```text
 pokedesk/
-├── public/                 # Asset statici
-│   ├── audio/              # Effetti sonori e musica
-│   ├── icon-192.png        # Icona PWA
-│   ├── icon-512.png        # Icona PWA
-│   ├── manifest.json       # Configurazione PWA
-│   └── sw.js               # Service Worker
-├── scripts/                # Script di utilità per build e manutenzione
+├── .env.example           # Esempio di variabili d'ambiente
+├── .gitignore             # File ignorati da Git
+├── check_icon_sizes.js    # Verifica dimensioni icone PWA
+├── index.html             # Entry HTML dell'app
+├── metadata.json          # Metadati della build
+├── package-lock.json      # Lockfile npm
+├── package.json           # Dipendenze e script
+├── PROJECT_FILE_MAP.md    # Mappa dettagliata del progetto
+├── PROJECT_STRUCTURE.md    # Questa guida
+├── README.md              # Documentazione principale
+├── public/                # Asset statici
+│   ├── audio/             # Effetti sonori e musica
+│   ├── icon-192.png       # Icona PWA
+│   ├── icon-512.png       # Icona PWA
+│   ├── manifest.json      # Configurazione PWA
+│   └── sw.js              # Service Worker
+├── scripts/               # Script di utilità per build e manutenzione
 │   ├── patch-sw.js
 │   └── resize-icons.mjs
-├── src/                    # Codice sorgente
+├── src/                   # Codice sorgente
 │   ├── components/
-│   │   ├── screens/        # Schermate principali dell'app
-│   │   └── ui/             # Componenti UI riutilizzabili
-│   ├── data/               # Dati statici (Lega, spawn, ecc.)
-│   ├── services/           # Servizi logici (Livelli, Torre Lotta)
-│   ├── App.tsx             # Componente root e routing
-│   ├── AudioService.ts     # Gestione musica globale
-│   ├── BattleEngine.ts     # Motore di calcolo battaglie
-│   ├── CatchEngine.ts      # Algoritmi di cattura e breeding
+│   │   ├── screens/       # Schermate principali dell'app
+│   │   └── ui/            # Componenti UI riutilizzabili
+│   ├── data/              # Dati statici (Lega, spawn, ecc.)
+│   ├── services/          # Servizi logici (Livelli, Torre Lotta)
+│   ├── store/             # Slice e store Zustand
+│   ├── App.tsx            # Componente root e routing
+│   ├── AudioService.ts    # Gestione musica globale
+│   ├── BattleEngine.ts    # Motore di calcolo battaglie
+│   ├── CatchEngine.ts     # Algoritmi di cattura e breeding
 │   ├── NotificationService.ts # Gestione notifiche app
-│   ├── store.ts            # Stato globale (Zustand)
-│   ├── types.ts            # Definizioni TypeScript
-│   ├── api.ts              # Interfaccia PokeAPI
-│   └── TickSystem.ts       # Loop temporizzato background
-├── README.md               # Documentazione principale
-├── PROJECT_STRUCTURE.md    # Questa guida
-├── package.json            # Dipendenze e script
-├── tsconfig.json           # Configurazione TypeScript
-└── vite.config.ts          # Configurazione Vite
+│   ├── store.ts           # Stato globale (Zustand)
+│   ├── types.ts           # Definizioni TypeScript
+│   ├── api.ts             # Interfaccia PokeAPI
+│   ├── TickSystem.ts      # Loop temporizzato background
+│   ├── index.css          # Stili globali
+│   ├── main.tsx           # Entry point React
+│   ├── rarityTable.ts     # Gestione rarità e multipliers
+│   ├── useSoundEffects.ts # Hook effetti sonori
+│   ├── vite-env.d.ts      # Tipi Vite
+│   ├── BattleStages.test.ts
+│   ├── CatchEngine.test.ts
+│   ├── Evolution.test.ts
+│   ├── ExpSystem.test.ts
+│   ├── StatsFormula.test.ts
+│   ├── TypeChart.test.ts
+│   └── NotificationService.ts
+└── vite.config.ts         # Configurazione Vite
 ```
 
 ## Cartella Radice
@@ -55,6 +74,9 @@ pokedesk/
 ## scripts/
 - **patch-sw.js**: Applica patch al Service Worker durante la build.
 - **resize-icons.mjs**: Genera automaticamente le icone di varie dimensioni per il manifest.
+
+## Documentazione aggiuntiva
+- **PROJECT_FILE_MAP.md**: nuova guida completa con l'intero albero delle cartelle e una descrizione file per file.
 
 ## src/ (Codice Sorgente)
 

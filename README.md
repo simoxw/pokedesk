@@ -45,14 +45,16 @@ Un simulatore di battaglie e cattura Pokémon moderno, sviluppato come Progressi
 - `src/CatchEngine.ts`: Algoritmi per probabilità di cattura, nature e shiny.
 - `src/api.ts`: Interfaccia verso PokeAPI con traduzioni in italiano e logica evolutiva integrata.
 - `src/components/screens/`: Interfaccia utente modulare divisa in schermate funzionali.
+- `PROJECT_FILE_MAP.md`: mappa completa delle cartelle e dei file del progetto con descrizioni dettagliate.
 
 ## 📝 Note Tecniche
 
 Il progetto implementa un `TickSystem.ts` robusto per la rigenerazione dello stato in background (cariche, schiusa uova) e utilizza un sistema di routing basato su stati in `App.tsx` per una transizione fluida tra le schermate stile app nativa.
 
-## Aggiornamenti Recenti
+## Documentazione di progetto aggiornata
+- `PROJECT_FILE_MAP.md`: nuova documentazione con l'albero completo delle cartelle del progetto e la descrizione di ciascun file.
 
-- **Preset squadra persistenti**: i preset nel Box restano validi anche se i Pokémon passano da team a box (lookup su posseduti `team + box`).
+## Aggiornamenti Recenti
 - **Preset per categoria**: supporto categorie `gen1..gen8`, `legendary`, `favorite` con validazione al salvataggio.
 - **Ordinamento Box per data**: aggiunto filtro `date` nel PC Box usando `caughtAt`.
 - **Fix danno immunità tipo**: mosse con moltiplicatore `0x` ora infliggono correttamente `0` danni.
