@@ -1,5 +1,6 @@
 import { create } from 'zustand';
-import { persist } from 'zustand/middleware';
+import { persist, createJSONStorage } from 'zustand/middleware';
+import { get, set, del } from 'idb-keyval';
 import { GameState, Pokemon, ScreenName, Medal, Item, Move, DailyMission, Egg, Achievement, TeamPreset, GenMission } from './types';
 import { LEGENDARY_IDS, GEN_RANGES } from './data/legendaryIds';
 import { api } from './api';
@@ -371,6 +372,71 @@ const INITIAL_MEDALS: Medal[] = Array.from({ length: 40 }, (_, i) => ({
   type: 'normal',
   isUnlocked: false,
 }));
+
+const SAVE_KEY = 'pokedesk-save';
+const LEGACY_BACKUP_KEY = 'pokedesk-save-legacy-backup';
+const MIGRATION_FLAG_KEY = 'pokedesk-idb-migrated';
+
+const indexedDBStorage = {
+  getItem: async (name: string): Promise<string | null> => {
+    try {
+      const migrationDone = localStorage.getItem(MIGRATION_FLAG_KEY);
+
+      // Prima migrazione da localStorage
+      if (!migrationDone) {
+        const legacyData = localStorage.getItem(name);
+        if (legacyData) {
+          await set(name, legacyData);
+          const written = await get<string>(name);
+
+          if (written === legacyData) {
+            localStorage.setItem(LEGACY_BACKUP_KEY, legacyData);
+            localStorage.setItem(MIGRATION_FLAG_KEY, Date.now().toString());
+            console.log('[PokéDesk] ✅ Migrazione IndexedDB completata con successo');
+          } else {
+            console.warn('[PokéDesk] ⚠️ Verifica migrazione fallita');
+            return legacyData;
+          }
+        }
+      }
+
+      // Lettura principale da IndexedDB
+      const value = await get<string>(name);
+      if (value !== undefined && value !== null) return value;
+
+      // Fallback
+      return localStorage.getItem(name);
+    } catch (err) {
+      console.warn('[PokéDesk] IndexedDB non disponibile → fallback localStorage', err);
+      return localStorage.getItem(name);
+    }
+  },
+
+  setItem: async (name: string, value: string): Promise<void> => {
+    try {
+      await set(name, value);
+
+      // Pulizia legacy dopo migrazione confermata
+      if (localStorage.getItem(MIGRATION_FLAG_KEY)) {
+        localStorage.removeItem(name);
+      }
+    } catch (err) {
+      console.warn('[PokéDesk] Scrittura IndexedDB fallita → localStorage', err);
+      localStorage.setItem(name, value);
+    }
+  },
+
+  removeItem: async (name: string): Promise<void> => {
+    try {
+      await del(name);
+    } catch (err) {
+      console.warn('[PokéDesk] Errore remove IndexedDB', err);
+    }
+    localStorage.removeItem(name);
+    localStorage.removeItem(LEGACY_BACKUP_KEY);
+    localStorage.removeItem(MIGRATION_FLAG_KEY);
+  },
+};
 
 export const useStore = create<GameStore>()(
   persist(
@@ -831,7 +897,7 @@ export const useStore = create<GameStore>()(
           basePokemonId: nonDitto.baseSpeciesId,
           baseSpeciesId: nonDitto.baseSpeciesId,
           createdAt: now,
-          hatchAt: now + 72 * 3600000, // 72 ore in millisecondi
+          hatchAt: now + 48 * 3600000, // 48 ore in millisecondi
           ivs: bestIvs,
           nature: CatchEngine.getNature(),
           isShiny: false,
@@ -1382,7 +1448,8 @@ export const useStore = create<GameStore>()(
        },
      }),
     {
-      name: 'pokedesk-save',
+      name: SAVE_KEY,
+      storage: createJSONStorage(() => indexedDBStorage),
       onRehydrateStorage: () => (state) => {
         if (!state) return;
         const clampHp = (p: any) => ({

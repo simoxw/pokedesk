@@ -6,38 +6,103 @@ import { ArrowLeft, Copy, Download, Upload, Trash2, Volume2, VolumeX, Bell, Bell
 export default function OptionsScreen() {
   const { settings, setScreen, resetGame, updateSettings } = useStore();
 
-  const handleExport = () => {
-    const data = localStorage.getItem('pokedesk-save');
-    if (!data) return;
-    const blob = new Blob([data], { type: 'application/json' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `pokedesk_save_${new Date().toISOString().split('T')[0]}.json`;
-    a.click();
+  // === EXPORT SALVATAGGIO ===
+  const handleExport = async () => {
+    try {
+      let data: string | null = null;
+
+      // 1. Prova prima da IndexedDB
+      try {
+        const { get } = await import('idb-keyval');
+        data = (await get('pokedesk-save')) as string | null;
+      } catch {
+        console.warn('IndexedDB non disponibile durante export');
+      }
+
+      // 2. Fallback su localStorage
+      if (!data) {
+        data = localStorage.getItem('pokedesk-save');
+      }
+
+      // 3. Fallback su legacy backup (utile dopo migrazione)
+      if (!data) {
+        data = localStorage.getItem('pokedesk-save-legacy-backup');
+      }
+
+      if (!data) {
+        alert('❌ Nessun salvataggio trovato!');
+        return;
+      }
+
+      const blob = new Blob([data], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+
+      a.href = url;
+      a.download = `pokedesk_save_${new Date().toISOString().slice(0, 10)}.json`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+
+      console.log('[PokéDesk] Export completato con successo');
+    } catch (err) {
+      console.error('Export fallito:', err);
+      alert("❌ Si è verificato un errore durante l'export");
+    }
   };
 
+  // === IMPORT SALVATAGGIO ===
   const handleImport = () => {
     const input = document.createElement('input');
     input.type = 'file';
     input.accept = '.json';
-    input.onchange = (e: any) => {
-      const file = e.target.files[0];
+    
+    input.onchange = async (e: Event) => {
+      const target = e.target as HTMLInputElement | null;
+      const file = target?.files?.[0];
       if (!file) return;
+
       const reader = new FileReader();
-      reader.onload = (ev) => {
+      reader.onload = async (ev) => {
         try {
           const text = ev.target?.result as string;
-          JSON.parse(text); // valida che sia JSON
-          localStorage.setItem('pokedesk-save', text);
-          alert('Salvataggio importato! Ricarica la pagina.');
-          window.location.reload();
-        } catch {
-          alert('File non valido!');
+
+          // Validazione JSON
+          JSON.parse(text);
+
+          let success = false;
+
+          // 1. Prova a scrivere in IndexedDB
+          try {
+            const { set } = await import('idb-keyval');
+            await set('pokedesk-save', text);
+            localStorage.setItem('pokedesk-idb-migrated', Date.now().toString());
+            success = true;
+            console.log('[PokéDesk] Import in IndexedDB completato');
+          } catch {
+            console.warn('Fallback su localStorage per import');
+          }
+
+          // 2. Fallback su localStorage
+          if (!success) {
+            localStorage.setItem('pokedesk-save', text);
+            localStorage.setItem('pokedesk-save-legacy-backup', text);
+            success = true;
+          }
+
+          if (success) {
+            alert('✅ Salvataggio importato con successo!\nLa pagina verrà ricaricata.');
+            setTimeout(() => window.location.reload(), 800);
+          }
+        } catch (err) {
+          console.error('Import error:', err);
+          alert('❌ File non valido o corrotto.\nAssicurati di aver selezionato un file .json di PokéDesk.');
         }
       };
       reader.readAsText(file);
     };
+
     input.click();
   };
 

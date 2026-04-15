@@ -122,3 +122,14 @@ pokedesk/
   - IA nemica in `BattleScreen` migliorata nella scelta mosse (KO, superefficace a danno atteso, meno status inutili).
   - buff team avversari Lega/Master con IV/EV più competitivi.
   - `Caramella Rara` in negozio bilanciata con costo aumentato (`4000`).
+
+- **Persistenza e Dati (store + OptionsScreen)**
+  - migrazione storage principale da `localStorage` a IndexedDB tramite `idb-keyval` in `src/store.ts`.
+  - mantenuto fallback trasparente su `localStorage` e backup legacy (`pokedesk-save-legacy-backup`).
+  - `OptionsScreen.tsx` aggiornato con Export/Import compatibili IndexedDB:
+    - export con lookup progressivo (IndexedDB -> save locale -> backup).
+    - import con validazione JSON e fallback automatico in assenza IndexedDB.
+
+- **Breeding**
+  - ridotto il tempo di schiusa per le nuove uova da `72h` a `48h` in `src/store.ts`.
+  - nessuna migrazione retroattiva sui timer già salvati (comportamento stabile per uova in incubazione).

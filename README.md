@@ -63,3 +63,18 @@ Il progetto implementa un `TickSystem.ts` robusto per la rigenerazione dello sta
   - costo `Caramella Rara` in shop aumentato a `4000`.
   - IA mosse nemica migliorata (preferenza KO/superefficaci a danno atteso).
   - Team avversari Lega/Master potenziati con IV/EV migliori.
+
+## Aggiornamenti Dati e Salvataggio (Apr 2026)
+
+- **Persistenza su IndexedDB**: lo store Zustand usa ora `idb-keyval` con storage asincrono (`createJSONStorage`) mantenendo fallback sicuro su `localStorage`.
+- **Migrazione automatica**: al primo avvio utile, i dati legacy vengono copiati da `localStorage` a IndexedDB con verifica di scrittura e flag di migrazione.
+- **Backup legacy**: mantenuto un backup in `localStorage` (`pokedesk-save-legacy-backup`) per resilienza durante la transizione.
+- **Export/Import migliorati** (`OptionsScreen`):
+  - Export: priorità IndexedDB, fallback su `localStorage`, fallback su backup legacy.
+  - Import: validazione JSON, scrittura preferita in IndexedDB, fallback su `localStorage`, reload guidato app.
+- **Compatibilità mobile/PWA**: comportamento più robusto su browser moderni con quota storage generalmente superiore rispetto al solo `localStorage`.
+
+## Aggiornamento Gameplay (Apr 2026)
+
+- **Breeding - Tempo uova**: le nuove uova richiedono ora `48 ore` (prima `72 ore`).
+- **Retrocompatibilità timer**: le uova già in incubazione mantengono il timer originario salvato, evitando side-effect sui salvataggi esistenti.
