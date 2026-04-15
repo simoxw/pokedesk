@@ -21,6 +21,7 @@ import IslandScreen from './components/screens/IslandScreen';
 import OptionsScreen from './components/screens/OptionsScreen';
 import AchievementScreen from './components/screens/AchievementScreen';
 import BattleTowerScreen from './components/screens/BattleTowerScreen';
+import TradeEventScreen from './components/screens/TradeEventScreen';
 import BottomNav from './components/ui/BottomNav';
 import TypeBadge from './components/ui/TypeBadge';
 import { useTickSystem } from './TickSystem';
@@ -118,6 +119,7 @@ export default function App() {
       case 'SHOP_SCREEN': return <ShopScreen />;
       case 'PROFILE_SCREEN': return <ProfileScreen />;
       case 'TRADE_SCREEN': return <TradeScreen />;
+      case 'TRADE_EVENT_SCREEN': return <TradeEventScreen />;
       case 'OPTIONS_SCREEN': return <OptionsScreen />;
       case 'FRIEND_BATTLE_SCREEN': return <FriendBattleScreen />;
       case 'LEAGUE_SELECT_SCREEN': return <LeagueSelectScreen />;

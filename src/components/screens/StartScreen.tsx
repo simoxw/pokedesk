@@ -12,12 +12,12 @@ export default function StartScreen() {
       <motion.div
         initial={{ scale: 0.8, opacity: 0 }}
         animate={{ scale: 1, opacity: 1 }}
-        className="mb-12 text-center"
+        className="mb-8 text-center"
       >
-        <h1 className="text-6xl font-black tracking-tighter text-[#e63946] drop-shadow-[0_0_15px_rgba(230,57,70,0.5)]">
+        <h1 className="text-5xl font-black tracking-tighter text-[#e63946] drop-shadow-[0_0_12px_rgba(230,57,70,0.45)]">
           POKEDESK
         </h1>
-        <p className="text-sm uppercase tracking-widest opacity-50 mt-2">Gotta Catch 'Em All</p>
+        <p className="text-xs uppercase tracking-widest opacity-50 mt-1">Gotta Catch 'Em All</p>
       </motion.div>
 
       <div className="w-full max-w-xs space-y-4">
@@ -62,6 +62,11 @@ export default function StartScreen() {
           icon={<ArrowLeftRight size={20} />} 
           label="SCAMBIA" 
           onClick={() => setScreen('TRADE_SCREEN')}
+        />
+        <MenuButton 
+          icon={<span className="text-lg">🎯</span>} 
+          label="TRADE EVENT" 
+          onClick={() => setScreen('TRADE_EVENT_SCREEN')}
         />
         <MenuButton 
           icon={<Sword size={20} />} 

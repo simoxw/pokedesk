@@ -13,6 +13,8 @@ Un simulatore di battaglie e cattura Pokémon moderno, sviluppato come Progressi
 - **Toast di missione**: Notifica visiva al completamento missione e auto-dismiss a 3 secondi.
 - **Sincronizzazione Pokédex**: Registrazione automatica delle nuove specie nel Pokédex durante l'evoluzione e il livellamento.
 - **Isole Leggendarie**: Nuova modalità giornaliera per catturare un leggendario (sbloccata dopo una run Lega) con esperienza e IV corretti.
+- **Dojo di Allenamento**: Nuova funzione in Hub per migliorare IV/EV dei Pokémon con costo crescente e filtri di selezione velocizzati.
+- **Trade Event**: Evento speciale di scambio con un Pokémon NPC a IV alti, ricompense fisse e scelta tra team/box.
 - **Breeding e Uova**: Possibilità di far accoppiare Pokémon (incluso Ditto) per ottenere uova con IV ereditati.
 - **Gestione Squadra**: Team attivo (fino a 4 Pokémon), PC Box illimitato, strumenti curativi e caramelle rare.
 - **Sistema di Cariche**: Energia temporizzata rigenerativa per limitare le azioni di Cattura, Lotta e Safari.
@@ -78,5 +80,7 @@ Il progetto implementa un `TickSystem.ts` robusto per la rigenerazione dello sta
 
 ## Aggiornamento Gameplay (Apr 2026)
 
+- **Dojo**: implementato un nuovo sistema di allenamento per migliorare IV/EV dei Pokémon, con costi di addestramento progressivi.
+- **Trade Event**: nuova schermata evento con Pokémon offerta NPC ad IV alti e selezione del Pokémon da scambiare dal team o dal box.
 - **Breeding - Tempo uova**: le nuove uova richiedono ora `48 ore` (prima `72 ore`).
 - **Retrocompatibilità timer**: le uova già in incubazione mantengono il timer originario salvato, evitando side-effect sui salvataggi esistenti.

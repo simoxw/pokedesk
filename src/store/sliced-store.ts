@@ -133,6 +133,7 @@ export const useStore = create<GameStore>()(
           };
         }
         if (!state.teamPresets) state.teamPresets = {};
+        if (!state.dojoTrainingCount) state.dojoTrainingCount = {};
         if (state.activePresetCategory === undefined) state.activePresetCategory = null;
         if (state.genChallenges === undefined) state.genChallenges = null;
       },

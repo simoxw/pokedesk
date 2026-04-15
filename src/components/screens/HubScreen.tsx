@@ -1,5 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useStore } from '../../store';
+import type { GameState } from '../../store/types';
+import type { Stats } from '../../types';
 import { api } from '../../api';
 import { BattleEngine } from '../../BattleEngine';
 import { motion, AnimatePresence } from 'motion/react';
@@ -7,13 +9,19 @@ import { Zap, Target, Sword, TreePine, X, Trophy } from 'lucide-react';
 import PokemonSprite from '../ui/PokemonSprite';
 import { LEGENDARY_IDS, GEN_RANGES } from '../../data/legendaryIds';
 
+const getStatTotal = (ivs: Stats) => (Object.values(ivs) as number[]).reduce((a, b) => a + b, 0);
+
 export default function HubScreen() {
   const { 
     charges, 
     safariCharges, 
+    coins,
+    dojoTrainingCount,
     setScreen, 
     team, 
+    box,
     updatePokemon, 
+    trainPokemon,
     consumeCharge, 
     consumeSafariCharge, 
     medals, 
@@ -30,7 +38,6 @@ export default function HubScreen() {
     eggs,
     startIncubation,
     hatchEgg,
-    box,
     favorites,
     islandLastCatch,
     claimStreak,
@@ -61,6 +68,14 @@ export default function HubScreen() {
   const [incubPick1, setIncubPick1] = useState<any>(null);
   const [incubPreview, setIncubPreview] = useState<any>(null);
   const [incubPreviewLoading, setIncubPreviewLoading] = useState(false);
+  const [showDojo, setShowDojo] = useState(false);
+  const [dojoStage, setDojoStage] = useState<'select' | 'configure'>('select');
+  const [dojoSelected, setDojoSelected] = useState<any>(null);
+  const [dojoCategory, setDojoCategory] = useState<'iv' | 'ev'>('iv');
+  const [dojoTargetStat, setDojoTargetStat] = useState<keyof Stats>('attack');
+  const [dojoEvAmount, setDojoEvAmount] = useState(1);
+  const [dojoSortBy, setDojoSortBy] = useState<'iv_desc' | 'iv_asc' | 'level_desc'>('iv_desc');
+  const [dojoFavoritesOnly, setDojoFavoritesOnly] = useState(false);
   const [incubSearch, setIncubSearch] = useState('');
   const [incubFilterType, setIncubFilterType] = useState<string | null>(null);
   const [incubFavOnly, setIncubFavOnly] = useState(false);
@@ -184,6 +199,10 @@ export default function HubScreen() {
       return p.pokemonId >= range[0] && p.pokemonId <= range[1];
     });
   })();
+
+  const dojoNextIvCost = dojoSelected ? 1000 * Math.pow(2, dojoTrainingCount[dojoSelected.id] ?? 0) : 1000;
+  const dojoCurrentEvTotal = dojoSelected ? (Object.values(dojoSelected.evs) as number[]).reduce((a: number, b: number) => a + b, 0) : 0;
+  const dojoMaxEvAdd = Math.max(0, 512 - dojoCurrentEvTotal);
 
   return (
     <div className="h-full relative overflow-hidden overflow-x-hidden flex flex-col items-center justify-evenly py-3 px-6">
@@ -385,24 +404,43 @@ export default function HubScreen() {
             )}
           </motion.button>
 
-          {/* INCUBATRICE */}
-          <motion.button
-            whileHover={{ scale: 1.05 }}
-            whileTap={{ scale: 0.95 }}
-            onClick={() => { setShowIncubator(true); setIncubStep('list'); setIncubPick1(null); }}
-            className="w-full bg-[#1a1a2e] border border-white/10 py-4 rounded-2xl flex items-center justify-between"
-          >
-            <div className="flex items-center gap-3">
-              <span className="text-2xl">🥚</span>
-              <div className="text-left">
-                <p className="text-sm font-black">INCUBATRICE</p>
-                <p className="text-[10px] text-white/40">{eggs.length}/4 uova</p>
+          <div className="grid grid-cols-2 gap-3">
+            {/* INCUBATRICE */}
+            <motion.button
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
+              onClick={() => { setShowIncubator(true); setIncubStep('list'); setIncubPick1(null); }}
+              className="w-full bg-[#1a1a2e] border border-white/10 py-4 rounded-2xl flex items-center justify-between"
+            >
+              <div className="flex items-center gap-3">
+                <span className="text-2xl">🥚</span>
+                <div className="text-left">
+                  <p className="text-sm font-black">INCUBATRICE</p>
+                  <p className="text-[10px] text-white/40">{eggs.length}/4 uova</p>
+                </div>
               </div>
-            </div>
-            {eggs.some(e => Date.now() >= e.hatchAt) && (
-              <span className="text-[10px] font-black bg-yellow-500/20 text-yellow-400 border border-yellow-500/30 px-2 py-0.5 rounded-full animate-pulse">🐣 PRONTE!</span>
-            )}
-          </motion.button>
+              {eggs.some(e => Date.now() >= e.hatchAt) && (
+                <span className="text-[10px] font-black bg-yellow-500/20 text-yellow-400 border border-yellow-500/30 px-2 py-0.5 rounded-full animate-pulse">🐣 PRONTE!</span>
+              )}
+            </motion.button>
+
+            {/* DOJO */}
+            <motion.button
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
+              onClick={() => { setShowDojo(true); setDojoStage('select'); setDojoSelected(null); setDojoCategory('iv'); setDojoTargetStat('attack'); setDojoEvAmount(1); }}
+              className="w-full bg-[#1a1a2e] border border-white/10 py-4 rounded-2xl flex items-center justify-between"
+            >
+              <div className="flex items-center gap-3">
+                <span className="text-2xl">🥋</span>
+                <div className="text-left">
+                  <p className="text-sm font-black">DOJO</p>
+                  <p className="text-[10px] text-white/40">Migliora IV / EV</p>
+                </div>
+              </div>
+              <span className="text-[10px] text-white/30">✦</span>
+            </motion.button>
+          </div>
 
           {/* LOTTA + LEGA affiancati */}
           <div className="grid grid-cols-2 gap-3">
@@ -690,6 +728,199 @@ export default function HubScreen() {
               <p className="text-[10px] text-white/30 text-center italic">
                 Le missioni si rinnovano ogni giorno
               </p>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Bottom-sheet Dojo */}
+      <AnimatePresence>
+        {showDojo && (
+          <motion.div
+            initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+            className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex flex-col justify-end"
+            onClick={() => setShowDojo(false)}
+          >
+            <motion.div
+              initial={{ y: '100%' }} animate={{ y: 0 }} exit={{ y: '100%' }}
+              className="bg-[#1a1a2e] rounded-t-3xl p-6 space-y-4 max-h-[85vh] flex flex-col"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div className="flex items-center justify-between">
+                <h3 className="font-black text-lg">DOJO</h3>
+                <button onClick={() => setShowDojo(false)} className="p-2 bg-white/10 rounded-xl">
+                  <X size={18} />
+                </button>
+              </div>
+
+              {dojoStage === 'select' ? (
+                <>
+                  <p className="text-[11px] text-white/50">Scegli un Pokémon da allenare. Il costo IV parte da 1000¢ e raddoppia a ogni allenamento, EV 500¢ per punto.</p>
+                  <div className="flex flex-col gap-3">
+                    <div className="flex items-center justify-between text-xs text-white/40 flex-wrap gap-2">
+                      <span>{coins}¢ disponibili</span>
+                      <span>{team.length + box.length} Pokémon disponibili</span>
+                    </div>
+                    <div className="grid grid-cols-2 gap-3">
+                      <button
+                        type="button"
+                        onClick={() => setDojoSortBy('iv_desc')}
+                        className={`rounded-2xl px-3 py-3 text-xs font-black ${dojoSortBy === 'iv_desc' ? 'bg-[#e63946] text-white' : 'bg-[#1a1a2e] text-white/60'}`}
+                      >
+                        IV ↓
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setDojoSortBy('iv_asc')}
+                        className={`rounded-2xl px-3 py-3 text-xs font-black ${dojoSortBy === 'iv_asc' ? 'bg-[#e63946] text-white' : 'bg-[#1a1a2e] text-white/60'}`}
+                      >
+                        IV ↑
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setDojoSortBy('level_desc')}
+                        className={`rounded-2xl px-3 py-3 text-xs font-black ${dojoSortBy === 'level_desc' ? 'bg-[#e63946] text-white' : 'bg-[#1a1a2e] text-white/60'}`}
+                      >
+                        Lv ↓
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setDojoFavoritesOnly((current) => !current)}
+                        className={`rounded-2xl px-3 py-3 text-xs font-black ${dojoFavoritesOnly ? 'bg-yellow-500 text-black' : 'bg-[#1a1a2e] text-white/60'}`}
+                      >
+                        {dojoFavoritesOnly ? 'Solo preferiti ★' : 'Preferiti'}
+                      </button>
+                    </div>
+                  </div>
+                  <div className="grid grid-cols-2 gap-3 overflow-y-auto max-h-[45vh] no-scrollbar min-h-0">
+                    {[...team, ...box]
+                      .filter((pkmn) => {
+                        if (dojoFavoritesOnly && !favorites.includes(pkmn.id)) return false;
+                        return true;
+                      })
+                      .sort((a, b) => {
+                        if (dojoSortBy === 'iv_desc') {
+                          const ivA = getStatTotal(a.ivs);
+                          const ivB = getStatTotal(b.ivs);
+                          return ivB - ivA;
+                        }
+                        if (dojoSortBy === 'iv_asc') {
+                          const ivA = getStatTotal(a.ivs);
+                          const ivB = getStatTotal(b.ivs);
+                          return ivA - ivB;
+                        }
+                        return b.level - a.level;
+                      })
+                      .map((pkmn) => (
+                      <button
+                        key={pkmn.id}
+                        onClick={() => {
+                          setDojoSelected(pkmn);
+                          setDojoStage('configure');
+                        }}
+                        className="bg-[#0f0f1a] border border-white/10 p-3 rounded-3xl text-left hover:border-[#e63946] min-h-[80px] flex items-center gap-3"
+                      >
+                        <PokemonSprite pokemonId={pkmn.pokemonId} isShiny={pkmn.isShiny} style={{ width: '34px', height: '34px' }} />
+                        <div className="truncate min-w-0">
+                          <p className="font-black truncate">{pkmn.name} Lv.{pkmn.level}</p>
+                          <p className="text-[10px] text-white/40 truncate">IV {(Object.values(pkmn.ivs) as number[]).reduce((a: number, b: number) => a + b, 0)} · EV {(Object.values(pkmn.evs) as number[]).reduce((a: number, b: number) => a + b, 0)}/512</p>
+                        </div>
+                      </button>
+                    ))}
+                  </div>
+                </>
+              ) : (
+                <>
+                  {dojoSelected && (
+                    <div className="bg-[#0f0f1a] border border-white/10 rounded-3xl p-4">
+                      <div className="flex items-center gap-3 mb-3">
+                        <PokemonSprite pokemonId={dojoSelected.pokemonId} isShiny={dojoSelected.isShiny} style={{ width: '40px', height: '40px' }} />
+                        <div>
+                          <p className="font-black">{dojoSelected.name} Lv.{dojoSelected.level}</p>
+                          <p className="text-[10px] text-white/40">IV {(Object.values(dojoSelected.ivs) as number[]).reduce((a: number, b: number) => a + b, 0)} · EV {dojoCurrentEvTotal}/512</p>
+                        </div>
+                      </div>
+                      <div className="grid grid-cols-3 gap-2 text-[10px] text-white/50">
+                        {Object.entries(dojoSelected.ivs).map(([key, value]) => (
+                          <div key={key} className="bg-white/5 rounded-2xl p-2 text-center">
+                            <div className="font-black uppercase">{key}</div>
+                            <div>{value as number}</div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                  <div className="flex items-center gap-2">
+                    <button
+                      onClick={() => setDojoCategory('iv')}
+                      className={`flex-1 py-2 rounded-2xl font-black text-sm ${dojoCategory === 'iv' ? 'bg-[#e63946]' : 'bg-[#0f0f1a] text-white/60'}`}
+                    >
+                      IV
+                    </button>
+                    <button
+                      onClick={() => setDojoCategory('ev')}
+                      className={`flex-1 py-2 rounded-2xl font-black text-sm ${dojoCategory === 'ev' ? 'bg-[#e63946]' : 'bg-[#0f0f1a] text-white/60'}`}
+                    >
+                      EV
+                    </button>
+                  </div>
+                  <div className="grid grid-cols-3 gap-2">
+                    {(['hp','attack','defense','spAtk','spDef','speed'] as Array<keyof Stats>).map((stat) => (
+                      <button
+                        key={stat as string}
+                        onClick={() => setDojoTargetStat(stat)}
+                        className={`py-2 rounded-2xl text-xs font-black uppercase ${dojoTargetStat === stat ? 'bg-[#e63946] text-white' : 'bg-[#0f0f1a] text-white/50'}`}
+                      >
+                        {stat === 'hp' ? 'HP' : stat === 'attack' ? 'ATT' : stat === 'defense' ? 'DEF' : stat === 'spAtk' ? 'SP.ATK' : stat === 'spDef' ? 'SP.DEF' : 'VEL'}
+                      </button>
+                    ))}
+                  </div>
+                  {dojoCategory === 'ev' && (
+                    <div className="space-y-2">
+                      <div className="flex items-center justify-between text-[10px] text-white/40">
+                        <span>Punti EV</span>
+                        <span>Max disponibile {dojoMaxEvAdd}</span>
+                      </div>
+                      <input
+                        type="number"
+                        min={1}
+                        max={Math.max(1, dojoMaxEvAdd)}
+                        value={dojoEvAmount}
+                        onChange={(e) => setDojoEvAmount(Math.max(1, Number(e.target.value) || 1))}
+                        className="w-full bg-[#0f0f1a] border border-white/10 rounded-2xl px-4 py-3 text-sm"
+                      />
+                    </div>
+                  )}
+                  <div className="rounded-3xl border border-white/10 bg-[#11121b] p-4 text-sm">
+                    <p className="font-black text-white/80 mb-2">Costo</p>
+                    <p className="text-white/60 mb-1">
+                      {dojoCategory === 'iv'
+                        ? `Prossimo punto IV: ${dojoNextIvCost}¢`
+                        : `EV: ${dojoEvAmount * 500}¢`}
+                    </p>
+                    <p className="text-[10px] text-white/30">Usa monete per aumentare le statistiche del tuo Pokémon in modo permanente.</p>
+                  </div>
+                  <div className="flex gap-3">
+                    <button
+                      onClick={() => setDojoStage('select')}
+                      className="flex-1 py-3 rounded-2xl bg-white/10 text-white/70 font-black"
+                    >
+                      Indietro
+                    </button>
+                    <button
+                      onClick={() => {
+                        if (!dojoSelected) return;
+                        const amount = dojoCategory === 'iv' ? 1 : Math.min(dojoEvAmount, dojoMaxEvAdd);
+                        trainPokemon(dojoSelected.id, dojoCategory, dojoTargetStat, amount);
+                        setShowDojo(false);
+                      }}
+                      className="flex-1 py-3 rounded-2xl bg-[#e63946] font-black"
+                    >
+                      Conferma
+                    </button>
+                  </div>
+                </>
+              )}
             </motion.div>
           </motion.div>
         )}

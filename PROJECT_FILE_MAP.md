@@ -79,6 +79,7 @@ pokedesk/
 │   │   │   ├── StarterDraft.tsx
 │   │   │   ├── StartScreen.tsx
 │   │   │   ├── TeamScreen.tsx
+│   │   │   ├── TradeEventScreen.tsx
 │   │   │   └── TradeScreen.tsx
 │   │   └── ui/
 │   │       ├── BottomNav.tsx
@@ -180,6 +181,7 @@ pokedesk/
 - `StarterDraft.tsx`: selezione starter iniziale con draft e apertura della partita.
 - `StartScreen.tsx`: schermata iniziale del gioco.
 - `TeamScreen.tsx`: gestione del team attivo, composizione e scambi.
+- `TradeEventScreen.tsx`: evento di scambio speciale con offerte NPC e selezione da team/box.
 - `TradeScreen.tsx`: sistema di scambio casuale e scelte Prodigio.
 
 ### Cartella `src/components/ui/`

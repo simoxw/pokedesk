@@ -12,6 +12,7 @@ export type ScreenName =
   | 'SHOP_SCREEN'
   | 'PROFILE_SCREEN'
   | 'TRADE_SCREEN'
+  | 'TRADE_EVENT_SCREEN'
   | 'OPTIONS_SCREEN'
   | 'FRIEND_BATTLE_SCREEN'
   | 'LEAGUE_SELECT_SCREEN'
@@ -191,6 +192,7 @@ export interface GameState {
   battleWinStreak: number;
   battleTower: BattleTowerState;
   teamPresets: Record<string, TeamPreset>;
+  dojoTrainingCount: Record<string, number>;
 }
 
 export interface PokemonSpecies {

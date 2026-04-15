@@ -96,4 +96,5 @@ export interface GameStore extends GameState {
   advanceBattleTowerFloor: () => void;
   abandonBattleTower: () => void;
   claimBattleTowerReward: (floor: number) => void;
+  trainPokemon: (pokemonId: string, category: 'iv' | 'ev', stat: keyof Pokemon['ivs'], amount?: number) => void;
 }

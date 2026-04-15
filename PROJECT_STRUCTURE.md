@@ -105,6 +105,7 @@ pokedesk/
 - **OptionsScreen.tsx**: Impostazioni audio e notifiche.
 - **StartScreen.tsx / StarterDraft.tsx**: Inizializzazione profilo e scelta starter.
 - **TradeScreen.tsx**: Sistema di Scambio Prodigioso casuale.
+- **TradeEventScreen.tsx**: Evento di scambio speciale con offerte NPC e selezione Pokémon da team/box.
 - **FriendBattleScreen.tsx**: Sfide simulate contro team di amici.
 
 ### UI Components (src/components/ui/)
@@ -138,6 +139,10 @@ pokedesk/
   - tab dedicata in `HubScreen` con claim indipendente e messaggi guidati quando il team non è valido.
   - integrazione progresso su eventi gameplay (vittoria, cattura, evoluzione, condizioni no-faint/solo).
   - pool giornaliero missioni esteso con estrazione random senza duplicati e slot skill per categorie avanzate.
+
+- **Dojo e Trade Event**
+  - aggiunta funzione Dojo in `HubScreen` per ordinare, filtrare e allenare Pokémon con costi IV/EV.
+  - aggiunta `TradeEventScreen.tsx`, evento con offerte NPC e selezione da team/box.
 
 - **Bilanciamento e Combat**
   - fix danno immunità in `BattleEngine`: mosse `0x` non infliggono più 1 HP.

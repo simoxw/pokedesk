@@ -14,6 +14,7 @@ export type PokemonSlice = Pick<
   | 'pokedex'
   | 'pokedexTypes'
   | 'stats'
+  | 'dojoTrainingCount'
   | 'addPokemon'
   | 'updatePokemon'
   | 'releasePokemon'
@@ -24,11 +25,13 @@ export type PokemonSlice = Pick<
   | 'updatePokedex'
   | 'incrementStat'
   | 'savePokedexTypes'
+  | 'trainPokemon'
 >;
 
 export const createPokemonSlice: StateCreator<GameStore, [], [], PokemonSlice> = (set, get) => ({
   pokedex: {},
   pokedexTypes: {},
+  dojoTrainingCount: {},
   stats: { totalCaught: 0, totalBattles: 0, shiniesFound: 0, pokemonReleased: 0 },
   addPokemon: (pokemon) =>
     set((state) => {
@@ -184,6 +187,50 @@ export const createPokemonSlice: StateCreator<GameStore, [], [], PokemonSlice> =
       team: state.team.map((p) => (p.id === id ? { ...p, ...updates } : p)),
       box: state.box.map((p) => (p.id === id ? { ...p, ...updates } : p)),
     })),
+  trainPokemon: (pokemonId: string, category: 'iv' | 'ev', stat: keyof Pokemon['ivs'], amount: number = 1) =>
+    set((state) => {
+      const pokemon = state.team.find((p) => p.id === pokemonId) ?? state.box.find((p) => p.id === pokemonId);
+      if (!pokemon) return {};
+
+      if (category === 'iv') {
+        const currentIv = pokemon.ivs[stat];
+        if (currentIv >= 31) return {};
+        const trainingCount = state.dojoTrainingCount[pokemonId] ?? 0;
+        const cost = 1000 * Math.pow(2, trainingCount);
+        if (state.coins < cost) return {};
+        const newIvs = { ...pokemon.ivs, [stat]: Math.min(31, currentIv + 1) };
+        const newStats = BattleEngine.calculateStats(pokemon.level, pokemon.baseStats, newIvs, pokemon.evs, pokemon.nature);
+        const hpDiff = newStats.hp - pokemon.stats.hp;
+        const newCurrentHp = Math.min(newStats.hp, Math.max(0, pokemon.currentHp + hpDiff));
+        const updatedPokemon = { ...pokemon, ivs: newIvs, stats: newStats, currentHp: newCurrentHp };
+        return {
+          team: state.team.map((p) => (p.id === pokemonId ? updatedPokemon : p)),
+          box: state.box.map((p) => (p.id === pokemonId ? updatedPokemon : p)),
+          coins: state.coins - cost,
+          dojoTrainingCount: { ...state.dojoTrainingCount, [pokemonId]: trainingCount + 1 },
+        };
+      }
+
+      if (category === 'ev') {
+        const totalEvs = Object.values(pokemon.evs).reduce((sum, value) => sum + value, 0);
+        const addAmount = Math.max(1, Math.min(Math.floor(amount), 512 - totalEvs));
+        if (addAmount <= 0) return {};
+        const cost = 500 * addAmount;
+        if (state.coins < cost) return {};
+        const newEvs = { ...pokemon.evs, [stat]: pokemon.evs[stat] + addAmount };
+        const newStats = BattleEngine.calculateStats(pokemon.level, pokemon.baseStats, pokemon.ivs, newEvs, pokemon.nature);
+        const hpDiff = newStats.hp - pokemon.stats.hp;
+        const newCurrentHp = Math.min(newStats.hp, Math.max(0, pokemon.currentHp + hpDiff));
+        const updatedPokemon = { ...pokemon, evs: newEvs, stats: newStats, currentHp: newCurrentHp };
+        return {
+          team: state.team.map((p) => (p.id === pokemonId ? updatedPokemon : p)),
+          box: state.box.map((p) => (p.id === pokemonId ? updatedPokemon : p)),
+          coins: state.coins - cost,
+        };
+      }
+
+      return {};
+    }),
   releasePokemon: (id) =>
     set((state) => {
       const pkmn = [...state.team, ...state.box].find((p) => p.id === id);
