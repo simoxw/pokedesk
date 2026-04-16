@@ -137,6 +137,21 @@ export const useStore = create<GameStore>()(
         if (state.activePresetCategory === undefined) state.activePresetCategory = null;
         if (state.genChallenges === undefined) state.genChallenges = null;
         
+        // Fix retroactive: clamp EVs to max 510 per stat group (total 510)
+        const fixEvRetroactive = (p: any) => {
+          const totalEvs = Object.values(p.evs || {}).reduce((sum: number, val: any) => sum + (val || 0), 0);
+          if (totalEvs > 510) {
+            const scale = 510 / totalEvs;
+            const newEvs = Object.fromEntries(
+              Object.entries(p.evs || {}).map(([stat, value]: [string, any]) => [stat, Math.floor((value || 0) * scale)])
+            );
+            return { ...p, evs: newEvs };
+          }
+          return p;
+        };
+        state.team = state.team.map(fixEvRetroactive);
+        state.box = state.box.map(fixEvRetroactive);
+        
         // Auto-unlock exp_share and exp_boost if 40+ medals unlocked
         const bossesWon = (state.medals || []).filter((m: any) => m.isUnlocked).length;
         if (bossesWon >= 40) {

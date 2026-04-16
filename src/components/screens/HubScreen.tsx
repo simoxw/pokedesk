@@ -200,9 +200,9 @@ export default function HubScreen() {
     });
   })();
 
-  const dojoNextIvCost = dojoSelected ? 1000 * Math.pow(2, dojoTrainingCount[dojoSelected.id] ?? 0) : 1000;
+  const dojoNextIvCost = dojoSelected ? 1000 + 2000 * (dojoTrainingCount[dojoSelected.id] ?? 0) : 1000;
   const dojoCurrentEvTotal = dojoSelected ? (Object.values(dojoSelected.evs) as number[]).reduce((a: number, b: number) => a + b, 0) : 0;
-  const dojoMaxEvAdd = Math.max(0, 512 - dojoCurrentEvTotal);
+  const dojoMaxEvAdd = Math.max(0, 510 - dojoCurrentEvTotal);
 
   return (
     <div className="h-full relative overflow-hidden overflow-x-hidden flex flex-col items-center justify-evenly py-3 px-6">
@@ -823,7 +823,7 @@ export default function HubScreen() {
                         <PokemonSprite pokemonId={pkmn.pokemonId} isShiny={pkmn.isShiny} style={{ width: '34px', height: '34px' }} />
                         <div className="truncate min-w-0">
                           <p className="font-black truncate">{pkmn.name} Lv.{pkmn.level}</p>
-                          <p className="text-[10px] text-white/40 truncate">IV {(Object.values(pkmn.ivs) as number[]).reduce((a: number, b: number) => a + b, 0)} · EV {(Object.values(pkmn.evs) as number[]).reduce((a: number, b: number) => a + b, 0)}/512</p>
+                          <p className="text-[10px] text-white/40 truncate">IV {(Object.values(pkmn.ivs) as number[]).reduce((a: number, b: number) => a + b, 0)} · EV {(Object.values(pkmn.evs) as number[]).reduce((a: number, b: number) => a + b, 0)}/510</p>
                         </div>
                       </button>
                     ))}
@@ -837,7 +837,7 @@ export default function HubScreen() {
                         <PokemonSprite pokemonId={dojoSelected.pokemonId} isShiny={dojoSelected.isShiny} style={{ width: '40px', height: '40px' }} />
                         <div>
                           <p className="font-black">{dojoSelected.name} Lv.{dojoSelected.level}</p>
-                          <p className="text-[10px] text-white/40">IV {(Object.values(dojoSelected.ivs) as number[]).reduce((a: number, b: number) => a + b, 0)} · EV {dojoCurrentEvTotal}/512</p>
+                          <p className="text-[10px] text-white/40">IV {(Object.values(dojoSelected.ivs) as number[]).reduce((a: number, b: number) => a + b, 0)} · EV {dojoCurrentEvTotal}/510</p>
                         </div>
                       </div>
                       <div className="grid grid-cols-3 gap-2 text-[10px] text-white/50">

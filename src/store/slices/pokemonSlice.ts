@@ -196,7 +196,7 @@ export const createPokemonSlice: StateCreator<GameStore, [], [], PokemonSlice> =
         const currentIv = pokemon.ivs[stat];
         if (currentIv >= 31) return {};
         const trainingCount = state.dojoTrainingCount[pokemonId] ?? 0;
-        const cost = 1000 * Math.pow(2, trainingCount);
+        const cost = 1000 + 2000 * trainingCount;
         if (state.coins < cost) return {};
         const newIvs = { ...pokemon.ivs, [stat]: Math.min(31, currentIv + 1) };
         const newStats = BattleEngine.calculateStats(pokemon.level, pokemon.baseStats, newIvs, pokemon.evs, pokemon.nature);
@@ -213,7 +213,7 @@ export const createPokemonSlice: StateCreator<GameStore, [], [], PokemonSlice> =
 
       if (category === 'ev') {
         const totalEvs = Object.values(pokemon.evs).reduce((sum, value) => sum + value, 0);
-        const addAmount = Math.max(1, Math.min(Math.floor(amount), 512 - totalEvs));
+        const addAmount = Math.max(1, Math.min(Math.floor(amount), 510 - totalEvs));
         if (addAmount <= 0) return {};
         const cost = 500 * addAmount;
         if (state.coins < cost) return {};
