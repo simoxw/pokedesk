@@ -1,12 +1,24 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { useStore } from '../../store';
 import { api } from '../../api';
 import { motion, AnimatePresence } from 'motion/react';
 import { ArrowLeft, Package, Heart, Zap, Star, Loader, X } from 'lucide-react'; 
 
 export default function BagScreen() {
-  const { inventory, setScreen, useItem, addItem, addCoins, team, box, updatePokemon, expShareActive, toggleExpShare, expBoostActive, toggleExpBoost, useRareCandy, useSpeciesCandy } = useStore();
+  const { inventory, medals, setScreen, useItem, addItem, addCoins, team, box, updatePokemon, expShareActive, toggleExpShare, expBoostActive, toggleExpBoost, useRareCandy, useSpeciesCandy } = useStore();
   const [tab, setTab] = useState<'balls' | 'heal' | 'candy'>('balls');
+
+  useEffect(() => {
+    const bossesWon = medals.filter((m: any) => m.isUnlocked).length;
+    if (bossesWon >= 40) {
+      if ((inventory['exp_share'] || 0) === 0) {
+        addItem('exp_share', 1);
+      }
+      if ((inventory['exp_boost'] || 0) === 0) {
+        addItem('exp_boost', 1);
+      }
+    }
+  }, [medals, inventory, addItem]);
 
   const SELL_PRICES: Record<string, number> = {
     pokeball: 100,

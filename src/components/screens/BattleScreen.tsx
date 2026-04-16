@@ -616,6 +616,7 @@ export default function BattleScreen() {
     }
 
     recordBattleWin(); 
+    award40MedalExpItems();
     reportGenBattleResult({ win: true, noFaint: team.every((p) => p.currentHp > 0), solo: team.length === 1 });
     // Achievement: Invincibile 
     if (!playerTookDamage) { 
@@ -634,9 +635,6 @@ export default function BattleScreen() {
       addItem('superpotion', 2); 
       if (Math.random() < 0.10) addItem('rare_candy', 1); 
       if (Math.random() < 0.10) addItem('ultraball', 1); 
-      // Condividi ESP: premio unico per aver completato tutte le 40 medaglie 
-      const bossesWon = useStore.getState().medals.filter((m: any) => m.isUnlocked).length; 
-      award40MedalExpItems();
       addLog('🎁 Ricompense Capopalestra ricevute!'); 
     } else { 
       addCoins(Math.floor(200 + (defeatedEnemy?.level ?? 5) * 2)); 
