@@ -46,7 +46,7 @@ function createNpcOffer(fromPokemon: any) {
 }
 
 export default function TradeEventScreen() {
-  const { team, box, coins, favorites, setScreen, addPokemon, removePokemon, updatePokedex } = useStore();
+  const { team, box, coins, favorites, setScreen, addPokemon, removePokemon, updatePokedex, addCoins } = useStore();
   const [selectedSource, setSelectedSource] = useState<'team' | 'box'>('team');
   const [selectedPokemonId, setSelectedPokemonId] = useState<string | null>(null);
   const [offerSeed, setOfferSeed] = useState(Math.random());
@@ -89,13 +89,14 @@ export default function TradeEventScreen() {
       alert('Non hai abbastanza monete per lo scambio.');
       return;
     }
+    addCoins(-tradeCost);
     removePokemon(selectedPokemon.id);
     addPokemon({ ...npcOffer, id: `npc-${Math.random().toString(36).slice(2, 9)}` });
     updatePokedex(npcOffer.pokemonId, 'caught', npcOffer.types?.[0]);
     setSelectedPokemonId(null);
     setOfferSeed(Math.random());
     alert(`Scambio completato! Hai ricevuto ${npcOffer.name}.`);
-  }, [selectedPokemon, npcOffer, coins, removePokemon, addPokemon, updatePokedex]);
+  }, [selectedPokemon, npcOffer, coins, removePokemon, addPokemon, updatePokedex, addCoins]);
 
   return (
     <div className="h-full flex flex-col bg-[#0f0f1a] overflow-hidden">
