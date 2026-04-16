@@ -136,6 +136,17 @@ export const useStore = create<GameStore>()(
         if (!state.dojoTrainingCount) state.dojoTrainingCount = {};
         if (state.activePresetCategory === undefined) state.activePresetCategory = null;
         if (state.genChallenges === undefined) state.genChallenges = null;
+        
+        // Auto-unlock exp_share and exp_boost if 40+ medals unlocked
+        const bossesWon = (state.medals || []).filter((m: any) => m.isUnlocked).length;
+        if (bossesWon >= 40) {
+          if ((state.inventory['exp_share'] || 0) === 0) {
+            state.inventory = { ...state.inventory, exp_share: 1 };
+          }
+          if ((state.inventory['exp_boost'] || 0) === 0) {
+            state.inventory = { ...state.inventory, exp_boost: 1 };
+          }
+        }
       },
     }
   )
