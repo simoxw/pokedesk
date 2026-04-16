@@ -367,6 +367,20 @@ export default function BattleScreen() {
     initBattle();
   }, []);
 
+  const award40MedalExpItems = () => {
+    const bossesWon = useStore.getState().medals.filter((m: any) => m.isUnlocked).length;
+    if (bossesWon >= 40) {
+      if ((useStore.getState().inventory['exp_share'] || 0) === 0) {
+        addItem('exp_share', 1);
+        addLog('🏆 Hai completato tutte le palestre! Ottieni il Condividi ESP!');
+      }
+      if ((useStore.getState().inventory['exp_boost'] || 0) === 0) {
+        addItem('exp_boost', 1);
+        addLog('🏆 Hai completato tutte le palestre! Ottieni il Potenziamento ESP!');
+      }
+    }
+  };
+
   const processEnemyDefeat = async (defeatedEnemy: any) => {
     const currentPkm = team[activeIdx];
     const baseExp = defeatedEnemy.base_experience || 100;
@@ -507,6 +521,7 @@ export default function BattleScreen() {
       setEnemyStages({ attack: 0, defense: 0, spAtk: 0, spDef: 0, speed: 0, accuracy: 0, evasion: 0 });
       setEnemyFlinch(false);
       setPlayerFlinch(false);
+      award40MedalExpItems();
       clearLeagueBattleTeam();
       setIsFinished(true);
       setIsAnimating(false);
@@ -525,6 +540,7 @@ export default function BattleScreen() {
       setEnemyStages({ attack: 0, defense: 0, spAtk: 0, spDef: 0, speed: 0, accuracy: 0, evasion: 0 });
       setEnemyFlinch(false);
       setPlayerFlinch(false);
+      award40MedalExpItems();
       clearMasterBattleTeam();
       setMasterBattleResult('win');
       setIsFinished(true);
@@ -555,12 +571,16 @@ export default function BattleScreen() {
 
       advanceBattleTowerFloor();
       const newFloor = useStore.getState().battleTower.currentFloor;
+      const completedFloor = newFloor - 1; // currentFloor is now the next floor to fight
+      const towerReward = 500 + Math.max(0, completedFloor - 1) * 100;
+      addCoins(towerReward);
+      addLog(`🎁 +${towerReward} monete per aver superato il Piano ${completedFloor}!`);
       
-      // Check milestone
+      // Check milestone for the floor that was just completed
       const milestones = [7, 14, 21, 25, 35, 49, 77];
-      if (milestones.includes(newFloor - 1)) {
-        claimBattleTowerReward(newFloor - 1);
-        const milestone = TOWER_MILESTONES[newFloor - 1];
+      if (milestones.includes(completedFloor)) {
+        claimBattleTowerReward(completedFloor);
+        const milestone = TOWER_MILESTONES[completedFloor];
         if (milestone) addLog(`🎁 ${milestone.label} completato!`);
       }
       
@@ -616,16 +636,7 @@ export default function BattleScreen() {
       if (Math.random() < 0.10) addItem('ultraball', 1); 
       // Condividi ESP: premio unico per aver completato tutte le 40 medaglie 
       const bossesWon = useStore.getState().medals.filter((m: any) => m.isUnlocked).length; 
-      if (bossesWon === 40) {
-        if ((useStore.getState().inventory['exp_share'] || 0) === 0) {
-          addItem('exp_share', 1);
-          addLog('🏆 Hai completato tutte le palestre! Ottieni il Condividi ESP!');
-        }
-        if ((useStore.getState().inventory['exp_boost'] || 0) === 0) {
-          addItem('exp_boost', 1);
-          addLog('🏆 Hai completato tutte le palestre! Ottieni il Potenziamento ESP!');
-        }
-      }
+      award40MedalExpItems();
       addLog('🎁 Ricompense Capopalestra ricevute!'); 
     } else { 
       addCoins(Math.floor(200 + (defeatedEnemy?.level ?? 5) * 2)); 
