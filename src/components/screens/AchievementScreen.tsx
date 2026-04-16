@@ -363,7 +363,7 @@ export default function AchievementScreen() {
       <div className="max-w-4xl mx-auto mb-8">
         <div className="flex items-center justify-between mb-6">
           <button
-            onClick={() => setScreen('HUB_SCREEN')}
+            onClick={() => setScreen('START_SCREEN')}
             className="flex items-center gap-2 text-white/60 hover:text-white transition-colors"
           >
             <ArrowLeft className="w-6 h-6" />

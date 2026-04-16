@@ -55,6 +55,7 @@ export default function TradeEventScreen() {
   const [boxLevelMin, setBoxLevelMin] = useState(0);
   const [boxLevelMax, setBoxLevelMax] = useState(100);
   const [boxFavoritesOnly, setBoxFavoritesOnly] = useState(false);
+  const [boxSortBy, setBoxSortBy] = useState<'none' | 'iv_asc'>('none');
   const tradeCost = 5000;
 
   const allOwned = useMemo(() => [...team, ...box], [team, box]);
@@ -70,14 +71,18 @@ export default function TradeEventScreen() {
   }, [allOwned, offerSeed]);
 
   const filteredBox = useMemo(() => {
-    return box.filter((pkmn) => {
+    const filtered = box.filter((pkmn) => {
       if (boxFavoritesOnly && !favorites.includes(pkmn.id)) return false;
       const totalIv = sumIvs(pkmn.ivs);
       if (totalIv < boxIvMin || totalIv > boxIvMax) return false;
       if (pkmn.level < boxLevelMin || pkmn.level > boxLevelMax) return false;
       return true;
     });
-  }, [box, boxFavoritesOnly, boxIvMin, boxIvMax, boxLevelMin, boxLevelMax, favorites]);
+    if (boxSortBy === 'iv_asc') {
+      return [...filtered].sort((a, b) => sumIvs(a.ivs) - sumIvs(b.ivs));
+    }
+    return filtered;
+  }, [box, boxFavoritesOnly, boxIvMin, boxIvMax, boxLevelMin, boxLevelMax, favorites, boxSortBy]);
 
   const availableList = selectedSource === 'team' ? team : filteredBox;
 
@@ -238,13 +243,22 @@ export default function TradeEventScreen() {
                   </div>
                 </div>
               </div>
-              <button
-                type="button"
-                onClick={() => setBoxFavoritesOnly((current) => !current)}
-                className={`w-full py-3 rounded-2xl text-sm font-black ${boxFavoritesOnly ? 'bg-yellow-500 text-black' : 'bg-[#1a1a2e] text-white/60'}`}
-              >
-                {boxFavoritesOnly ? 'Solo preferiti ★' : 'Mostra preferiti'}
-              </button>
+              <div className="grid grid-cols-2 gap-3">
+                <button
+                  type="button"
+                  onClick={() => setBoxFavoritesOnly((current) => !current)}
+                  className={`w-full py-3 rounded-2xl text-sm font-black ${boxFavoritesOnly ? 'bg-yellow-500 text-black' : 'bg-[#1a1a2e] text-white/60'}`}
+                >
+                  {boxFavoritesOnly ? 'Solo preferiti ★' : 'Preferiti'}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setBoxSortBy((current: 'none' | 'iv_asc') => (current === 'iv_asc' ? 'none' : 'iv_asc'))}
+                  className={`w-full py-3 rounded-2xl text-sm font-black ${boxSortBy === 'iv_asc' ? 'bg-[#e63946] text-white' : 'bg-[#1a1a2e] text-white/60'}`}
+                >
+                  IV ↑
+                </button>
+              </div>
             </div>
           )}
           <div className="grid grid-cols-2 gap-3">

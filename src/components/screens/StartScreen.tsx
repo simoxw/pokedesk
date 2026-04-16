@@ -6,6 +6,7 @@ import { Play, ShoppingBag, User, ArrowLeftRight, Settings, Sword, Trophy } from
 export default function StartScreen() {
   const { setScreen, isFirstRun, leagueProgress } = useStore();
   const towerUnlocked = leagueProgress.completedRuns >= 1;
+  const tradeEventUnlocked = leagueProgress.completedRuns >= 1;
 
   return (
     <div className="h-full flex flex-col items-center justify-center p-6 bg-gradient-to-b from-[#0f0f1a] to-[#1a1a2e]">
@@ -63,11 +64,22 @@ export default function StartScreen() {
           label="SCAMBIA" 
           onClick={() => setScreen('TRADE_SCREEN')}
         />
-        <MenuButton 
-          icon={<span className="text-lg">🎯</span>} 
-          label="TRADE EVENT" 
-          onClick={() => setScreen('TRADE_EVENT_SCREEN')}
-        />
+        <div className="relative">
+          <MenuButton 
+            icon={<span className="text-lg">🎯</span>} 
+            label="TRADE EVENT" 
+            onClick={() => setScreen('TRADE_EVENT_SCREEN')}
+            primary={false}
+            disabled={!tradeEventUnlocked}
+          />
+          {!tradeEventUnlocked && (
+            <div className="absolute inset-0 flex items-center justify-end pr-4 pointer-events-none">
+              <span className="text-[10px] text-white/30 font-bold">
+                🔒 Completa la Lega
+              </span>
+            </div>
+          )}
+        </div>
         <MenuButton 
           icon={<Sword size={20} />} 
           label="SFIDA AMICI" 
