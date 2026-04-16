@@ -161,6 +161,7 @@ export interface GameState {
   stats: { totalCaught: number; totalBattles: number; shiniesFound: number; pokemonReleased: number };
   settings: { audio: boolean; notifications: boolean };
   expShareActive: boolean;
+  expBoostActive: boolean;
   pendingMedalUnlock: Medal | null;
   pendingEvolution: { pokemonId: string; newPokemonId: number; newName: string; newTypes?: PokemonType[]; newBaseStats?: Stats } | null;
   pendingNewMoveQueue: { pokemonId: string; move: Move }[];

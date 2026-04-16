@@ -69,6 +69,7 @@ export interface GameStore extends GameState {
   recordBattleWin: () => void;
   resetBattleStreak: () => void;
   toggleExpShare: () => void;
+  toggleExpBoost: () => void;
   checkDailyMissions: () => void;
   claimMission: (id: string) => void;
   claimGenMission: (id: string) => void;

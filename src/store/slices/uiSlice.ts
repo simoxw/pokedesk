@@ -26,6 +26,8 @@ export type UiSlice = Pick<
   | 'dismissMissionToast'
   | 'updateSettings'
   | 'toggleExpShare'
+  | 'expBoostActive'
+  | 'toggleExpBoost'
   | 'setFriendBattleTeam'
   | 'clearFriendBattleTeam'
   | 'setLeagueBattleTeam'
@@ -45,6 +47,7 @@ export const createUiSlice: StateCreator<GameStore, [], [], UiSlice> = (set, get
   isFirstRun: true,
   settings: { audio: true, notifications: true },
   expShareActive: false,
+  expBoostActive: false,
   friendBattleTeam: null,
   leagueBattleTeam: null,
   leagueBattleResult: null,
@@ -116,6 +119,7 @@ export const createUiSlice: StateCreator<GameStore, [], [], UiSlice> = (set, get
   dismissMissionToast: () => set({ pendingMissionToast: null }),
   updateSettings: (updates) => set((state) => ({ settings: { ...state.settings, ...updates } })),
   toggleExpShare: () => set((state) => ({ expShareActive: !state.expShareActive })),
+  toggleExpBoost: () => set((state) => ({ expBoostActive: !state.expBoostActive })),
   setFriendBattleTeam: (team) => set({ friendBattleTeam: team }),
   clearFriendBattleTeam: () => set({ friendBattleTeam: null }),
   setLeagueBattleTeam: (team) => set({ leagueBattleTeam: team }),

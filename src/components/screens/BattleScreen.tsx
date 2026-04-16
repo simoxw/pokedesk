@@ -13,7 +13,7 @@ import confetti from 'canvas-confetti';
 import { generateRandomEVs, getTowerFloorConfig, TOWER_MILESTONES } from '../../services/battleTowerService';
 
 export default function BattleScreen() {
-  const { team, setScreen, incrementStat, addCoins, addItem, updatePokemon, inventory, useItem, gainExp, currentBattlePath, recordBattleWin, medals, expShareActive, friendBattleTeam, clearFriendBattleTeam, leagueBattleTeam, clearLeagueBattleTeam, setLeagueBattleResult, masterBattleTeam, clearMasterBattleTeam, setMasterBattleResult, battleTower, startBattleTower, advanceBattleTowerFloor, abandonBattleTower, claimBattleTowerReward, reportGenBattleResult } = useStore();
+  const { team, setScreen, incrementStat, addCoins, addItem, updatePokemon, inventory, useItem, gainExp, currentBattlePath, recordBattleWin, medals, expShareActive, expBoostActive, friendBattleTeam, clearFriendBattleTeam, leagueBattleTeam, clearLeagueBattleTeam, setLeagueBattleResult, masterBattleTeam, clearMasterBattleTeam, setMasterBattleResult, battleTower, startBattleTower, advanceBattleTowerFloor, abandonBattleTower, claimBattleTowerReward, reportGenBattleResult } = useStore();
   const isFriendBattle = !!friendBattleTeam;
   const isTowerBattle = !!battleTower?.isActive;
   const towerFloor = battleTower?.currentFloor ?? 0;
@@ -369,10 +369,11 @@ export default function BattleScreen() {
 
   const processEnemyDefeat = async (defeatedEnemy: any) => {
     const currentPkm = team[activeIdx];
-    const baseExp = defeatedEnemy.base_experience || 100; 
-    const exp = BattleEngine.calculateExp(baseExp, defeatedEnemy.level); 
-    addLog(`${defeatedEnemy.name} è esausto! ${currentPkm.name} guadagna ${exp} ESP!`); 
-    const levelBefore = currentPkm.level; 
+    const baseExp = defeatedEnemy.base_experience || 100;
+    const boostedBaseExp = expBoostActive ? baseExp * 2 : baseExp;
+    const exp = BattleEngine.calculateExp(boostedBaseExp, defeatedEnemy.level);
+    addLog(`${defeatedEnemy.name} è esausto! ${currentPkm.name} guadagna ${exp} ESP!`);
+    const levelBefore = currentPkm.level;
     gainExp(currentPkm.id, exp); 
     // EV gain per il Pokémon attivo 
     const freshActive = useStore.getState().team.find((p: any) => p.id === currentPkm.id) ?? currentPkm; 
@@ -615,10 +616,16 @@ export default function BattleScreen() {
       if (Math.random() < 0.10) addItem('ultraball', 1); 
       // Condividi ESP: premio unico per aver completato tutte le 40 medaglie 
       const bossesWon = useStore.getState().medals.filter((m: any) => m.isUnlocked).length; 
-      if (bossesWon === 40 && (useStore.getState().inventory['exp_share'] || 0) === 0) { 
-        addItem('exp_share', 1); 
-        addLog('🏆 Hai completato tutte le palestre! Ottieni il Condividi ESP!'); 
-      } 
+      if (bossesWon === 40) {
+        if ((useStore.getState().inventory['exp_share'] || 0) === 0) {
+          addItem('exp_share', 1);
+          addLog('🏆 Hai completato tutte le palestre! Ottieni il Condividi ESP!');
+        }
+        if ((useStore.getState().inventory['exp_boost'] || 0) === 0) {
+          addItem('exp_boost', 1);
+          addLog('🏆 Hai completato tutte le palestre! Ottieni il Potenziamento ESP!');
+        }
+      }
       addLog('🎁 Ricompense Capopalestra ricevute!'); 
     } else { 
       addCoins(Math.floor(200 + (defeatedEnemy?.level ?? 5) * 2)); 

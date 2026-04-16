@@ -911,7 +911,11 @@ export default function HubScreen() {
                       onClick={() => {
                         if (!dojoSelected) return;
                         const amount = dojoCategory === 'iv' ? 1 : Math.min(dojoEvAmount, dojoMaxEvAdd);
+                        if (dojoCategory === 'ev' && amount <= 0) return;
+                        if (dojoCategory === 'iv' && dojoSelected.ivs[dojoTargetStat] >= 31) return;
                         trainPokemon(dojoSelected.id, dojoCategory, dojoTargetStat, amount);
+                        setDojoStage('select');
+                        setDojoSelected(null);
                       }}
                       className="flex-1 py-3 rounded-2xl bg-[#e63946] font-black"
                     >

@@ -5,7 +5,7 @@ import { motion, AnimatePresence } from 'motion/react';
 import { ArrowLeft, Package, Heart, Zap, Star, Loader, X } from 'lucide-react'; 
 
 export default function BagScreen() {
-  const { inventory, setScreen, useItem, addItem, addCoins, team, box, updatePokemon, expShareActive, toggleExpShare, useRareCandy, useSpeciesCandy } = useStore();
+  const { inventory, setScreen, useItem, addItem, addCoins, team, box, updatePokemon, expShareActive, toggleExpShare, expBoostActive, toggleExpBoost, useRareCandy, useSpeciesCandy } = useStore();
   const [tab, setTab] = useState<'balls' | 'heal' | 'candy'>('balls');
 
   const SELL_PRICES: Record<string, number> = {
@@ -39,6 +39,7 @@ export default function BagScreen() {
     ],
     candy: [
         { id: 'exp_share', name: 'Condividi ESP', icon: '📡', description: expShareActive ? '✅ Attivo — tutta la squadra riceve ESP' : '❌ Disattivo — solo il Pokémon attivo', isToggle: true }, 
+        { id: 'exp_boost', name: 'Potenziamento ESP', icon: '⚡', description: expBoostActive ? '✅ Attivo — ESP bonus +100%' : '❌ Disattivo — ESP normale', isToggle: true },
         { id: 'tm', name: 'MT Casuale', icon: '💿', description: 'Insegna una mossa MT' }, 
         { id: 'heart_scale', name: 'Squama Cuore', icon: '❤️', description: 'Insegna una mossa potente o rara' },
         { id: 'rare_candy', name: 'Caramella Rara', icon: '🍬' },
@@ -57,7 +58,7 @@ export default function BagScreen() {
           return acc; 
         }, []), 
       ]
-  }), [inventory, team, box, expShareActive]);
+  }), [inventory, team, box, expShareActive, expBoostActive]);
 
   return (
     <div className="h-full flex flex-col p-6 bg-[#0f0f1a]">
@@ -107,10 +108,17 @@ export default function BagScreen() {
                 )}
                 {tab !== 'balls' && (
                   <button 
-                    className={`px-4 py-2 rounded-xl text-xs font-bold ${ (item as any).isToggle ? (expShareActive ? 'bg-green-500' : 'bg-slate-600') : 'bg-[#e63946]' }`} 
-                    onClick={() => (item as any).isToggle ? toggleExpShare() : setPendingItem(item)} 
+                    className={`px-4 py-2 rounded-xl text-xs font-bold ${ (item as any).isToggle ? (item.id === 'exp_share' ? (expShareActive ? 'bg-green-500' : 'bg-slate-600') : item.id === 'exp_boost' ? (expBoostActive ? 'bg-green-500' : 'bg-slate-600') : 'bg-slate-600') : 'bg-[#e63946]' }`} 
+                    onClick={() => {
+                      if ((item as any).isToggle) {
+                        if (item.id === 'exp_share') toggleExpShare();
+                        else if (item.id === 'exp_boost') toggleExpBoost();
+                      } else {
+                        setPendingItem(item);
+                      }
+                    }} 
                   > 
-                    {(item as any).isToggle ? (expShareActive ? 'ON' : 'OFF') : 'USA'} 
+                    {(item as any).isToggle ? (item.id === 'exp_share' ? (expShareActive ? 'ON' : 'OFF') : item.id === 'exp_boost' ? (expBoostActive ? 'ON' : 'OFF') : 'OFF') : 'USA'} 
                   </button> 
                 )}
               </div>
@@ -240,6 +248,12 @@ export default function BagScreen() {
                   // Gestione Condividi ESP (toggle, non si usa su pokemon) 
                   if (pendingItem.id === 'exp_share') { 
                     toggleExpShare(); 
+                    setPendingItem(null); 
+                    return; 
+                  } 
+                  // Gestione Potenziamento ESP (toggle, non si usa su pokemon) 
+                  if (pendingItem.id === 'exp_boost') { 
+                    toggleExpBoost(); 
                     setPendingItem(null); 
                     return; 
                   } 
