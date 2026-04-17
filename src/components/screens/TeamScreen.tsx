@@ -4,27 +4,7 @@ import { useStore } from '../../store';
 import PokemonDetailsModal from '../ui/PokemonDetailsModal';
 import TypeBadge from '../ui/TypeBadge';
 import PokemonSprite from '../ui/PokemonSprite';
-
-function getExpForLevel(growthRate: string, level: number): number { 
-  if (level >= 100) return 0; 
-  switch (growthRate) { 
-    case 'slow': return Math.floor(5 * level ** 3 / 4); 
-    case 'medium-slow': return Math.max(0, Math.floor(6/5 * level**3 - 15*level**2 + 100*level - 140)); 
-    case 'fast': return Math.floor(4 * level ** 3 / 5); 
-    default: return Math.floor(level ** 3); 
-  } 
-} 
-function getExpProgress(pokemon: any) { 
-  if (pokemon.level >= 100) return { current: 0, needed: 0, percent: 100 }; 
-  const expThisLevel = getExpForLevel(pokemon.growthRate ?? 'medium', pokemon.level); 
-  const expNextLevel = getExpForLevel(pokemon.growthRate ?? 'medium', pokemon.level + 1); 
-  const needed = expNextLevel - expThisLevel; 
-  const totalExp = pokemon.exp || 0; 
-  // Se exp < soglia del livello attuale, lo trattiamo come 0 progresso (Pokémon vecchi) 
-  const current = totalExp < expThisLevel ? 0 : totalExp - expThisLevel; 
-  const percent = needed > 0 ? Math.min(100, Math.floor((current / needed) * 100)) : 100; 
-  return { current, needed, percent }; 
-} 
+import { getExpForLevel, getExpProgress } from '../../utils/expUtils'; 
 
 function PokemonSlot({ pokemon, index, onRemove, onSelect, onUseCandy, onCandyCount, isSelected, onTap }: any) { 
   return ( 
@@ -168,7 +148,7 @@ export default function TeamScreen() {
                 onUseCandy={(p: any) => { 
                   const candyKey = `candy_${p.baseSpeciesId ?? p.pokemonId}`; 
                   const owned = inventory[candyKey] || 0; 
-                  if (p.level >= 99) { alert('Livello massimo!'); return; } 
+                  if (p.level >= 100) { alert('Livello massimo!'); return; } 
                   if (owned >= 3) { 
                     useSpeciesCandy(p.id, p.baseSpeciesId ?? p.pokemonId); 
                     alert(`+1 livello con Caramella ${p.name}! (${owned - 3} rimaste)`); 

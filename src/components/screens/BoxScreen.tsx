@@ -120,7 +120,7 @@ export default function BoxScreen() {
 
   const getStatValue = (pkmn: any, statKey: string) => {
     if (statKey === 'ivTotal') {
-      return Object.values(pkmn.ivs).reduce((a: number, b: number) => a + b, 0);
+      return (Object.values(pkmn.ivs) as number[]).reduce((a, b) => a + b, 0);
     }
     if (statKey.startsWith('ivs.')) {
       const prop = statKey.split('.')[1] as keyof typeof pkmn.ivs;
@@ -442,7 +442,7 @@ export default function BoxScreen() {
                     const owned = inventory[candyKey] || 0; 
                     if (owned < 3) { 
                       alert(`Caramelle ${selectedPkmn.name}: ${owned}/3 — ne servono 3 per salire di livello!`); 
-                    } else if (selectedPkmn.level >= 99) { 
+                    } else if (selectedPkmn.level >= 100) { 
                       alert('Livello massimo raggiunto!'); 
                     } else { 
                       useSpeciesCandy(selectedPkmn.id, selectedPkmn.baseSpeciesId ?? selectedPkmn.pokemonId); 

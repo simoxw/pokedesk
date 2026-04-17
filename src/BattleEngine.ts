@@ -182,6 +182,8 @@ const NATURE_MODS: Record<string, { up: string; down: string }> = {
   Careful:  { up: 'spDef',   down: 'spAtk'   },
 };
 
+import { getExpForLevel } from './utils/expUtils';
+
 export const BattleEngine = {
   getStageMultiplier(stage: number): number {
     const s = Math.max(-6, Math.min(6, stage));
@@ -282,46 +284,6 @@ export const BattleEngine = {
   },
 
   getExpForNextLevel(level: number, growthRate: string): number {
-    // Experience required for next level based on growth rate
-    // Using simplified formulas (Pokemon experience formulas)
-    const nextLevel = level + 1;
-    
-    switch (growthRate.toLowerCase()) {
-      case 'fast':
-        // Fast: 4/5 * n^3
-        return Math.floor(4 * Math.pow(nextLevel, 3) / 5);
-      case 'medium-fast':
-        // Medium Fast: n^3
-        return Math.pow(nextLevel, 3);
-      case 'medium-slow':
-        // Medium Slow: 6/5 * n^3 - 15 * n^2 + 100 * n - 140
-        return Math.floor(6 * Math.pow(nextLevel, 3) / 5 - 15 * Math.pow(nextLevel, 2) + 100 * nextLevel - 140);
-      case 'slow':
-        // Slow: 5/4 * n^3
-        return Math.floor(5 * Math.pow(nextLevel, 3) / 4);
-      case 'fluctuating':
-        // Fluctuating: complex formula
-        if (nextLevel <= 15) {
-          return Math.floor((Math.pow(nextLevel, 3) * (Math.floor((nextLevel + 1) / 3) + 24)) / 50);
-        } else if (nextLevel <= 35) {
-          return Math.floor((Math.pow(nextLevel, 3) * (nextLevel + 14)) / 50);
-        } else {
-          return Math.floor((Math.pow(nextLevel, 3) * (Math.floor(nextLevel / 2) + 32)) / 50);
-        }
-      case 'erratic':
-        // Erratic: complex formula
-        if (nextLevel <= 50) {
-          return Math.floor((Math.pow(nextLevel, 3) * (100 - nextLevel)) / 50);
-        } else if (nextLevel <= 68) {
-          return Math.floor((Math.pow(nextLevel, 3) * (150 - nextLevel)) / 100);
-        } else if (nextLevel <= 98) {
-          return Math.floor((Math.pow(nextLevel, 3) * Math.floor((1911 - 10 * nextLevel) / 3)) / 500);
-        } else {
-          return Math.floor((Math.pow(nextLevel, 3) * (160 - nextLevel)) / 100);
-        }
-      default:
-        // Default to Medium Fast
-        return Math.pow(nextLevel, 3);
-    }
+    return getExpForLevel(growthRate, level + 1);
   }
 };
