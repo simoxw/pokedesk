@@ -48,6 +48,7 @@ export default function BattleScreen() {
   enemyRef.current = enemy;
   const [apiError, setApiError] = useState<string | null>(null);
   const [playerTookDamage, setPlayerTookDamage] = useState(false);
+  const [totalEnemies, setTotalEnemies] = useState(1);
 
   const playerPkmn = team[activeIdx];
   const isLeagueBattle = !!leagueBattleTeam;
@@ -120,6 +121,7 @@ export default function BattleScreen() {
           setEnemy(firstEnemy);
           enemyRef.current = firstEnemy;
           setLogs([`⚔️ Battaglia contro ${leagueTrainerName}!`]);
+          setTotalEnemies([l1, l2, l3, l4].filter(Boolean).length);
           setLoading(false);
           return;
         }
@@ -139,6 +141,7 @@ export default function BattleScreen() {
           setEnemy(firstEnemy);
           enemyRef.current = firstEnemy;
           setLogs([`⚔️ Sfida Master contro ${masterTrainerName}!`]);
+          setTotalEnemies([m1, m2, m3, m4].filter(Boolean).length);
           setLoading(false);
           return;
         }
@@ -160,6 +163,7 @@ export default function BattleScreen() {
           setEnemy(firstEnemy);
           enemyRef.current = firstEnemy;
           setLogs([`⚔️ Sfida con ${friendTrainerName}! Forza!`]);
+          setTotalEnemies([f1, f2, f3, f4].filter(Boolean).length);
           setLoading(false);
           return;
         }
@@ -225,6 +229,7 @@ export default function BattleScreen() {
                ? `🗼 Piano ${floor} — Boss Floor!` 
                : `🗼 Torre Lotta — Piano ${floor}`;
              setLogs([floorLabel]);
+             setTotalEnemies(enemies.length);
              setLoading(false);
              return;
            } catch(e) {
@@ -353,6 +358,7 @@ export default function BattleScreen() {
         };
         setEnemy(enemyData);
         enemyRef.current = enemyData;
+        setTotalEnemies(1 + (enemy2 ? 1 : 0) + (enemy3 ? 1 : 0));
         setLoading(false);
         useStore.getState().updatePokedex(id, 'seen');
       } catch (err: any) {
@@ -980,6 +986,19 @@ export default function BattleScreen() {
       setTimeout(() => setPlayerHitAnim(false), 400);
     }
 
+    // --- RECOIL: il nemico subisce danno di rimbalzo ---
+    const enemyRecoilPct = enemyMove.meta?.recoil ?? 0;
+    if (enemyRecoilPct > 0 && enemyDamage > 0) {
+      const enemyRecoilDmg = Math.max(1, Math.floor(enemyDamage * enemyRecoilPct / 100));
+      setEnemy((prev: any) => {
+        const nextHp = Math.max(0, prev.currentHp - enemyRecoilDmg);
+        const next = { ...prev, currentHp: nextHp };
+        enemyRef.current = next;
+        addLog(`${prev.name} subisce ${enemyRecoilDmg} danni di rimbalzo!`);
+        return next;
+      });
+    }
+
     // --- DRAIN: il nemico si cura in base al valore drain di PokeAPI ---
     const enemyMetaDrain = enemyMove.meta?.drain ?? 0;
     const enemyFallbackDrain = enemyMove.name?.toLowerCase().includes('assorb') ? 0.5 : 0;
@@ -1025,6 +1044,26 @@ export default function BattleScreen() {
         setActiveIdx(nextAvailable);
         setPlayerStages({ attack: 0, defense: 0, spAtk: 0, spDef: 0, speed: 0, accuracy: 0, evasion: 0 });
         addLog(`Vai ${team[nextAvailable].name}!`);
+      }
+    }
+
+    // --- SELF-DROP mosse offensive nemico (Close Combat, Overheat, ecc.) ---
+    if (enemyMove.category !== 'status' && enemyMove.stat_changes && enemyMove.stat_changes.length > 0) {
+      const ENEMY_SELF_MAP: Record<string, string> = {
+        attack: 'attack', defense: 'defense',
+        'special-attack': 'spAtk', 'special-defense': 'spDef',
+        speed: 'speed',
+      };
+      for (const sc of enemyMove.stat_changes) {
+        const statKey = ENEMY_SELF_MAP[sc.stat.name];
+        if (!statKey) continue;
+        setEnemyStages(prev => ({
+          ...prev,
+          [statKey]: Math.min(6, Math.max(-6, (prev[statKey] ?? 0) + sc.change)),
+        }));
+      }
+      if (enemyMove.stat_changes.some((sc: any) => sc.change < 0)) {
+        addLog(`Le statistiche di ${liveEnemy.name} sono diminuite!`);
       }
     }
 
@@ -1308,6 +1347,48 @@ export default function BattleScreen() {
       return {};
     }
 
+    // --- STAT CHANGES: gestisci self-drop vs target-drop per TUTTE le mosse ---
+    if (move.category !== 'status' && move.stat_changes && move.stat_changes.length > 0) {
+      const SELF_DROP_MOVE_IDS = new Set(['276', '315', '354', '370', '434', '437', '557', '620', '705']);
+      const STAT_MAP: Record<string, string> = {
+        attack: 'attack', defense: 'defense',
+        'special-attack': 'spAtk', 'special-defense': 'spDef',
+        speed: 'speed', accuracy: 'accuracy', evasion: 'evasion',
+      };
+      let selfChanged = false, targetChanged = false;
+      const isSelfDropMove = SELF_DROP_MOVE_IDS.has(move.id);
+      const targetIsUser = ['user', 'user-self', 'allies', 'allies-others', 'allies-and-self'].includes(move.target ?? '');
+
+      for (const sc of move.stat_changes) {
+        const statKey = STAT_MAP[sc.stat.name];
+        if (!statKey) continue;
+
+        if (targetIsUser || isSelfDropMove) {
+          setPlayerStages(prev => ({
+            ...prev,
+            [statKey]: Math.min(6, Math.max(-6, (prev[statKey] ?? 0) + sc.change)),
+          }));
+          selfChanged = true;
+        } else {
+          setEnemyStages(prev => ({
+            ...prev,
+            [statKey]: Math.min(6, Math.max(-6, (prev[statKey] ?? 0) + sc.change)),
+          }));
+          targetChanged = true;
+        }
+      }
+
+      if (selfChanged) {
+        const hasDrop = move.stat_changes.some((sc: any) => sc.change < 0);
+        setStatChanges({ label: hasDrop ? '↓ STAT −' : '↑ STAT +', positive: !hasDrop });
+        addLog(`Le statistiche di ${playerPkmn.name} sono ${hasDrop ? 'diminuite' : 'aumentate'}!`);
+      }
+      if (targetChanged) {
+        const hasDrop = move.stat_changes.some((sc: any) => sc.change < 0);
+        addLog(`Le statistiche di ${currentEnemy.name} sono ${hasDrop ? 'diminuite' : 'aumentate'}!`);
+      }
+    }
+
     // --- MOSSE OFFENSIVE con effetto stato secondario --- 
     if (move.statusEffect && !currentEnemy.status && move.effectChance) { 
       if (Math.random() * 100 < move.effectChance) { 
@@ -1439,7 +1520,10 @@ export default function BattleScreen() {
 
     if (playerFirst) {
       const isCrit = Math.random() < 0.06;
-      const damage = BattleEngine.calculateDamage(effPlayer as any, effEnemy as any, move, isCrit);
+      const isMultiHit = (move.meta?.min_hits ?? 1) > 1;
+      const baseDmg = BattleEngine.calculateDamage(effPlayer as any, effEnemy as any, move, isCrit);
+      const hitCount = isMultiHit ? 3 : 1;
+      const damage = isMultiHit ? baseDmg * hitCount : baseDmg;
       const typeMultiplier = BattleEngine.getTypeEffectiveness(move.type, effEnemy.types);
       const effLabel = BattleEngine.getTypeEffectivenessLabel(typeMultiplier);
       const newEnemyHp = Math.max(0, (liveEnemyAtStartOfMove?.currentHp ?? 0) - damage);
@@ -1479,6 +1563,16 @@ export default function BattleScreen() {
         enemyRef.current = next;
         return next;
       });
+
+      // Recoil giocatore
+      const recoilPctP = move.meta?.recoil ?? 0;
+      if (recoilPctP > 0 && damage > 0) {
+        const recoilDmgP = Math.max(1, Math.floor(damage * recoilPctP / 100));
+        const freshPkmnR = useStore.getState().team.find((p: any) => p.id === playerPkmn.id) ?? playerPkmn;
+        updatePokemon(freshPkmnR.id, { currentHp: Math.max(0, freshPkmnR.currentHp - recoilDmgP) });
+        addLog(`${playerPkmn.name} subisce ${recoilDmgP} danni di rimbalzo!`);
+      }
+
       await new Promise(r => setTimeout(r, 800));
 
       if (newEnemyHp <= 0) { 
@@ -1538,7 +1632,10 @@ export default function BattleScreen() {
       }
 
       const isCrit = Math.random() < 0.06;
-      const damage = BattleEngine.calculateDamage(effPlayer as any, effEnemy as any, move, isCrit);
+      const isMultiHit2 = (move.meta?.min_hits ?? 1) > 1;
+      const baseDmg2 = BattleEngine.calculateDamage(effPlayer as any, effEnemy as any, move, isCrit);
+      const hitCount2 = isMultiHit2 ? 3 : 1;
+      const damage = isMultiHit2 ? baseDmg2 * hitCount2 : baseDmg2;
       const typeMultiplier = BattleEngine.getTypeEffectiveness(move.type, effEnemy.types);
       const effLabel = BattleEngine.getTypeEffectivenessLabel(typeMultiplier);
       const currentEnemyAfterEnemyTurn = enemyRef.current ?? liveEnemyAtStartOfMove;
@@ -1579,6 +1676,16 @@ export default function BattleScreen() {
         enemyRef.current = next;
         return next;
       });
+
+      // Recoil giocatore (branch lento)
+      const recoilPctP2 = move.meta?.recoil ?? 0;
+      if (recoilPctP2 > 0 && damage > 0) {
+        const recoilDmgP2 = Math.max(1, Math.floor(damage * recoilPctP2 / 100));
+        const freshPkmnR2 = useStore.getState().team.find((p: any) => p.id === playerPkmn.id) ?? playerPkmn;
+        updatePokemon(freshPkmnR2.id, { currentHp: Math.max(0, freshPkmnR2.currentHp - recoilDmgP2) });
+        addLog(`${playerPkmn.name} subisce ${recoilDmgP2} danni di rimbalzo!`);
+      }
+
       await new Promise(r => setTimeout(r, 800));
 
       if (newEnemyHp <= 0) { 
@@ -1999,6 +2106,21 @@ export default function BattleScreen() {
               </div>
             )}
           </div>
+          {/* Ball indicators avversario */}
+          {totalEnemies > 1 && (
+            <div className="flex gap-1 mt-1 mb-1">
+              {Array.from({ length: totalEnemies }).map((_, i) => (
+                <div
+                  key={i}
+                  className={`w-2.5 h-2.5 rounded-full border ${
+                    i < enemyPhase - 1
+                      ? 'bg-gray-600 border-gray-500'
+                      : 'bg-red-500 border-red-400 shadow-[0_0_4px_rgba(239,68,68,0.5)]'
+                  }`}
+                />
+              ))}
+            </div>
+          )}
             <div className="flex items-center gap-2">
               <div className="flex-1 bg-white/10 rounded-full h-2">
                 <div

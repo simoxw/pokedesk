@@ -40,6 +40,7 @@ export interface Move {
   effectChance?: number;
   statusEffect?: StatusEffect;
   meta?: any;
+  target?: string;
   stat_changes?: Array<{ change: number; stat: { name: string } }>;
 }
 

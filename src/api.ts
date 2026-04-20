@@ -158,6 +158,7 @@ export const api = {
             if (ac && ac > 0) return ac; 
             return moveData.effect_chance ?? undefined; 
           })(), 
+          target: moveData.target?.name,
           stat_changes: moveData.stat_changes ?? [],
         }); 
       } catch (e) {
