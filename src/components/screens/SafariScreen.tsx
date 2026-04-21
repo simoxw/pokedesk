@@ -58,7 +58,14 @@ export default function SafariScreen() {
         const idFromRarity = getRandomIdByRarity(unlockedGens, rarityTier);
 
         const getRandomPokemonId = (): number => {
-          if (gen8Unlocked) {
+          if (gen9Unlocked) {
+            // 25% Gen6, 25% Gen7, 25% Gen8, 25% Gen9
+            const roll = Math.random();
+            if (roll < 0.25) return Math.floor(Math.random() * (721 - 650 + 1)) + 650;
+            if (roll < 0.50) return Math.floor(Math.random() * (809 - 722 + 1)) + 722;
+            if (roll < 0.75) return Math.floor(Math.random() * (898 - 810 + 1)) + 810;
+            return Math.floor(Math.random() * (1025 - 906 + 1)) + 906;
+          } else if (gen8Unlocked) {
             // 33% Gen6, 33% Gen7, 34% Gen8
             const roll = Math.random();
             if (roll < 0.33) return Math.floor(Math.random() * (721 - 650 + 1)) + 650;
