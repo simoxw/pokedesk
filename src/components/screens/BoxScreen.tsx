@@ -364,6 +364,7 @@ export default function BoxScreen() {
             { key: 'gen6', label: 'Gen 6', icon: '🗼' },
             { key: 'gen7', label: 'Gen 7', icon: '🌺' },
             { key: 'gen8', label: 'Gen 8', icon: '⚔️' },
+            { key: 'gen9', label: 'Gen 9', icon: '🔴' },
             { key: 'legendary', label: 'Leggendari', icon: '⭐' },
             { key: 'favorite', label: 'Preferita', icon: '❤️' },
           ] as { key: TeamPreset['category']; label: string; icon: string }[]).map(({ key, label, icon }) => {

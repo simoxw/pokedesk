@@ -4,7 +4,8 @@ import { api } from '../../api';
 import { motion, AnimatePresence } from 'motion/react'; 
 import { ArrowLeft, X, Heart, Sword, Shield, Zap, Activity, Filter, Search, Calculator } from 'lucide-react';
 import { TYPE_CHART } from '../../BattleEngine'; 
-import TypeBadge from '../ui/TypeBadge'; 
+import TypeBadge from '../ui/TypeBadge';
+import type { PokemonType } from '../../types'; 
 
 const STAT_META: Record<string, { label: string; icon: React.ReactNode; color: string }> = { 
   hp:      { label: 'HP',       icon: <Heart size={12} />,    color: '#f87171' }, 
@@ -71,6 +72,7 @@ export default function PokedexScreen() {
     { id: 6, label: 'Gen 6', range: [650, 721] },
     { id: 7, label: 'Gen 7', range: [722, 809] },
     { id: 8, label: 'Gen 8', range: [810, 898] },
+    { id: 9, label: 'Gen 9', range: [906, 1025] },
   ];
 
   const TYPES = [
@@ -79,7 +81,7 @@ export default function PokedexScreen() {
     'rock', 'ghost', 'dragon', 'steel', 'dark', 'fairy'
   ];
  
-  const entries = Array.from({ length: 898 }, (_, i) => i + 1); 
+  const entries = Array.from({ length: 1025 }, (_, i) => i + 1); 
  
   const handleSelect = async (id: number) => { 
     if (!pokedex[id]) return; 
@@ -120,7 +122,7 @@ export default function PokedexScreen() {
     const caughtInGen = Array.from({ length: total }, (_, i) => gen.range[0] + i) 
       .filter(id => pokedex[id] === 'caught').length; 
     const pct = Math.round((caughtInGen / total) * 100); 
-    const flags: Record<number, string> = { 1: '🗾', 2: '🌸', 3: '🌊', 4: '❄️', 5: '🗽', 6: '🗼', 7: '🌺', 8: '⚔️' };
+    const flags: Record<number, string> = { 1: '🗾', 2: '🌸', 3: '🌊', 4: '❄️', 5: '🗽', 6: '🗼', 7: '🌺', 8: '⚔️', 9: '🔴' };
     return { ...gen, caughtInGen, total, pct, flag: flags[gen.id] }; 
   });
 
@@ -233,7 +235,7 @@ export default function PokedexScreen() {
             <div className="text-[10px] text-white/40 font-bold uppercase">Visti</div> 
           </div> 
           <div className="flex-1 bg-[#1a1a2e] rounded-2xl p-3 text-center border border-white/5"> 
-            <div className="text-xl font-black text-white/60">898</div> 
+            <div className="text-xl font-black text-white/60">1025</div> 
             <div className="text-[10px] text-white/40 font-bold uppercase">Totali</div> 
           </div> 
         </div> 
@@ -613,9 +615,9 @@ export default function PokedexScreen() {
                     { label: '🔻 Non molto efficace ×0.5', mult: 0.5, color: 'text-orange-400 border-orange-500/30 bg-orange-500/10' },
                     { label: '🚫 Nessun effetto ×0', mult: 0, color: 'text-red-400 border-red-500/30 bg-red-500/10' },
                   ].map(({ label, mult, color }) => {
-                    const chart = TYPE_CHART[calcAttackType as any] ?? {};
+                    const chart = TYPE_CHART[calcAttackType as PokemonType] ?? {};
                     const types = (Object.keys(TYPE_CHART) as string[]).filter(defType => {
-                      const val = chart[defType as any] ?? 1;
+                      const val = chart[defType as PokemonType] ?? 1;
                       return val === mult;
                     });
                     if (types.length === 0) return null;

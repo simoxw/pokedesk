@@ -518,7 +518,7 @@ export default function TradeScreen() {
                               setWonderStep('trading');
                               setWonderLoading(true);
                               try {
-                                const randomId = Math.floor(Math.random() * 898) + 1;
+                                const randomId = Math.floor(Math.random() * 1025) + 1;
                                 const data = await api.getPokemon(randomId);
                                 const species = await api.getSpecies(randomId);
                                 const level = Math.max(5, wonderPkmn.level + Math.floor(Math.random() * 11) - 5);

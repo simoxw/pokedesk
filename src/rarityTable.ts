@@ -63,6 +63,10 @@ const COMMON_GEN8 = range(810, 840);
 const UNCOMMON_GEN8 = range(841, 870);
 const RARE_GEN8 = range(871, 898);
 
+const COMMON_GEN9 = range(906, 950);
+const UNCOMMON_GEN9 = range(951, 990);
+const RARE_GEN9 = range(991, 1025);
+
 export const RARITY_POOLS: Record<RarityTier, Record<number, number[]>> = {
   common: {
     1: COMMON_GEN1,
@@ -73,6 +77,7 @@ export const RARITY_POOLS: Record<RarityTier, Record<number, number[]>> = {
     6: COMMON_GEN6,
     7: COMMON_GEN7,
     8: COMMON_GEN8,
+    9: COMMON_GEN9,
   },
   uncommon: {
     1: UNCOMMON_GEN1,
@@ -83,6 +88,7 @@ export const RARITY_POOLS: Record<RarityTier, Record<number, number[]>> = {
     6: UNCOMMON_GEN6,
     7: UNCOMMON_GEN7,
     8: UNCOMMON_GEN8,
+    9: UNCOMMON_GEN9,
   },
   rare: {
     1: RARE_GEN1,
@@ -93,6 +99,7 @@ export const RARITY_POOLS: Record<RarityTier, Record<number, number[]>> = {
     6: RARE_GEN6,
     7: RARE_GEN7,
     8: RARE_GEN8,
+    9: RARE_GEN9,
   },
 };
 

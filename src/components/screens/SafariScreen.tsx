@@ -48,10 +48,12 @@ export default function SafariScreen() {
 
         const gen7Unlocked = medalsCount >= 25;
         const gen8Unlocked = medalsCount >= 30;
+        const gen9Unlocked = medalsCount >= 35;
 
         const unlockedGens = [6];
         if (gen7Unlocked) unlockedGens.push(7);
         if (gen8Unlocked) unlockedGens.push(8);
+        if (gen9Unlocked) unlockedGens.push(9);
 
         const idFromRarity = getRandomIdByRarity(unlockedGens, rarityTier);
 

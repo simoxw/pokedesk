@@ -63,6 +63,7 @@ const GEN_CHALLENGE_REWARDS: Record<TeamPreset['category'], number> = {
   gen6: 800,
   gen7: 850,
   gen8: 900,
+  gen9: 950,
   legendary: 1500,
   favorite: 700,
 };
@@ -80,7 +81,7 @@ const GEN_SKILL_POOL: GenMissionTemplate[] = [
   { type: 'genSoloWin', target: 1, description: (c) => `Vinci con un solo Pokémon in squadra (${c.toUpperCase()})`, rewardFactor: 1 },
 ];
 
-const SKILL_ENABLED_CATEGORIES: TeamPreset['category'][] = ['gen6', 'gen7', 'gen8', 'legendary'];
+const SKILL_ENABLED_CATEGORIES: TeamPreset['category'][] = ['gen6', 'gen7', 'gen8', 'gen9', 'legendary'];
 
 export function isPokemonInPresetCategory(pokemon: GameStore['team'][number], category: TeamPreset['category']): boolean {
   if (category === 'favorite') return true;

@@ -120,6 +120,8 @@ const ACHIEVEMENTS_DATA = [
   { id: 'col_gen7_full', name: 'Maestro Alola', description: 'Cattura tutti i 88 Pokémon di Gen 7', category: 'collection' as const, target: 88, reward: { coins: 12000, items: { rare_candy: 4, masterball: 2 } } },
   { id: 'col_gen8', name: 'Esploratore Galar', description: 'Cattura 30 Pokémon di Gen 8', category: 'collection' as const, target: 30, reward: { coins: 4000, items: { rare_candy: 2 } } },
   { id: 'col_gen8_full', name: 'Maestro Galar', description: 'Cattura tutti i 89 Pokémon di Gen 8', category: 'collection' as const, target: 89, reward: { coins: 12000, items: { rare_candy: 4, masterball: 2 } } },
+  { id: 'col_gen9', name: 'Esploratore Paldea', description: 'Cattura 30 Pokémon di Gen 9', category: 'collection' as const, target: 30, reward: { coins: 4500, items: { rare_candy: 2 } } },
+  { id: 'col_gen9_full', name: 'Maestro Paldea', description: 'Cattura tutti i 120 Pokémon di Gen 9', category: 'collection' as const, target: 120, reward: { coins: 14000, items: { rare_candy: 4, masterball: 2 } } },
   
   // LEGA
   {

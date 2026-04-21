@@ -186,6 +186,7 @@ export default function HubScreen() {
     gen6: 'Gen 6',
     gen7: 'Gen 7',
     gen8: 'Gen 8',
+    gen9: 'Gen 9',
     legendary: 'Leggendari',
     favorite: 'Preferita',
   };

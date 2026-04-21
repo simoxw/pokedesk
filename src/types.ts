@@ -140,7 +140,7 @@ export interface BattleTowerState {
 
 export interface TeamPreset {
   label: string;
-  category: 'gen1'|'gen2'|'gen3'|'gen4'|'gen5'|'gen6'|'gen7'|'gen8'|'legendary'|'favorite';
+  category: 'gen1'|'gen2'|'gen3'|'gen4'|'gen5'|'gen6'|'gen7'|'gen8'|'gen9'|'legendary'|'favorite';
   pokemonIds: string[];
   updatedAt: number;
 }
