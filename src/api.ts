@@ -110,6 +110,8 @@ export const api = {
       'self-destruct', 'explosion', 'wide-guard', 'quick-guard',
     ]);
 
+    const SELF_DROP_MOVE_IDS = new Set(['276', '315', '354', '370', '434', '437', '557', '620', '705']);
+
     const levelUpMoves = pokemonData.moves
       .filter((m: any) =>
         !BANNED_MOVES.has(m.move.name) &&
@@ -130,6 +132,10 @@ export const api = {
       try {
         const moveData = await this.getMove(m.name);
         if (!moveData) continue;
+        
+        if (SELF_DROP_MOVE_IDS.has(moveData.id.toString())) {
+          moveData.meta = { ...moveData.meta, stat_chance: 0 };
+        }
         
         moves.push({ 
           id: moveData.id.toString(), 

@@ -12,6 +12,8 @@ import PokemonSprite from '../ui/PokemonSprite';
 import confetti from 'canvas-confetti';
 import { generateRandomEVs, getTowerFloorConfig, TOWER_MILESTONES } from '../../services/battleTowerService';
 
+const SELF_DROP_MOVE_IDS = new Set(['276', '315', '354', '370', '434', '437', '557', '620', '705']);
+
 export default function BattleScreen() {
   const { team, setScreen, incrementStat, addCoins, addItem, updatePokemon, inventory, useItem, gainExp, currentBattlePath, recordBattleWin, medals, expShareActive, expBoostActive, friendBattleTeam, clearFriendBattleTeam, leagueBattleTeam, clearLeagueBattleTeam, setLeagueBattleResult, masterBattleTeam, clearMasterBattleTeam, setMasterBattleResult, battleTower, startBattleTower, advanceBattleTowerFloor, abandonBattleTower, claimBattleTowerReward, reportGenBattleResult } = useStore();
   const isFriendBattle = !!friendBattleTeam;
@@ -1042,7 +1044,8 @@ export default function BattleScreen() {
         'special-attack': 'spAtk', 'special-defense': 'spDef',
         speed: 'speed', accuracy: 'accuracy', evasion: 'evasion',
       };
-      const statChance: number = enemyMove.meta?.stat_chance ?? 0;
+      let statChance: number = enemyMove.meta?.stat_chance ?? 0;
+      if (SELF_DROP_MOVE_IDS.has(enemyMove.id)) statChance = 0;
       for (const sc of enemyMove.stat_changes) {
         const statKey = STAT_MAP[sc.stat.name];
         if (!statKey) continue;
@@ -1309,7 +1312,8 @@ export default function BattleScreen() {
         'special-attack': 'spAtk', 'special-defense': 'spDef',
         speed: 'speed', accuracy: 'accuracy', evasion: 'evasion',
       };
-      const statChance: number = move.meta?.stat_chance ?? 0;
+      let statChance: number = move.meta?.stat_chance ?? 0;
+      if (SELF_DROP_MOVE_IDS.has(move.id)) statChance = 0;
       for (const sc of move.stat_changes) {
         const statKey = STAT_MAP[sc.stat.name];
         if (!statKey) continue;
