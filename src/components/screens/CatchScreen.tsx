@@ -43,7 +43,7 @@ export default function CatchScreen() {
       setLoading(true);
       try {
         const avgLevel = team.length > 0 ? team.reduce((acc, p) => acc + p.level, 0) / team.length : 5;
-        const level = Math.max(5, Math.floor(avgLevel + (Math.random() * 10 - 5)));
+        const level = Math.min(100, Math.max(5, Math.floor(avgLevel + (Math.random() * 10 - 5))));
         
         // Gen sbloccate progressivamente con le medaglie
         const unlockedGens: number[] = [1];

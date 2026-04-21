@@ -3,6 +3,7 @@ import { createJSONStorage, persist } from 'zustand/middleware';
 import { del, get, set } from 'idb-keyval';
 
 import { GameStore } from './types';
+import { BattleEngine } from '../BattleEngine';
 import { createAchievementSlice } from './slices/achievementSlice';
 import { createBreedingSlice } from './slices/breedingSlice';
 import { createInventorySlice } from './slices/inventorySlice';
@@ -151,6 +152,36 @@ export const useStore = create<GameStore>()(
         };
         state.team = state.team.map(fixEvRetroactive);
         state.box = state.box.map(fixEvRetroactive);
+
+        // Fix retroattivo: porta tutti i Pokémon sopra il livello 100 a livello 100
+        const clampLevel100 = (p: any) => {
+          if (!p || p.level <= 100) return p;
+          const cappedLevel = 100;
+          const newStats = BattleEngine.calculateStats(
+            cappedLevel,
+            p.baseStats,
+            p.ivs,
+            p.evs ?? { hp: 0, attack: 0, defense: 0, spAtk: 0, spDef: 0, speed: 0 },
+            p.nature
+          );
+          // Calcola exp minima per il livello 100 in base al growth rate
+          const gr = p.growthRate ?? 'medium-fast';
+          const exp100 = (() => {
+            if (gr === 'slow') return Math.floor(5 * 100 ** 3 / 4);
+            if (gr === 'medium-slow') return Math.max(0, Math.floor(6/5 * 100**3 - 15*100**2 + 100*100 - 140));
+            if (gr === 'fast') return Math.floor(4 * 100 ** 3 / 5);
+            return 100 ** 3;
+          })();
+          return {
+            ...p,
+            level: cappedLevel,
+            exp: exp100,
+            stats: newStats,
+            currentHp: Math.min(newStats.hp, Math.max(1, p.currentHp)),
+          };
+        };
+        state.team = state.team.map(clampLevel100);
+        state.box = state.box.map(clampLevel100);
         
         // Auto-unlock exp_share and exp_boost if 40+ medals unlocked
         const bossesWon = (state.medals || []).filter((m: any) => m.isUnlocked).length;

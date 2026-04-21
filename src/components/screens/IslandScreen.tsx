@@ -67,7 +67,7 @@ export default function IslandScreen() {
         const dayHash = today.split('').reduce((a, b) => a + b.charCodeAt(0), 0);
         const id = ISLAND_LEGENDARIES[dayHash % ISLAND_LEGENDARIES.length];
         const avgLevel = team.length > 0 ? Math.floor(team.reduce((acc, p) => acc + p.level, 0) / team.length) : 50;
-        const level = Math.max(45, Math.min(70, avgLevel + 5));
+        const level = Math.max(45, Math.min(70, Math.min(100, avgLevel + 5)));
         const data = await api.getPokemon(id);
         const species = await api.getSpecies(id);
         setPokemon({ ...data, species, level });

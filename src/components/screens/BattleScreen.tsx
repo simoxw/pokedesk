@@ -931,43 +931,28 @@ export default function BattleScreen() {
       }
     }
 
-    // --- EFFECT: Stat Changes per il Nemico ---
-    if (enemyMove.category === 'status' || (enemyMove.stat_changes && enemyMove.stat_changes.length > 0)) {
-      const statChangesData = enemyMove.stat_changes ?? enemyMove.meta?.stat_changes ?? [];
+    // --- EFFECT: Stat Changes nemico (solo mosse STATUS) ---
+    if (enemyMove.category === 'status' && enemyMove.stat_changes && enemyMove.stat_changes.length > 0) {
       const STAT_MAP: Record<string, string> = {
-        attack: 'attack',
-        defense: 'defense',
-        'special-attack': 'spAtk',
-        'special-defense': 'spDef',
-        speed: 'speed',
-        accuracy: 'accuracy',
-        evasion: 'evasion',
+        attack: 'attack', defense: 'defense',
+        'special-attack': 'spAtk', 'special-defense': 'spDef',
+        speed: 'speed', accuracy: 'accuracy', evasion: 'evasion',
       };
-
       let playerDebuffed = false;
       let enemyBoosted = false;
-
-      for (const sc of statChangesData) {
+      for (const sc of enemyMove.stat_changes) {
         const statKey = STAT_MAP[sc.stat.name];
         if (!statKey) continue;
-
         if (sc.change < 0) {
-          // Debuff al giocatore
-          setPlayerStages(prev => ({
-            ...prev,
-            [statKey]: Math.max(-6, (prev[statKey] ?? 0) + sc.change),
-          }));
+          // Mosse status con change negativo colpiscono l'avversario (es. Ruggito, Colpo Coda)
+          setPlayerStages(prev => ({ ...prev, [statKey]: Math.max(-6, (prev[statKey] ?? 0) + sc.change) }));
           playerDebuffed = true;
-        } else if (sc.change > 0) {
-          // Boost al nemico
-          setEnemyStages(prev => ({
-            ...prev,
-            [statKey]: Math.min(6, (prev[statKey] ?? 0) + sc.change),
-          }));
+        } else {
+          // Mosse status con change positivo potenziano chi le usa (es. Danza Spada, Agilità)
+          setEnemyStages(prev => ({ ...prev, [statKey]: Math.min(6, (prev[statKey] ?? 0) + sc.change) }));
           enemyBoosted = true;
         }
       }
-
       if (playerDebuffed) {
         setStatChanges({ label: '↓ STAT −', positive: false });
         addLog(`Le statistiche di ${currentPlayerPkmn.name} sono diminuite!`);
@@ -1047,23 +1032,36 @@ export default function BattleScreen() {
       }
     }
 
-    // --- SELF-DROP mosse offensive nemico (Close Combat, Overheat, ecc.) ---
+    // --- Stat changes mosse OFFENSIVE nemico ---
+    // stat_chance=0 → self-drop garantito (Zuffa, Draco Meteor, ecc.)
+    // stat_chance>0 e change<0 → effetto secondario sul GIOCATORE con probabilità
+    // stat_chance>0 e change>0 → self-boost secondario sul NEMICO con probabilità (Pugno Meteora)
     if (enemyMove.category !== 'status' && enemyMove.stat_changes && enemyMove.stat_changes.length > 0) {
-      const ENEMY_SELF_MAP: Record<string, string> = {
+      const STAT_MAP: Record<string, string> = {
         attack: 'attack', defense: 'defense',
         'special-attack': 'spAtk', 'special-defense': 'spDef',
-        speed: 'speed',
+        speed: 'speed', accuracy: 'accuracy', evasion: 'evasion',
       };
+      const statChance: number = enemyMove.meta?.stat_chance ?? 0;
       for (const sc of enemyMove.stat_changes) {
-        const statKey = ENEMY_SELF_MAP[sc.stat.name];
+        const statKey = STAT_MAP[sc.stat.name];
         if (!statKey) continue;
-        setEnemyStages(prev => ({
-          ...prev,
-          [statKey]: Math.min(6, Math.max(-6, (prev[statKey] ?? 0) + sc.change)),
-        }));
-      }
-      if (enemyMove.stat_changes.some((sc: any) => sc.change < 0)) {
-        addLog(`Le statistiche di ${liveEnemy.name} sono diminuite!`);
+        if (statChance === 0) {
+          // Self-drop garantito: sempre sul nemico stesso
+          setEnemyStages(prev => ({ ...prev, [statKey]: Math.min(6, Math.max(-6, (prev[statKey] ?? 0) + sc.change)) }));
+          if (sc.change < 0) addLog(`Le statistiche di ${liveEnemy.name} sono diminuite!`);
+          if (sc.change > 0) addLog(`Le statistiche di ${liveEnemy.name} sono aumentate!`);
+        } else if (Math.random() * 100 < statChance) {
+          if (sc.change < 0) {
+            // Effetto secondario sul giocatore (es. Crunch -DEF, Psichica -SpDef)
+            setPlayerStages(prev => ({ ...prev, [statKey]: Math.max(-6, (prev[statKey] ?? 0) + sc.change) }));
+            addLog(`Le statistiche di ${currentPlayerPkmn.name} sono diminuite!`);
+          } else {
+            // Self-boost secondario nemico (es. Pugno Meteora +ATK)
+            setEnemyStages(prev => ({ ...prev, [statKey]: Math.min(6, (prev[statKey] ?? 0) + sc.change) }));
+            addLog(`Le statistiche di ${liveEnemy.name} sono aumentate!`);
+          }
+        }
       }
     }
 
@@ -1226,82 +1224,36 @@ export default function BattleScreen() {
         return {}; 
       } 
 
-      // Usa i dati veri dalla mossa (move.stat_changes o move.meta.stat_changes). Se non ci sono, usa fallback per alcuni casi (es: Barriera).
-      let statChangesData: Array<{ change: number; stat: { name: string } }> =
-        move.stat_changes ?? move.meta?.stat_changes ?? [];
-      if (statChangesData.length === 0) {
-        const lowerName = move.name?.toLowerCase() ?? '';
-        const id = move.id?.toString();
-        if (id === '45' || lowerName.includes('ruggito') || lowerName.includes('growl')) 
-          statChangesData = [{ change: -1, stat: { name: 'attack' } }];
-        else if (id === '39' || lowerName.includes('colpocoda') || lowerName.includes('tail whip')) 
-          statChangesData = [{ change: -1, stat: { name: 'defense' } }];
-        else if (id === '43' || lowerName.includes('fulmisguardo') || lowerName.includes('leer')) 
-          statChangesData = [{ change: -1, stat: { name: 'defense' } }];
-        else if (id === '81' || lowerName.includes('millebava') || lowerName.includes('string shot')) 
-          statChangesData = [{ change: -2, stat: { name: 'speed' } }];
-        else if (id === '112' || lowerName.includes('barriera') || lowerName.includes('barrier')) 
-          statChangesData = [{ change: 2, stat: { name: 'defense' } }];
-        else if (id === '110' || lowerName.includes('ritirata') || lowerName.includes('withdraw')) 
-          statChangesData = [{ change: 1, stat: { name: 'defense' } }];
-        else if (id === '106' || lowerName.includes('rafforzamento') || lowerName.includes('harden')) 
-          statChangesData = [{ change: 1, stat: { name: 'defense' } }];
-        else if (id === '104' || lowerName.includes('doppioteam') || lowerName.includes('double team'))
-          statChangesData = [{ change: 1, stat: { name: 'evasion' } }];
-        else if (id === '28' || lowerName.includes('turbosabbia') || lowerName.includes('sand attack'))
-          statChangesData = [{ change: -1, stat: { name: 'accuracy' } }];
-        else if (id === '116' || lowerName.includes('focalenergia') || lowerName.includes('focus energy'))
-          statChangesData = [{ change: 2, stat: { name: 'accuracy' } }]; // Simuliamo il crit con accuracy per ora o lasciamo così
-        else if (id === '74' || lowerName.includes('agilità') || lowerName.includes('agility'))
-          statChangesData = [{ change: 2, stat: { name: 'speed' } }];
-        else if (id === '14' || lowerName.includes('danzaspada') || lowerName.includes('swords dance'))
-          statChangesData = [{ change: 2, stat: { name: 'attack' } }];
-        else if (id === '347' || lowerName.includes('calmamente') || lowerName.includes('calm mind'))
-          statChangesData = [{ change: 1, stat: { name: 'special-attack' } }, { change: 1, stat: { name: 'special-defense' } }];
-        else if (id === '349' || lowerName.includes('dragodanza') || lowerName.includes('dragon dance'))
-          statChangesData = [{ change: 1, stat: { name: 'attack' } }, { change: 1, stat: { name: 'speed' } }];
-      }
-      const STAT_MAP: Record<string, string> = {
-        attack: 'attack',
-        defense: 'defense',
-        'special-attack': 'spAtk',
-        'special-defense': 'spDef',
-        speed: 'speed',
-        accuracy: 'accuracy',
-        evasion: 'evasion',
-      };
-
-      let playerBoosted = false;
-      let enemyDebuffed = false;
-
-      for (const sc of statChangesData) {
-        const statKey = STAT_MAP[sc.stat.name];
-        if (!statKey) continue;
-
-        if (sc.change > 0) {
-          // Boost al giocatore
-          setPlayerStages(prev => ({
-            ...prev,
-            [statKey]: Math.min(6, (prev[statKey] ?? 0) + sc.change),
-          }));
-          playerBoosted = true;
-        } else if (sc.change < 0) {
-          // Debuff al nemico
-          setEnemyStages(prev => ({
-            ...prev,
-            [statKey]: Math.max(-6, (prev[statKey] ?? 0) + sc.change),
-          }));
-          enemyDebuffed = true;
+      // --- EFFECT: Stat Changes giocatore (solo mosse STATUS) ---
+      if (move.stat_changes && move.stat_changes.length > 0) {
+        const STAT_MAP: Record<string, string> = {
+          attack: 'attack', defense: 'defense',
+          'special-attack': 'spAtk', 'special-defense': 'spDef',
+          speed: 'speed', accuracy: 'accuracy', evasion: 'evasion',
+        };
+        let enemyDebuffed = false;
+        let playerBoosted = false;
+        for (const sc of move.stat_changes) {
+          const statKey = STAT_MAP[sc.stat.name];
+          if (!statKey) continue;
+          if (sc.change < 0) {
+            // Mosse status con change negativo colpiscono l'avversario (es. Ruggito, Colpo Coda)
+            setEnemyStages(prev => ({ ...prev, [statKey]: Math.max(-6, (prev[statKey] ?? 0) + sc.change) }));
+            enemyDebuffed = true;
+          } else {
+            // Mosse status con change positivo potenziano chi le usa (es. Danza Spada, Agilità)
+            setPlayerStages(prev => ({ ...prev, [statKey]: Math.min(6, (prev[statKey] ?? 0) + sc.change) }));
+            playerBoosted = true;
+          }
         }
-      }
-
-      if (playerBoosted) {
-        setStatChanges({ label: '↑ STAT +', positive: true });
-        addLog(`Le statistiche di ${playerPkmn.name} sono aumentate!`);
-      }
-      if (enemyDebuffed) {
-        setStatChanges({ label: '↓ STAT −', positive: false });
-        addLog(`Le statistiche di ${currentEnemy?.name} sono diminuite!`);
+        if (enemyDebuffed) {
+          setStatChanges({ label: '↓ STAT −', positive: false });
+          addLog(`Le statistiche di ${currentEnemy?.name} sono diminuite!`);
+        }
+        if (playerBoosted) {
+          setStatChanges({ label: '↑ STAT +', positive: true });
+          addLog(`Le statistiche di ${playerPkmn.name} sono aumentate!`);
+        }
       }
 
       // Se non ci sono stat_changes nel meta, mantieni il comportamento esistente
@@ -1347,45 +1299,36 @@ export default function BattleScreen() {
       return {};
     }
 
-    // --- STAT CHANGES: gestisci self-drop vs target-drop per TUTTE le mosse ---
+    // --- Stat changes mosse OFFENSIVE giocatore ---
+    // stat_chance=0 → self-drop garantito (Zuffa, Draco Meteor, ecc.)
+    // stat_chance>0 e change<0 → effetto secondario sul NEMICO con probabilità
+    // stat_chance>0 e change>0 → self-boost secondario sul GIOCATORE con probabilità (Pugno Meteora)
     if (move.category !== 'status' && move.stat_changes && move.stat_changes.length > 0) {
-      const SELF_DROP_MOVE_IDS = new Set(['276', '315', '354', '370', '434', '437', '557', '620', '705']);
       const STAT_MAP: Record<string, string> = {
         attack: 'attack', defense: 'defense',
         'special-attack': 'spAtk', 'special-defense': 'spDef',
         speed: 'speed', accuracy: 'accuracy', evasion: 'evasion',
       };
-      let selfChanged = false, targetChanged = false;
-      const isSelfDropMove = SELF_DROP_MOVE_IDS.has(move.id);
-      const targetIsUser = ['user', 'user-self', 'allies', 'allies-others', 'allies-and-self'].includes(move.target ?? '');
-
+      const statChance: number = move.meta?.stat_chance ?? 0;
       for (const sc of move.stat_changes) {
         const statKey = STAT_MAP[sc.stat.name];
         if (!statKey) continue;
-
-        if (targetIsUser || isSelfDropMove) {
-          setPlayerStages(prev => ({
-            ...prev,
-            [statKey]: Math.min(6, Math.max(-6, (prev[statKey] ?? 0) + sc.change)),
-          }));
-          selfChanged = true;
-        } else {
-          setEnemyStages(prev => ({
-            ...prev,
-            [statKey]: Math.min(6, Math.max(-6, (prev[statKey] ?? 0) + sc.change)),
-          }));
-          targetChanged = true;
+        if (statChance === 0) {
+          // Self-drop garantito: sempre sul giocatore stesso
+          setPlayerStages(prev => ({ ...prev, [statKey]: Math.min(6, Math.max(-6, (prev[statKey] ?? 0) + sc.change)) }));
+          if (sc.change < 0) addLog(`Le statistiche di ${playerPkmn.name} sono diminuite!`);
+          if (sc.change > 0) addLog(`Le statistiche di ${playerPkmn.name} sono aumentate!`);
+        } else if (Math.random() * 100 < statChance) {
+          if (sc.change < 0) {
+            // Effetto secondario sul nemico (es. Crunch -DEF, Psichica -SpDef)
+            setEnemyStages(prev => ({ ...prev, [statKey]: Math.max(-6, (prev[statKey] ?? 0) + sc.change) }));
+            addLog(`Le statistiche di ${currentEnemy?.name} sono diminuite!`);
+          } else {
+            // Self-boost secondario giocatore (es. Pugno Meteora +ATK)
+            setPlayerStages(prev => ({ ...prev, [statKey]: Math.min(6, (prev[statKey] ?? 0) + sc.change) }));
+            addLog(`Le statistiche di ${playerPkmn.name} sono aumentate!`);
+          }
         }
-      }
-
-      if (selfChanged) {
-        const hasDrop = move.stat_changes.some((sc: any) => sc.change < 0);
-        setStatChanges({ label: hasDrop ? '↓ STAT −' : '↑ STAT +', positive: !hasDrop });
-        addLog(`Le statistiche di ${playerPkmn.name} sono ${hasDrop ? 'diminuite' : 'aumentate'}!`);
-      }
-      if (targetChanged) {
-        const hasDrop = move.stat_changes.some((sc: any) => sc.change < 0);
-        addLog(`Le statistiche di ${currentEnemy.name} sono ${hasDrop ? 'diminuite' : 'aumentate'}!`);
       }
     }
 
