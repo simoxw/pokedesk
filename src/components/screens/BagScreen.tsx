@@ -61,6 +61,10 @@ export default function BagScreen() {
         { id: 'leaf_stone', name: 'Pietra Foglia', icon: '🍃' },
         { id: 'moon_stone', name: 'Pietra Lunare', icon: '🌙' },
         { id: 'dawn_stone', name: 'Pietra Alba', icon: '🌅' },
+        { id: 'ice_stone', name: 'Pietra Ghiaccio', icon: '🧊' },
+        { id: 'dark_stone', name: 'Pietra Buia', icon: '🌑' },
+        { id: 'sun_stone', name: 'Pietra Solare', icon: '☀️' },
+        { id: 'prism_scale', name: 'Scaglia Prisma', icon: '🌈' },
         // Caramelle specie dinamiche dai pokemon in squadra/box 
         ...[...team, ...box].reduce((acc: any[], p) => { 
           const key = `candy_${p.baseSpeciesId ?? p.pokemonId}`; 
@@ -270,7 +274,7 @@ export default function BagScreen() {
                     return; 
                   } 
                   // Gestione Pietre Evolutive 
-                  if (pendingItem.id.endsWith('_stone')) { 
+                  if (pendingItem.id.endsWith('_stone') || pendingItem.id === 'prism_scale') { 
 
                     setIsProcessing(true);
                     try {

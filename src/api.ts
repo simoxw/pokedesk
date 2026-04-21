@@ -274,6 +274,36 @@ export const api = {
     newTypes?: string[];
   } | null> {
     try {
+      // Override manuale per Eevee
+      if (speciesData.id === 133 || speciesData.name === 'eevee') {
+        let manualEvolution = null;
+        if (itemName === 'dark-stone') manualEvolution = 'umbreon';
+        if (itemName === 'sun-stone') manualEvolution = 'espeon';
+        if (itemName === 'prism-scale') manualEvolution = 'sylveon';
+        if (itemName === 'ice-stone') manualEvolution = 'glaceon';
+
+        if (manualEvolution) {
+          const nextPokemon = await this.getPokemon(manualEvolution);
+          const nextSpecies = await this.getSpecies(manualEvolution);
+          
+          const getStat = (name: string) => nextPokemon.stats.find((s: any) => s.stat.name === name)?.base_stat || 0;
+          
+          return {
+            newId: nextPokemon.id,
+            newName: this.getItalianName(nextSpecies.names),
+            newBaseStats: {
+              hp: getStat('hp'),
+              attack: getStat('attack'),
+              defense: getStat('defense'),
+              spAtk: getStat('special-attack'),
+              spDef: getStat('special-defense'),
+              speed: getStat('speed'),
+            },
+            newTypes: nextPokemon.types.map((t: any) => t.type.name)
+          };
+        }
+      }
+
       const chain = await this.getEvolutionChain(speciesData.evolution_chain.url);
       
       let currentNode = chain.chain;

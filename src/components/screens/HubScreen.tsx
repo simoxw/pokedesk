@@ -93,7 +93,7 @@ export default function HubScreen() {
   const getTimeToNextSafariTick = () => {
     if (safariCharges >= 8) return 0;
     const elapsed = Date.now() - lastSafariTickTimestamp;
-    return Math.max(0, 1800000 - (elapsed % 1800000));
+    return Math.max(0, 900000 - (elapsed % 900000));
   };
 
   useEffect(() => {

@@ -3,7 +3,7 @@ import { useStore } from './store';
 import { NotificationService } from './NotificationService';
 
 const TICK_INTERVAL = 300000; // 5 minutes in ms
-const SAFARI_TICK_INTERVAL = 1800000; // 30 minutes in ms
+const SAFARI_TICK_INTERVAL = 900000; // 15 minutes in ms
 const SAFARI_MAX_CHARGES = 8;
 
 export const useTickSystem = () => {
