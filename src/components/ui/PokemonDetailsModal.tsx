@@ -40,6 +40,27 @@ export default function PokemonDetailsModal({ pokemon: initialPokemon, onClose }
            initialPokemon;
   }, [initialPokemon, team, box]);
 
+  const [movesDraft, setMovesDraft] = React.useState<Pokemon['moves']>([]);
+
+  React.useEffect(() => {
+    if (!pokemon) {
+      setMovesDraft([]);
+      return;
+    }
+
+    setMovesDraft(pokemon.moves);
+  }, [pokemon?.id, pokemon?.moves]);
+
+  const reorderMoves = React.useCallback((fromIndex: number, toIndex: number) => {
+    if (!pokemon) return;
+    if (fromIndex < 0 || toIndex < 0 || fromIndex >= movesDraft.length || toIndex >= movesDraft.length) return;
+
+    const reorderedMoves = [...movesDraft];
+    [reorderedMoves[fromIndex], reorderedMoves[toIndex]] = [reorderedMoves[toIndex], reorderedMoves[fromIndex]];
+    setMovesDraft(reorderedMoves);
+    updatePokemon(pokemon.id, { moves: reorderedMoves });
+  }, [movesDraft, pokemon, updatePokemon]);
+
   if (!pokemon) return null;
 
   const isFavorite = favorites.includes(pokemon.id);
@@ -171,27 +192,23 @@ export default function PokemonDetailsModal({ pokemon: initialPokemon, onClose }
           <div className="grid grid-cols-1 gap-4">
             <h3 className="text-sm font-black uppercase tracking-widest text-[#e63946]">Parco Mosse</h3>
             <div className="grid grid-cols-1 gap-3">
-              {pokemon.moves.map((move, idx) => ( 
-                 <div key={move.id} className="bg-white/5 rounded-2xl p-4 border border-white/5 flex items-center gap-4"> 
+              {movesDraft.map((move, idx) => ( 
+                 <div key={`${move.id}-${idx}`} className="bg-white/5 rounded-2xl p-4 border border-white/5 flex items-center gap-4"> 
                    <div className="flex flex-col gap-1 shrink-0"> 
                      <button 
                        onClick={() => { 
                          if (idx === 0) return; 
-                         const m = [...pokemon.moves]; 
-                         [m[idx - 1], m[idx]] = [m[idx], m[idx - 1]]; 
-                         updatePokemon(pokemon.id, { moves: m }); 
+                         reorderMoves(idx, idx - 1);
                        }} 
                        disabled={idx === 0} 
                        className="w-5 h-5 rounded bg-white/10 flex items-center justify-center disabled:opacity-20 text-[10px] leading-none" 
                      >▲</button> 
                      <button 
                        onClick={() => { 
-                         if (idx === pokemon.moves.length - 1) return; 
-                         const m = [...pokemon.moves]; 
-                         [m[idx], m[idx + 1]] = [m[idx + 1], m[idx]]; 
-                         updatePokemon(pokemon.id, { moves: m }); 
+                         if (idx === movesDraft.length - 1) return; 
+                         reorderMoves(idx, idx + 1);
                        }} 
-                       disabled={idx === pokemon.moves.length - 1} 
+                       disabled={idx === movesDraft.length - 1} 
                        className="w-5 h-5 rounded bg-white/10 flex items-center justify-center disabled:opacity-20 text-[10px] leading-none" 
                      >▼</button> 
                    </div> 
@@ -221,7 +238,7 @@ export default function PokemonDetailsModal({ pokemon: initialPokemon, onClose }
                   </div>
                 </div>
               ))}
-              {Array.from({ length: 4 - pokemon.moves.length }).map((_, i) => (
+              {Array.from({ length: 4 - movesDraft.length }).map((_, i) => (
                 <div key={i} className="bg-white/5 rounded-2xl p-4 border border-dashed border-white/10 flex items-center justify-center">
                   <span className="text-xs opacity-20 italic">Slot Vuoto</span>
                 </div>

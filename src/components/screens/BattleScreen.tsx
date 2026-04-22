@@ -2281,9 +2281,9 @@ export default function BattleScreen() {
         ) : (
           <>
             <div className="grid grid-cols-2 gap-2">
-              {playerPkmn?.moves?.map((move: any) => (
+              {playerPkmn?.moves?.map((move: any, idx: number) => (
                 <button
-                  key={move.id}
+                  key={`${move.id}-${idx}`}
                   onPointerDown={(e) => {
                     longPressActive.current = false;
                     tooltipTimeout.current = setTimeout(() => {
