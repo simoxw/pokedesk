@@ -34,6 +34,7 @@ const SHOP_ITEMS = [
   { id: 'sun_stone',    name: 'Pietra Solare',    cost: 2100, icon: '☀️',  unlock: 3,  description: 'Evolve Eevee in Espeon' },
   { id: 'prism_scale',  name: 'Scaglia Prisma',   cost: 2100, icon: '🌈', unlock: 3,  description: 'Evolve Eevee in Sylveon' },
   { id: 'tm',           name: 'MT Casuale',       cost: 3500, icon: '💿', unlock: 4,  description: 'Insegna una mossa MT a un Pokémon' }, 
+  { id: 'nature_changer', name: 'Modificatore Natura', cost: 7000, icon: '🧬', unlock: 10, description: 'Cambia la natura di un Pokémon della squadra' },
   { id: 'heart_scale',  name: 'Squama Cuore',     cost: 6000, icon: '❤️',  unlock: 20, description: 'Insegna qualsiasi mossa (anche rare) a un Pokémon' },
 ]; 
 

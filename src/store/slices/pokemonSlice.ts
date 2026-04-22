@@ -26,6 +26,7 @@ export type PokemonSlice = Pick<
   | 'incrementStat'
   | 'savePokedexTypes'
   | 'trainPokemon'
+  | 'changeNature'
 >;
 
 export const createPokemonSlice: StateCreator<GameStore, [], [], PokemonSlice> = (set, get) => ({
@@ -244,6 +245,27 @@ export const createPokemonSlice: StateCreator<GameStore, [], [], PokemonSlice> =
           [candyKey]: (state.inventory[candyKey] || 0) + 1,
         },
         stats: { ...state.stats, pokemonReleased: state.stats.pokemonReleased + 1 },
+      };
+    }),
+  changeNature: (pokemonId, newNature) =>
+    set((state) => {
+      const pokemon = state.team.find((p) => p.id === pokemonId) ?? state.box.find((p) => p.id === pokemonId);
+      if (!pokemon || pokemon.nature === newNature) return {};
+      
+      const newStats = BattleEngine.calculateStats(
+        pokemon.level,
+        pokemon.baseStats,
+        pokemon.ivs,
+        pokemon.evs ?? { hp: 0, attack: 0, defense: 0, spAtk: 0, spDef: 0, speed: 0 },
+        newNature
+      );
+      const hpDiff = newStats.hp - pokemon.stats.hp;
+      const newCurrentHp = Math.min(newStats.hp, Math.max(0, pokemon.currentHp + hpDiff));
+      const updatedPokemon = { ...pokemon, nature: newNature, stats: newStats, currentHp: newCurrentHp };
+      
+      return {
+        team: state.team.map((p) => (p.id === pokemonId ? updatedPokemon : p)),
+        box: state.box.map((p) => (p.id === pokemonId ? updatedPokemon : p)),
       };
     }),
   replaceMove: (pokemonId, oldMoveId, newMove) =>

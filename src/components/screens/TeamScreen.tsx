@@ -110,12 +110,12 @@ export default function TeamScreen() {
 
   return (
     <div className="h-full flex flex-col bg-[#0f0f1a]">
-      <div className="p-6 flex items-center gap-4 border-b border-white/5">
+      <div className="p-4 flex items-center gap-4 border-b border-white/5">
         <button onClick={() => setScreen('HUB_SCREEN')} className="p-2 bg-[#1a1a2e] rounded-xl">
           <ArrowLeft size={20} />
         </button>
-        <h2 className="text-2xl font-black">LA TUA SQUADRA</h2>
-        <span className="ml-auto text-white/50">{team.length}/4</span>
+        <h2 className="text-xl font-black">LA TUA SQUADRA</h2>
+        <span className="ml-auto text-white/50 text-sm">{team.length}/4</span>
       </div>
 
       <div className="flex-1 overflow-y-auto p-6 space-y-4">

@@ -159,7 +159,7 @@ export const TYPE_CHART: Record<PokemonType, Partial<Record<PokemonType, number>
   },
 };
 
-const NATURE_MODS: Record<string, { up: string; down: string }> = {
+export const NATURE_MODS: Record<string, { up: string; down: string }> = {
   Lonely:   { up: 'attack',  down: 'defense' },
   Brave:    { up: 'attack',  down: 'speed'   },
   Adamant:  { up: 'attack',  down: 'spAtk'   },

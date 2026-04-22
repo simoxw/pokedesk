@@ -2,10 +2,12 @@ import React, { useState, useMemo, useEffect } from 'react';
 import { useStore } from '../../store';
 import { api } from '../../api';
 import { motion, AnimatePresence } from 'motion/react';
-import { ArrowLeft, Package, Heart, Zap, Star, Loader, X } from 'lucide-react'; 
+import { ArrowLeft, Package, Heart, Zap, Star, Loader, X } from 'lucide-react';
+import NatureSelector from '../ui/NatureSelector';
+import StatComparison from '../ui/StatComparison'; 
 
 export default function BagScreen() {
-  const { inventory, medals, setScreen, useItem, addItem, addCoins, team, box, updatePokemon, expShareActive, toggleExpShare, expBoostActive, toggleExpBoost, useRareCandy, useSpeciesCandy } = useStore();
+  const { inventory, medals, setScreen, useItem, addItem, addCoins, team, box, updatePokemon, expShareActive, toggleExpShare, expBoostActive, toggleExpBoost, useRareCandy, useSpeciesCandy, changeNature } = useStore();
   const [tab, setTab] = useState<'balls' | 'heal' | 'candy'>('balls');
 
   useEffect(() => {
@@ -36,6 +38,11 @@ export default function BagScreen() {
   const [tmPokemon, setTmPokemon] = useState<any>(null); 
   const [loadingTm, setLoadingTm] = useState(false);
 
+  // Nature Changer Flow States
+  const [natureChangerStep, setNatureChangerStep] = useState<'select_pokemon' | 'select_nature' | 'confirm_change'>('select_pokemon');
+  const [selectedNatureChangerPokemon, setSelectedNatureChangerPokemon] = useState<any>(null);
+  const [selectedNewNature, setSelectedNewNature] = useState<string | null>(null);
+
   const items = useMemo(() => ({
     balls: [
       { id: 'pokeball', name: 'Pokéball', icon: '🔴' },
@@ -54,6 +61,7 @@ export default function BagScreen() {
         { id: 'exp_boost', name: 'Potenziamento ESP', icon: '⚡', description: expBoostActive ? '✅ Attivo — ESP bonus +100%' : '❌ Disattivo — ESP normale', isToggle: true },
         { id: 'tm', name: 'MT Casuale', icon: '💿', description: 'Insegna una mossa MT' }, 
         { id: 'heart_scale', name: 'Squama Cuore', icon: '❤️', description: 'Insegna una mossa potente o rara' },
+        { id: 'nature_changer', name: 'Modificatore Natura', icon: '🧬', description: 'Cambia la natura di un Pokémon della squadra' },
         { id: 'rare_candy', name: 'Caramella Rara', icon: '🍬' },
         { id: 'fire_stone', name: 'Pietra Focaia', icon: '🔥' },
         { id: 'water_stone', name: 'Pietra Idrica', icon: '💧' },
@@ -332,6 +340,13 @@ export default function BagScreen() {
                     return;
                   }
 
+                  // Gestione Nature Changer
+                  if (pendingItem.id === 'nature_changer') {
+                    setSelectedNatureChangerPokemon(p);
+                    setNatureChangerStep('select_nature');
+                    return;
+                  }
+
                   if (isFullHeal) { 
                     updatePokemon(p.id, { status: null, sleepTurns: undefined }); 
                   } else { 
@@ -540,6 +555,109 @@ export default function BagScreen() {
                   </button>
                 ))}
               </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Nature Changer Overlay */}
+      <AnimatePresence>
+        {pendingItem?.id === 'nature_changer' && selectedNatureChangerPokemon && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex flex-col justify-end"
+            onClick={() => {
+              setPendingItem(null);
+              setSelectedNatureChangerPokemon(null);
+              setNatureChangerStep('select_pokemon');
+              setSelectedNewNature(null);
+            }}
+          >
+            <motion.div
+              initial={{ y: '100%' }}
+              animate={{ y: 0 }}
+              exit={{ y: '100%' }}
+              className="bg-[#1a1a2e] rounded-t-3xl p-6 max-h-[90vh] overflow-y-auto space-y-4"
+              onClick={e => e.stopPropagation()}
+            >
+              {/* Header */}
+              <div className="flex items-center justify-between mb-2">
+                <div className="flex items-center gap-3">
+                  <span className="text-2xl">🧬</span>
+                  <div>
+                    <h3 className="font-black text-lg">Modificatore Natura</h3>
+                    <p className="text-xs text-white/40">Cambia la natura di {selectedNatureChangerPokemon.name}</p>
+                  </div>
+                </div>
+                <button
+                  onClick={() => {
+                    setPendingItem(null);
+                    setSelectedNatureChangerPokemon(null);
+                    setNatureChangerStep('select_pokemon');
+                    setSelectedNewNature(null);
+                  }}
+                  className="p-2 bg-white/10 rounded-xl"
+                >
+                  ✕
+                </button>
+              </div>
+
+              {/* Step 1: Select Nature */}
+              {natureChangerStep === 'select_nature' && (
+                <div className="space-y-4">
+                  <div>
+                    <h4 className="text-sm font-bold mb-3 uppercase text-white/70">Seleziona una nuova natura</h4>
+                    <NatureSelector
+                      currentNature={selectedNatureChangerPokemon.nature}
+                      onSelect={(nature) => {
+                        setSelectedNewNature(nature);
+                        setNatureChangerStep('confirm_change');
+                      }}
+                    />
+                  </div>
+                </div>
+              )}
+
+              {/* Step 2: Confirm Change */}
+              {natureChangerStep === 'confirm_change' && selectedNewNature && (
+                <div className="space-y-4">
+                  <div>
+                    <h4 className="text-sm font-bold mb-3 uppercase text-white/70">Anteprima cambiamento</h4>
+                    <StatComparison
+                      pokemon={selectedNatureChangerPokemon}
+                      oldNature={selectedNatureChangerPokemon.nature}
+                      newNature={selectedNewNature}
+                    />
+                  </div>
+
+                  <div className="flex gap-3">
+                    <button
+                      onClick={() => {
+                        setNatureChangerStep('select_nature');
+                        setSelectedNewNature(null);
+                      }}
+                      className="flex-1 py-3 rounded-2xl font-bold bg-white/10 hover:bg-white/20 transition-all"
+                    >
+                      INDIETRO
+                    </button>
+                    <button
+                      onClick={() => {
+                        changeNature(selectedNatureChangerPokemon.id, selectedNewNature);
+                        useItem('nature_changer');
+                        setPendingItem(null);
+                        setSelectedNatureChangerPokemon(null);
+                        setNatureChangerStep('select_pokemon');
+                        setSelectedNewNature(null);
+                      }}
+                      className="flex-1 py-3 rounded-2xl font-bold bg-green-500 hover:bg-green-600 transition-all text-black"
+                    >
+                      APPLICA
+                    </button>
+                  </div>
+                </div>
+              )}
             </motion.div>
           </motion.div>
         )}
