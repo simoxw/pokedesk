@@ -653,11 +653,11 @@ export default function BattleScreen() {
       if (Math.random() < 0.10) addItem('megaball', 1); 
     } 
     incrementStat('totalBattles');
-    team.forEach(p => { 
+    useStore.getState().team.forEach(p => { 
       const isActive = p.id === currentPkm.id; 
       const recoveredHp = isActive 
         ? Math.min(p.stats.hp, p.currentHp + Math.floor(p.stats.hp * 0.1)) 
-        : Math.max(1, p.currentHp); // KO → 1HP minimo, non resta a 0
+        : Math.max(1, p.currentHp); // KO → 1HP minimo, non resta a 0 
       const recoveredMoves = p.moves.map((m: any) => ({ ...m, pp: m.maxPp })); 
       updatePokemon(p.id, { currentHp: recoveredHp, moves: recoveredMoves }); 
     });

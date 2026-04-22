@@ -29,8 +29,17 @@ interface PokemonDetailsModalProps {
   onClose: () => void;
 }
 
-export default function PokemonDetailsModal({ pokemon, onClose }: PokemonDetailsModalProps) {
-  const { favorites, toggleFavorite } = useStore();
+export default function PokemonDetailsModal({ pokemon: initialPokemon, onClose }: PokemonDetailsModalProps) {
+  const { favorites, toggleFavorite, updatePokemon, team, box } = useStore();
+  
+  // Sincronizza lo stato locale con lo store per aggiornamenti in tempo reale
+  const pokemon = React.useMemo(() => {
+    if (!initialPokemon) return null;
+    return team.find(p => p.id === initialPokemon.id) || 
+           box.find(p => p.id === initialPokemon.id) || 
+           initialPokemon;
+  }, [initialPokemon, team, box]);
+
   if (!pokemon) return null;
 
   const isFavorite = favorites.includes(pokemon.id);
@@ -162,11 +171,33 @@ export default function PokemonDetailsModal({ pokemon, onClose }: PokemonDetails
           <div className="grid grid-cols-1 gap-4">
             <h3 className="text-sm font-black uppercase tracking-widest text-[#e63946]">Parco Mosse</h3>
             <div className="grid grid-cols-1 gap-3">
-              {pokemon.moves.map(move => (
-                <div key={move.id} className="bg-white/5 rounded-2xl p-4 border border-white/5 flex items-center gap-4">
-                  <div className="w-12 h-12 bg-white/5 rounded-xl flex items-center justify-center">
-                    <TypeBadge type={move.type} small />
-                  </div>
+              {pokemon.moves.map((move, idx) => ( 
+                 <div key={move.id} className="bg-white/5 rounded-2xl p-4 border border-white/5 flex items-center gap-4"> 
+                   <div className="flex flex-col gap-1 shrink-0"> 
+                     <button 
+                       onClick={() => { 
+                         if (idx === 0) return; 
+                         const m = [...pokemon.moves]; 
+                         [m[idx - 1], m[idx]] = [m[idx], m[idx - 1]]; 
+                         updatePokemon(pokemon.id, { moves: m }); 
+                       }} 
+                       disabled={idx === 0} 
+                       className="w-5 h-5 rounded bg-white/10 flex items-center justify-center disabled:opacity-20 text-[10px] leading-none" 
+                     >▲</button> 
+                     <button 
+                       onClick={() => { 
+                         if (idx === pokemon.moves.length - 1) return; 
+                         const m = [...pokemon.moves]; 
+                         [m[idx], m[idx + 1]] = [m[idx + 1], m[idx]]; 
+                         updatePokemon(pokemon.id, { moves: m }); 
+                       }} 
+                       disabled={idx === pokemon.moves.length - 1} 
+                       className="w-5 h-5 rounded bg-white/10 flex items-center justify-center disabled:opacity-20 text-[10px] leading-none" 
+                     >▼</button> 
+                   </div> 
+                   <div className="w-12 h-12 bg-white/5 rounded-xl flex items-center justify-center shrink-0"> 
+                     <TypeBadge type={move.type} small /> 
+                   </div>
                   <div className="flex-1">
                     <div className="flex justify-between items-center mb-1">
                       <h4 className="font-black uppercase text-sm">{move.name}</h4>
