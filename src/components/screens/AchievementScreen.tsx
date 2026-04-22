@@ -105,7 +105,7 @@ const ACHIEVEMENTS_DATA = [
     name: 'Professor Pokémon',
     description: 'Completa tutti i Pokédex',
     category: 'collection' as const,
-    target: 1008,
+    target: 1025,
     reward: { coins: 50000, title: 'Professor' }
   },
   { id: 'col_gen3', name: 'Esploratore Hoenn', description: 'Cattura 50 Pokémon di Gen 3', category: 'collection' as const, target: 50, reward: { coins: 3000, items: { rare_candy: 2 } } },
@@ -237,6 +237,8 @@ export default function AchievementScreen() {
         col_gen7_full: countInRange(722, 809), 
         col_gen8: countInRange(810, 898), 
         col_gen8_full: countInRange(810, 898), 
+        col_gen9: countInRange(906, 1025),
+        col_gen9_full: countInRange(906, 1025),
       }; 
  
       Object.entries(progressMap).forEach(([id, progress]) => { 
@@ -323,6 +325,9 @@ export default function AchievementScreen() {
       case 'col_gen8': 
       case 'col_gen8_full': 
         return countInRange(810, 898); 
+      case 'col_gen9':
+      case 'col_gen9_full':
+        return countInRange(906, 1025);
       case 'breed_10': 
         return achievements.find(a => a.id === 'breed_10')?.progress ?? 0; 
       case 'no_damage': 

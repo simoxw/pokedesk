@@ -53,13 +53,18 @@ export default function PokemonDetailsModal({ pokemon: initialPokemon, onClose }
 
   const reorderMoves = React.useCallback((fromIndex: number, toIndex: number) => {
     if (!pokemon) return;
-    if (fromIndex < 0 || toIndex < 0 || fromIndex >= movesDraft.length || toIndex >= movesDraft.length) return;
 
-    const reorderedMoves = [...movesDraft];
-    [reorderedMoves[fromIndex], reorderedMoves[toIndex]] = [reorderedMoves[toIndex], reorderedMoves[fromIndex]];
-    setMovesDraft(reorderedMoves);
-    updatePokemon(pokemon.id, { moves: reorderedMoves });
-  }, [movesDraft, pokemon, updatePokemon]);
+    setMovesDraft((prevMoves) => {
+      if (fromIndex < 0 || toIndex < 0 || fromIndex >= prevMoves.length || toIndex >= prevMoves.length) {
+        return prevMoves;
+      }
+
+      const reorderedMoves = [...prevMoves];
+      [reorderedMoves[fromIndex], reorderedMoves[toIndex]] = [reorderedMoves[toIndex], reorderedMoves[fromIndex]];
+      updatePokemon(pokemon.id, { moves: reorderedMoves });
+      return reorderedMoves;
+    });
+  }, [pokemon, updatePokemon]);
 
   if (!pokemon) return null;
 
@@ -238,7 +243,7 @@ export default function PokemonDetailsModal({ pokemon: initialPokemon, onClose }
                   </div>
                 </div>
               ))}
-              {Array.from({ length: 4 - movesDraft.length }).map((_, i) => (
+              {Array.from({ length: Math.max(0, 4 - movesDraft.length) }).map((_, i) => (
                 <div key={i} className="bg-white/5 rounded-2xl p-4 border border-dashed border-white/10 flex items-center justify-center">
                   <span className="text-xs opacity-20 italic">Slot Vuoto</span>
                 </div>
