@@ -199,6 +199,38 @@ export const useStore = create<GameStore>()(
         };
         state.team = state.team.map(clampLevel100);
         state.box = state.box.map(clampLevel100);
+
+        // Sanity check: rimuove Pokémon con dati corrotti 
+        const isValidPokemon = (p: any) => 
+          p && 
+          typeof p.pokemonId === 'number' && p.pokemonId > 0 && 
+          typeof p.level === 'number' && p.level >= 1 && p.level <= 100 && 
+          p.stats && typeof p.stats.hp === 'number' && p.stats.hp > 0 && 
+          Array.isArray(p.moves) && 
+          Array.isArray(p.types) && p.types.length > 0; 
+
+        const teamBefore = state.team.length; 
+        const boxBefore = state.box.length; 
+        state.team = state.team.filter(isValidPokemon); 
+        state.box = state.box.filter(isValidPokemon); 
+
+        if (state.team.length < teamBefore || state.box.length < boxBefore) { 
+          console.warn( 
+            `[PokéDesk] Rimossi Pokémon corrotti: team ${teamBefore}→${state.team.length}, box ${boxBefore}→${state.box.length}` 
+          ); 
+        }
+
+        // Clamp PP: nessuna mossa può avere pp < 0 o pp > maxPp 
+        const fixPp = (p: any) => ({ 
+          ...p, 
+          moves: (p.moves ?? []).map((m: any) => ({ 
+            ...m, 
+            pp: Math.max(0, Math.min(m.maxPp ?? m.pp ?? 1, m.pp ?? 0)), 
+            maxPp: m.maxPp ?? m.pp ?? 1, 
+          })) 
+        }); 
+        state.team = state.team.map(fixPp); 
+        state.box = state.box.map(fixPp);
         
         // Auto-unlock exp_share and exp_boost if 40+ medals unlocked
         const bossesWon = (state.medals || []).filter((m: any) => m.isUnlocked).length;

@@ -7,7 +7,9 @@ import { BattleEngine } from '../../BattleEngine';
 import { motion, AnimatePresence } from 'motion/react';
 import { Zap, Target, Sword, TreePine, X, Trophy } from 'lucide-react';
 import PokemonSprite from '../ui/PokemonSprite';
-import { LEGENDARY_IDS, GEN_RANGES } from '../../data/legendaryIds';
+import { LEGENDARY_IDS, GEN_RANGES } from '../../data/legendaryIds'; 
+ import { usePreloader } from '../../usePreloader'; 
+ import { useImagePreloader } from '../../useImagePreloader'; 
 
 const getStatTotal = (ivs: Stats) => (Object.values(ivs) as number[]).reduce((a, b) => a + b, 0);
 
@@ -85,6 +87,8 @@ export default function HubScreen() {
   const [incubPokedexTo, setIncubPokedexTo] = useState('');
 
   const getTimeToNextTick = () => {
+    usePreloader(team, box); 
+    useImagePreloader(team, box); 
     if (charges >= 6) return 0;
     const elapsed = Date.now() - lastTickTimestamp;
     return Math.max(0, 300000 - (elapsed % 300000));

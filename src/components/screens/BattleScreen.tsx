@@ -1705,11 +1705,26 @@ export default function BattleScreen() {
     setIsAnimating(false);
   };
 
-  if (loading || !enemy) return (
-    <div className="h-full flex items-center justify-center bg-[#0f0f1a]">
-      <div className="text-white/50 animate-pulse font-bold">Caricamento battaglia...</div>
-    </div>
-  );
+  if (loading || !enemy) return ( 
+     <div className="h-full flex flex-col bg-[#0f0f1a] overflow-hidden"> 
+       {/* Skeleton enemy area */} 
+       <div className="flex-1 flex flex-col items-center justify-center gap-6 p-6"> 
+         <div className="self-start w-48 h-16 bg-white/5 rounded-2xl animate-pulse" /> 
+         <div className="w-48 h-48 bg-white/5 rounded-full animate-pulse" /> 
+         <div className="self-end w-48 h-16 bg-white/5 rounded-2xl animate-pulse" /> 
+         <div className="w-40 h-40 bg-white/5 rounded-full animate-pulse" /> 
+       </div> 
+       {/* Skeleton controls */} 
+       <div className="bg-[#0f0f1a]/95 border-t border-white/5 p-4 space-y-3"> 
+         <div className="h-20 bg-white/5 rounded-xl animate-pulse" /> 
+         <div className="grid grid-cols-2 gap-2"> 
+           {[1,2,3,4].map(i => ( 
+             <div key={i} className="h-16 bg-white/5 rounded-xl animate-pulse" /> 
+           ))} 
+         </div> 
+       </div> 
+     </div> 
+   ); 
 
   return (
     <div 
