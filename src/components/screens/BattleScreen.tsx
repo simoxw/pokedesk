@@ -406,7 +406,8 @@ export default function BattleScreen() {
       useStore.getState().team.forEach((p: any) => { 
         if (p.id !== currentPkm.id && p.currentHp > 0) {
           gainExp(p.id, halfExp);
-          applyEvGain(p, defeatedEnemy);
+          const freshP = useStore.getState().team.find((tp: any) => tp.id === p.id) ?? p; 
+          applyEvGain(freshP, defeatedEnemy);
         }
       }); 
     } 
