@@ -20,6 +20,22 @@ const MIGRATION_FLAG_KEY = 'pokedesk-idb-migrated';
 const hasLocalStorage = typeof localStorage !== 'undefined';
 const hasIndexedDB = typeof indexedDB !== 'undefined';
 
+// Verifica veloce accessibilità IndexedDB 
+async function checkIndexedDBHealth(): Promise<boolean> { 
+  try { 
+    const testKey = '__idb_health__'; 
+    await set(testKey, '1'); 
+    await del(testKey); 
+    return true; 
+  } catch { 
+    return false; 
+  } 
+} 
+// Eseguito una sola volta al boot in background 
+checkIndexedDBHealth().then(ok => { 
+  if (!ok) console.warn('[PokéDesk] IndexedDB non disponibile, uso localStorage'); 
+}); 
+
 const indexedDBStorage = {
   getItem: async (name: string): Promise<string | null> => {
     try {
@@ -140,11 +156,12 @@ export const useStore = create<GameStore>()(
         
         // Fix retroactive: clamp EVs to max 510 per stat group (total 510)
         const fixEvRetroactive = (p: any) => {
-          const totalEvs = Object.values(p.evs || {}).reduce((sum: number, val: any) => sum + (val || 0), 0);
+          const evs = p.evs || {};
+          const totalEvs = Object.values(evs).reduce((sum: number, val: any) => sum + (Number(val) || 0), 0) as number;
           if (totalEvs > 510) {
             const scale = 510 / totalEvs;
             const newEvs = Object.fromEntries(
-              Object.entries(p.evs || {}).map(([stat, value]: [string, any]) => [stat, Math.floor((value || 0) * scale)])
+              Object.entries(evs).map(([stat, value]: [string, any]) => [stat, Math.floor((Number(value) || 0) * scale)])
             );
             return { ...p, evs: newEvs };
           }

@@ -1,6 +1,7 @@
 import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
 import App from './App.tsx';
+import { ErrorBoundary } from './ErrorBoundary.tsx';
 import './index.css';
 
 // Registrazione del Service Worker solo in produzione, per non interferire con il dev server
@@ -26,6 +27,8 @@ if (import.meta.env.PROD && 'serviceWorker' in navigator) {
       }
 
       const registration = await navigator.serviceWorker.register(swUrl, { updateViaCache: 'none' });
+      // Forza controllo aggiornamento SW ad ogni avvio 
+      registration.update().catch(() => {}); 
       if (import.meta.env.DEV) {
         console.log('SW registrato con successo:', registration.scope);
       }
@@ -55,6 +58,8 @@ if (import.meta.env.PROD && 'serviceWorker' in navigator) {
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
-    <App />
+    <ErrorBoundary>
+      <App />
+    </ErrorBoundary>
   </StrictMode>,
 );

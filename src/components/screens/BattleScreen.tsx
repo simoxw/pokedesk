@@ -11,6 +11,7 @@ import TypeBadge from '../ui/TypeBadge';
 import PokemonSprite from '../ui/PokemonSprite';
 import confetti from 'canvas-confetti';
 import { generateRandomEVs, getTowerFloorConfig, TOWER_MILESTONES } from '../../services/battleTowerService';
+import { useLoadingWatchdog } from '../../useLoadingWatchdog';
 
 const SELF_DROP_MOVE_IDS = new Set(['276', '315', '354', '370', '434', '437', '557', '620', '705']);
 
@@ -45,6 +46,7 @@ export default function BattleScreen() {
   const [activeMoveTooltip, setActiveMoveTooltip] = useState<any>(null);
   const [lastEnemyMove, setLastEnemyMove] = useState<{ name: string; type: string } | null>(null);
   const tooltipTimeout = React.useRef<any>(null);
+  const battleTimeoutRef = React.useRef<ReturnType<typeof setTimeout> | null>(null);
   const longPressActive = React.useRef(false);
   const enemyRef = React.useRef<any>(null);
   enemyRef.current = enemy;
@@ -52,6 +54,7 @@ export default function BattleScreen() {
   const [playerTookDamage, setPlayerTookDamage] = useState(false);
   const [totalEnemies, setTotalEnemies] = useState(1);
 
+  useLoadingWatchdog(loading); 
   const playerPkmn = team[activeIdx];
   const isLeagueBattle = !!leagueBattleTeam;
   const isMasterBattle = !!masterBattleTeam;
@@ -101,6 +104,11 @@ export default function BattleScreen() {
   }; 
 
   useEffect(() => {
+    battleTimeoutRef.current = setTimeout(() => { 
+      setLoading(false); 
+      setApiError('Caricamento troppo lento. Controlla la connessione e riprova.'); 
+    }, 30000); 
+
     const initBattle = async () => {
       setLoading(true);
       setLastEnemyMove(null);
@@ -234,8 +242,8 @@ export default function BattleScreen() {
              setTotalEnemies(enemies.length);
              setLoading(false);
              return;
-           } catch(e) {
-             console.error('Tower battle init error:', e);
+           } catch(_e) {
+             console.error('Tower battle init error:', _e);
              setLoading(false);
              return;
            }
@@ -372,7 +380,13 @@ export default function BattleScreen() {
         }
       }
     };
-    initBattle();
+    initBattle().finally(() => {
+      if (battleTimeoutRef.current) clearTimeout(battleTimeoutRef.current);
+    });
+    
+    return () => {
+      if (battleTimeoutRef.current) clearTimeout(battleTimeoutRef.current);
+    };
   }, []);
 
   const award40MedalExpItems = () => {
@@ -2285,7 +2299,7 @@ export default function BattleScreen() {
               {playerPkmn?.moves?.map((move: any, idx: number) => (
                 <button
                   key={`${move.id}-${idx}`}
-                  onPointerDown={(e) => {
+                  onPointerDown={(_e) => {
                     longPressActive.current = false;
                     tooltipTimeout.current = setTimeout(() => {
                       longPressActive.current = true;
