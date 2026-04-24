@@ -55,8 +55,26 @@ export default function BattleScreen() {
   const [totalEnemies, setTotalEnemies] = useState(1);
 
   useLoadingWatchdog(loading); 
-  const playerPkmn = team[activeIdx];
-  const isLeagueBattle = !!leagueBattleTeam;
+ 
+   // Circuit breaker: segna l'entrata in battaglia per rilevare crash 
+   React.useEffect(() => { 
+     try { sessionStorage.setItem('pokedesk-battle-crashed', '1'); } catch {} 
+     return () => { 
+       try { sessionStorage.removeItem('pokedesk-battle-crashed'); } catch {} 
+     }; 
+   }, []); 
+ 
+   const playerPkmn = team[activeIdx]; 
+ 
+   // Safety: se il team è vuoto o l'indice non esiste, torna all'hub 
+   React.useEffect(() => { 
+     if (!loading && !isFinished && !playerPkmn) { 
+       console.warn('[PokéDesk] playerPkmn undefined, torno all\'hub'); 
+       setScreen('HUB_SCREEN'); 
+     } 
+   }, [loading, isFinished, playerPkmn]); 
+ 
+   const isLeagueBattle = !!leagueBattleTeam;
   const isMasterBattle = !!masterBattleTeam;
   const wasLeagueBattle = React.useRef(isLeagueBattle);
   const wasMasterBattle = React.useRef(isMasterBattle);

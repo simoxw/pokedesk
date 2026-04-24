@@ -114,6 +114,7 @@ export const useStore = create<GameStore>()(
       storage: createJSONStorage(() => indexedDBStorage),
       onRehydrateStorage: () => (state) => {
         if (!state) return;
+        try {
         const clampHp = (p: any) => ({
           ...p,
           currentHp: Math.min(p.stats?.hp ?? p.currentHp, Math.max(0, p.currentHp)),
@@ -230,18 +231,48 @@ export const useStore = create<GameStore>()(
           })) 
         }); 
         state.team = state.team.map(fixPp); 
-        state.box = state.box.map(fixPp);
+        state.box = state.box.map(fixPp); 
         
-        // Auto-unlock exp_share and exp_boost if 40+ medals unlocked
-        const bossesWon = (state.medals || []).filter((m: any) => m.isUnlocked).length;
-        if (bossesWon >= 40) {
-          if ((state.inventory['exp_share'] || 0) === 0) {
-            state.inventory = { ...state.inventory, exp_share: 1 };
-          }
-          if ((state.inventory['exp_boost'] || 0) === 0) {
-            state.inventory = { ...state.inventory, exp_boost: 1 };
-          }
-        }
+        // Auto-unlock exp_share and exp_boost if 40+ medals unlocked 
+        const bossesWon = (state.medals || []).filter((m: any) => m.isUnlocked).length; 
+        if (bossesWon >= 40) { 
+          if ((state.inventory['exp_share'] || 0) === 0) { 
+            state.inventory = { ...state.inventory, exp_share: 1 }; 
+          } 
+          if ((state.inventory['exp_boost'] || 0) === 0) { 
+            state.inventory = { ...state.inventory, exp_boost: 1 }; 
+          } 
+        } 
+
+        // Sicurezza: se lo screen salvato è una schermata di battaglia/cattura, 
+        // torna all'hub per evitare aperture con stato inconsistente 
+        const battleScreens = ['BATTLE_SCREEN','LEAGUE_BATTLE_SCREEN','MASTER_BATTLE_SCREEN','CATCH_SCREEN','SAFARI_SCREEN','ISLAND_SCREEN']; 
+        if (battleScreens.includes(state.currentScreen)) { 
+          state.currentScreen = 'HUB_SCREEN'; 
+        } 
+
+        // Circuit breaker: se il sessionStorage segna un crash durante la battaglia, 
+        // resetta leagueBattleTeam e masterBattleTeam per sicurezza 
+        try { 
+          if (sessionStorage.getItem('pokedesk-battle-crashed') === '1') { 
+            state.leagueBattleTeam = null; 
+            state.leagueBattleResult = null; 
+            state.masterBattleTeam = null; 
+            state.masterBattleResult = null; 
+            sessionStorage.removeItem('pokedesk-battle-crashed'); 
+            console.warn('[PokéDesk] Recovery da crash battaglia applicato.'); 
+          } 
+        } catch {} 
+
+        } catch (migrationError) { 
+          // Se la migrazione crasha, ripristina almeno lo stato di navigazione sicuro 
+          console.error('[PokéDesk] Errore critico in onRehydrateStorage:', migrationError); 
+          state.currentScreen = 'HUB_SCREEN'; 
+          state.leagueBattleTeam = null; 
+          state.masterBattleTeam = null; 
+          state.leagueBattleResult = null; 
+          state.masterBattleResult = null; 
+        } 
       },
     }
   )
