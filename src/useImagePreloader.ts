@@ -73,8 +73,11 @@ import { useEffect, useRef } from 'react';
  
        // Team in parallelo (sono pochi, max 4) 
        // Box in sequenza throttled per non stressare la rete 
-       Promise.all(teamUrls.map(preloadImage)).catch(() => {}); 
-       throttledImageQueue(boxUrls, 150); 
+       if (teamUrls.length > 0 || boxUrls.length > 0) {
+         console.log(`[ImagePreloader] Preloading ${teamUrls.length} team sprites and ${boxUrls.length} box sprites`);
+         Promise.all(teamUrls.map(preloadImage)).catch(() => {}); 
+         throttledImageQueue(boxUrls, 150).then(() => console.log('[ImagePreloader] Finished')); 
+       }
      }; 
  
      if ('requestIdleCallback' in window) { 

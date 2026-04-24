@@ -32,11 +32,13 @@ import { useEffect, useRef } from 'react';
  
        const tasks = toPreload.flatMap(pokemonId => [ 
          async () => { 
+           console.log(`[Preloader] Preloading data for ID: ${pokemonId}`);
            const data = await api.getPokemon(pokemonId); 
            preloadedRef.current.add(pokemonId); 
            return data; 
          }, 
          async () => { 
+           console.log(`[Preloader] Preloading species and moves for ID: ${pokemonId}`);
            const data = await api.getPokemon(pokemonId); 
            const species = await api.getSpecies(pokemonId); 
            // Precarichiamo anche le mosse al livello corrente del Pokémon 
@@ -49,7 +51,8 @@ import { useEffect, useRef } from 'react';
          }, 
        ]); 
  
-       throttledQueue(tasks, 200); 
+       console.log(`[Preloader] Starting queue with ${tasks.length} tasks`);
+       throttledQueue(tasks, 200).then(() => console.log('[Preloader] Queue finished')); 
      }; 
  
      if ('requestIdleCallback' in window) { 

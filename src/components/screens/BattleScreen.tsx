@@ -112,11 +112,13 @@ export default function BattleScreen() {
     const initBattle = async () => {
       setLoading(true);
       setLastEnemyMove(null);
+      console.log('[Battle] Initializing battle...');
       try {
         setLogs(['Inizia la battaglia!']);
 
         // PRIORITÀ: LEGA, MASTER, AMICI hanno la precedenza sulla Torre se i loro team sono settati
         if (isLeagueBattle && leagueBattleTeam && leagueBattleTeam.length > 0) {
+          console.log('[Battle] Type: League Battle');
           const toEnemy = (p: any) => ({
             ...p,
             currentHp: p.stats.hp,
@@ -137,6 +139,7 @@ export default function BattleScreen() {
         }
 
         if (isMasterBattle && masterBattleTeam && masterBattleTeam.length > 0) {
+          console.log('[Battle] Type: Master Battle');
           const toEnemy = (p: any) => ({
             ...p,
             currentHp: p.stats.hp,
@@ -157,6 +160,7 @@ export default function BattleScreen() {
         }
 
         if (isFriendBattle && friendBattleTeam && friendBattleTeam.length > 0) {
+          console.log('[Battle] Type: Friend Battle');
           const toEnemy = (p: any) => ({
             ...p,
             name: p.name,
@@ -179,6 +183,7 @@ export default function BattleScreen() {
         }
 
         if (isTowerBattle) {
+           console.log('[Battle] Type: Tower Battle');
            const floor = battleTower?.currentFloor ?? 1;
            const teamAvgLevel = Math.floor(team.reduce((acc, p) => acc + p.level, 0) / team.length);
            const config = getTowerFloorConfig(floor, teamAvgLevel);
@@ -270,6 +275,7 @@ export default function BattleScreen() {
         }; 
         
         const id = getRandomPokemonId(medalsCount);
+        console.log(`[Battle] Type: Wild Battle, Target ID: ${id}, Boss: ${isBoss}`);
                   
         const data = await api.getPokemon(id);
         const species = await api.getSpecies(id);
@@ -368,10 +374,12 @@ export default function BattleScreen() {
         };
         setEnemy(enemyData);
         enemyRef.current = enemyData;
+        console.log('[Battle] Enemy loaded:', enemyData.name, 'Lv.', enemyData.level);
         setTotalEnemies(1 + (enemy2 ? 1 : 0) + (enemy3 ? 1 : 0));
         setLoading(false);
         useStore.getState().updatePokedex(id, 'seen');
       } catch (err: any) {
+        console.error('[Battle] Initialization failed:', err);
         setLoading(false);
         if (err.message === 'OFFLINE') {
           setApiError('Sei offline. Connettiti per continuare.');
@@ -686,6 +694,7 @@ export default function BattleScreen() {
   };
 
   const executeEnemyTurn = async (currentPlayerPkmn: any) => {
+    console.log('[Battle] Enemy turn starting...');
     await new Promise(r => setTimeout(r, 800));
     const liveEnemy = enemyRef.current ?? enemy;
     if (!liveEnemy || liveEnemy.currentHp <= 0) return;
@@ -790,6 +799,8 @@ export default function BattleScreen() {
         enemyMove = bestOffensive ?? validMoves[Math.floor(Math.random() * validMoves.length)];
       }
     }
+
+    console.log('[Battle] Enemy chose move:', enemyMove?.name);
 
     // Fallback assoluto
     if (!enemyMove) {
@@ -1369,6 +1380,7 @@ export default function BattleScreen() {
 
   const handleMove = async (move: any) => {
     if (turn !== 'player' || isFinished || isAnimating || move.pp <= 0) return;
+    console.log('[Battle] Player move:', move.name);
 
     // --- CHECK FLINCH ---
     if (enemyFlinch) {

@@ -32,6 +32,7 @@ async function fetchWithCache(url: string): Promise<any> {
   let lastError: Error | null = null;
   for (let attempt = 0; attempt < MAX_RETRIES; attempt++) {
     try {
+      if (import.meta.env.DEV) console.debug(`[API] Fetching: ${url}`);
       const response = await fetch(url);
       if (!response.ok) {
         // 404 non serve ritentare
@@ -39,7 +40,10 @@ async function fetchWithCache(url: string): Promise<any> {
         throw new Error(`API_ERROR:${response.status}`);
       }
       const data = await response.json();
-      if (data) cacheSet(url, data);
+      if (data) {
+        cacheSet(url, data);
+        if (import.meta.env.DEV) console.debug(`[API] Success: ${url}`);
+      }
       return data;
     } catch (err: any) {
       lastError = err;
