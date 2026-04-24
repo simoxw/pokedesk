@@ -214,7 +214,7 @@ export const createPokemonSlice: StateCreator<GameStore, [], [], PokemonSlice> =
 
       if (category === 'ev') {
         const totalEvs = Object.values(pokemon.evs).reduce((sum, value) => sum + value, 0);
-        const addAmount = Math.max(1, Math.min(Math.floor(amount), 510 - totalEvs));
+        const addAmount = Math.max(0, Math.min(Math.floor(amount), 252 - pokemon.evs[stat], 510 - totalEvs));
         if (addAmount <= 0) return {};
         const cost = 500 * addAmount;
         if (state.coins < cost) return {};

@@ -966,9 +966,9 @@ export default function BattleScreen() {
       }
     }
 
-    // Applica effetto di stato nemico 
-    const statusChance = (!enemyMove.effectChance || enemyMove.effectChance === 0) ? 100 : enemyMove.effectChance;
-    if (enemyMove.statusEffect && !currentPlayerPkmn.status && Math.random() * 100 < statusChance) {
+    // Applica effetto di stato nemico (solo se la mossa ha effetto sul tipo) 
+    const statusChance = (!enemyMove.effectChance || enemyMove.effectChance === 0) ? 100 : enemyMove.effectChance; 
+    if (typeMultiplier > 0 && enemyMove.statusEffect && !currentPlayerPkmn.status && Math.random() * 100 < statusChance) {
       if (isImmuneToStatus(currentPlayerPkmn.types, enemyMove.statusEffect)) {
         addLog(`${currentPlayerPkmn.name} è immune a ${enemyMove.statusEffect}!`);
       } else {
@@ -1078,11 +1078,11 @@ export default function BattleScreen() {
       }
     }
 
-    // --- Stat changes mosse OFFENSIVE nemico ---
-    // stat_chance=0 → self-drop garantito (Zuffa, Draco Meteor, ecc.)
-    // stat_chance>0 e change<0 → effetto secondario sul GIOCATORE con probabilità
-    // stat_chance>0 e change>0 → self-boost secondario sul NEMICO con probabilità (Pugno Meteora)
-    if (enemyMove.category !== 'status' && enemyMove.stat_changes && enemyMove.stat_changes.length > 0) {
+    // --- Stat changes mosse OFFENSIVE nemico --- 
+     // stat_chance=0 → self-drop garantito (Zuffa, Draco Meteor, ecc.) 
+     // stat_chance>0 e change<0 → effetto secondario sul GIOCATORE con probabilità 
+     // stat_chance>0 e change>0 → self-boost secondario sul NEMICO con probabilità (Pugno Meteora) 
+     if (typeMultiplier > 0 && enemyMove.category !== 'status' && enemyMove.stat_changes && enemyMove.stat_changes.length > 0) {
       const STAT_MAP: Record<string, string> = {
         attack: 'attack', defense: 'defense',
         'special-attack': 'spAtk', 'special-defense': 'spDef',
@@ -1522,8 +1522,8 @@ export default function BattleScreen() {
 
       addLog(`${playerPkmn.name} usa ${move.name}!${damage > 0 ? ` (${damage} danni)` : ''}`);
       
-      // Status e Healing logica
-      const { newStatus, message } = applyPlayerMoveEffects(move, liveEnemyAtStartOfMove, damage);
+      // Status e Healing logica (salta se bersaglio immune al tipo) 
+      const { newStatus, message } = typeMultiplier > 0 ? applyPlayerMoveEffects(move, liveEnemyAtStartOfMove, damage) : {}; 
       if (message) addLog(message);
 
       if (isCrit) addLog('Brutto colpo!');
@@ -1635,8 +1635,8 @@ export default function BattleScreen() {
 
       addLog(`${playerPkmn.name} usa ${move.name}!${damage > 0 ? ` (${damage} danni)` : ''}`);
       
-      // Status e Healing logica
-      const { newStatus, message } = applyPlayerMoveEffects(move, currentEnemyAfterEnemyTurn, damage);
+      // Status e Healing logica (salta se bersaglio immune al tipo) 
+      const { newStatus, message } = typeMultiplier > 0 ? applyPlayerMoveEffects(move, currentEnemyAfterEnemyTurn, damage) : {}; 
       if (message) addLog(message);
 
       if (isCrit) addLog('Brutto colpo!');

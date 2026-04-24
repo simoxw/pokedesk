@@ -171,6 +171,23 @@ export const useStore = create<GameStore>()(
         state.team = state.team.map(fixEvRetroactive);
         state.box = state.box.map(fixEvRetroactive);
 
+        // Clamp retroattivo: IV max 31, EV per stat max 252 
+        const fixStatCaps = (p: any) => { 
+          const newIvs = Object.fromEntries( 
+            Object.entries(p.ivs ?? {}).map(([k, v]) => [k, Math.max(0, Math.min(31, Number(v)))]) 
+          ); 
+          const newEvs = Object.fromEntries( 
+            Object.entries(p.evs ?? {}).map(([k, v]) => [k, Math.max(0, Math.min(252, Number(v)))]) 
+          ); 
+          const ivUnchanged = Object.keys(newIvs).every(k => newIvs[k] === (p.ivs ?? {})[k]); 
+          const evUnchanged = Object.keys(newEvs).every(k => newEvs[k] === (p.evs ?? {})[k]); 
+          if (ivUnchanged && evUnchanged) return p; 
+          const newStats = BattleEngine.calculateStats(p.level, p.baseStats, newIvs, newEvs, p.nature); 
+          return { ...p, ivs: newIvs, evs: newEvs, stats: newStats, currentHp: Math.min(newStats.hp, Math.max(0, p.currentHp)) }; 
+        }; 
+        state.team = state.team.map(fixStatCaps); 
+        state.box = state.box.map(fixStatCaps); 
+
         // Fix retroattivo: porta tutti i Pokémon sopra il livello 100 a livello 100
         const clampLevel100 = (p: any) => {
           if (!p || p.level <= 100) return p;
