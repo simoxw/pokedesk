@@ -250,6 +250,19 @@ export default function BagScreen() {
                           priority: m.priority || 0, 
                           category: m.damage_class.name, 
                           description: api.getItalianDescription(m.flavor_text_entries), 
+                          meta: m.meta ?? null,
+                          stat_changes: m.stat_changes ?? [],
+                          statusEffect: (() => {
+                            const a = m.meta?.ailment?.name;
+                            if (!a || a === 'none' || a === 'unknown') return undefined;
+                            if (a === 'sleep') return 'SLP';
+                            if (a === 'poison' || a === 'bad-poison') return 'PSN';
+                            if (a === 'burn') return 'BRN';
+                            if (a === 'paralysis') return 'PAR';
+                            if (a === 'freeze') return 'FRZ';
+                            return undefined;
+                          })(),
+                          effectChance: m.meta?.ailment_chance > 0 ? m.meta.ailment_chance : (m.effect_chance ?? undefined),
                         })); 
 
                       if (pendingItem.id === 'heart_scale') {

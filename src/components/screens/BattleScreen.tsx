@@ -1036,9 +1036,21 @@ export default function BattleScreen() {
 
     // --- DRAIN: il nemico si cura in base al valore drain di PokeAPI ---
     const enemyMetaDrain = enemyMove.meta?.drain ?? 0;
-    const enemyFallbackDrain = enemyMove.name?.toLowerCase().includes('assorb') ? 0.5 : 0;
-    const enemyDrainRatio = (enemyMetaDrain > 0 ? enemyMetaDrain / 100 : enemyFallbackDrain);
-    const isEnemyDrain = enemyDrainRatio > 0;
+    const enemyMoveName = enemyMove.name?.toLowerCase() ?? '';
+    const enemyFallbackDrain = (
+      enemyMoveName.includes('assorb') ||
+      enemyMoveName.includes('mangia') ||
+      enemyMoveName.includes('dream') ||
+      enemyMoveName.includes('sogni') ||
+      enemyMoveName.includes('gigadrain') ||
+      enemyMoveName.includes('drain') ||
+      enemyMoveName.includes('prosciuga') ||
+      enemyMoveName.includes('energy') ||
+      enemyMoveName.includes('parassiseme') ||
+      enemyMoveName.includes('leech')
+    ) ? 0.5 : 0;
+    const enemyDrainRatio = (enemyMetaDrain !== 0 ? Math.abs(enemyMetaDrain) / 100 : enemyFallbackDrain);
+    const isEnemyDrain = enemyDrainRatio > 0 && enemyMetaDrain >= 0 && (enemyMetaDrain > 0 || enemyFallbackDrain > 0);
     if (isEnemyDrain) {
       const drainHeal = Math.floor(enemyDamage * enemyDrainRatio);
       if (drainHeal > 0) {
@@ -1050,6 +1062,23 @@ export default function BattleScreen() {
           return next;
         });
         addLog(`${liveEnemy.name} ha assorbito ${drainHeal} HP!`);
+      }
+    }
+    
+    // --- ENEMY RECOIL: danno di rimbalzo se drain è negativo ---
+    const isEnemyRecoil = enemyMetaDrain < 0;
+    if (isEnemyRecoil && enemyDamage > 0) {
+      const enemyRecoilRatio = Math.abs(enemyMetaDrain) / 100;
+      const enemyRecoilDmg = Math.max(1, Math.floor(enemyDamage * enemyRecoilRatio));
+      const hpAfterRecoil = Math.max(0, (enemyRef.current?.currentHp ?? 0) - enemyRecoilDmg);
+      setEnemy((prev: any) => {
+        const next = { ...prev, currentHp: hpAfterRecoil };
+        enemyRef.current = next;
+        return next;
+      });
+      addLog(`${enemyRef.current?.name ?? 'Nemico'} subisce ${enemyRecoilDmg} danni di rimbalzo!`);
+      if (hpAfterRecoil <= 0) {
+        setTimeout(() => processEnemyDefeat(enemyRef.current), 100);
       }
     } 
 
@@ -1333,9 +1362,21 @@ export default function BattleScreen() {
   
     // --- DRAIN MOVES: cura basata sul valore drain di PokeAPI (es. 50 = 50% danno) ---
     const metaDrain = move.meta?.drain ?? 0;
-    const fallbackDrain = move.name?.toLowerCase().includes('assorb') ? 0.5 : 0;
-    const drainRatio = (metaDrain > 0 ? metaDrain / 100 : fallbackDrain);
-    const isDrain = drainRatio > 0;
+    const moveName = move.name?.toLowerCase() ?? '';
+    const fallbackDrain = (
+      moveName.includes('assorb') ||
+      moveName.includes('mangia') ||
+      moveName.includes('dream') ||
+      moveName.includes('sogni') ||
+      moveName.includes('gigadrain') ||
+      moveName.includes('drain') ||
+      moveName.includes('prosciuga') ||
+      moveName.includes('energy') ||
+      moveName.includes('parassiseme') ||
+      moveName.includes('leech')
+    ) ? 0.5 : 0;
+    const drainRatio = (metaDrain !== 0 ? Math.abs(metaDrain) / 100 : fallbackDrain);
+    const isDrain = drainRatio > 0 && metaDrain >= 0 && (metaDrain > 0 || fallbackDrain > 0);
     if (isDrain) {
       const freshPkmn = useStore.getState().team.find((p: any) => p.id === playerPkmn.id) ?? playerPkmn;
       const healing = Math.floor(realDamage * drainRatio);
@@ -1348,6 +1389,17 @@ export default function BattleScreen() {
         }
       }
       return {};
+    }
+    
+    // --- RECOIL: danno di rimbalzo se drain è negativo ---
+    const isRecoil = metaDrain < 0;
+    if (isRecoil && realDamage > 0) {
+      const recoilRatio = Math.abs(metaDrain) / 100;
+      const recoilDmg = Math.max(1, Math.floor(realDamage * recoilRatio));
+      const freshPkmnForRecoil = useStore.getState().team.find(p => p.id === playerPkmn.id) ?? playerPkmn;
+      const newHpAfterRecoil = Math.max(0, freshPkmnForRecoil.currentHp - recoilDmg);
+      updatePokemon(freshPkmnForRecoil.id, { currentHp: newHpAfterRecoil });
+      addLog(`${freshPkmnForRecoil.name} subisce ${recoilDmg} danni di rimbalzo!`);
     }
 
     // --- Stat changes mosse OFFENSIVE giocatore ---
@@ -1526,47 +1578,91 @@ export default function BattleScreen() {
 
       addLog(`${playerPkmn.name} usa ${move.name}!${damage > 0 ? ` (${damage} danni)` : ''}`);
       
-      // Status e Healing logica (salta se bersaglio immune al tipo) 
-      const { newStatus, message } = typeMultiplier > 0 ? applyPlayerMoveEffects(move, liveEnemyAtStartOfMove, damage) : {}; 
-      if (message) addLog(message);
-
-      if (isCrit) addLog('Brutto colpo!');
-      if (effLabel && (damage > 0 || typeMultiplier === 0)) addLog(effLabel);
-      if (typeMultiplier >= 2) playSound('hitSuper');
-      else if (typeMultiplier > 0 && typeMultiplier < 1) playSound('hitWeak');
-
-      // Applica stato con immunità
-      let finalStatus = liveEnemyAtStartOfMove.status;
-      if (newStatus && !liveEnemyAtStartOfMove.status) {
-        if (isImmuneToStatus(liveEnemyAtStartOfMove.types, newStatus)) {
-          addLog(`${liveEnemyAtStartOfMove.name} è immune a ${newStatus}!`);
-        } else {
-          finalStatus = newStatus;
+      // Pure healing moves (non-drain) bypass type immunity — they heal the user, not affect the enemy
+      // Mosse di cura pura (senza assorbimento dal nemico)
+      const PURE_HEAL_MOVES: Record<string, number> = { 
+        '105': 0.5,   // recupero
+        '135': 0.5,   // uovo morbido
+        '208': 0.5,   // latte fresco
+        '303': 0.5,   // posa riposo
+        '355': 0.5,   // posariposo
+        '236': 0.5,   // chiaro di luna
+        '235': 0.5,   // sintesi
+        '234': 0.5,   // alba
+        '505': 0.5,   // pulsaguarigione
+        '588': 0.5,   // desiderio
+        '456': 0.5,   // guarigionevoto
+        '273': 0.5    // desiderio (alternativo)
+      };
+      const freshPkmnForHealing = useStore.getState().team.find(p => p.id === playerPkmn.id) ?? playerPkmn;
+      
+      let isHealMove = false;
+      
+      // Riposo: cura tutto, bypassa immunità
+      if (move.id === '156') {
+        isHealMove = true;
+        const healed = Math.floor(freshPkmnForHealing.stats.hp * 0.5);
+        const newHp = Math.min(freshPkmnForHealing.stats.hp, freshPkmnForHealing.currentHp + healed);
+        updatePokemon(freshPkmnForHealing.id, { currentHp: newHp });
+        addLog(`${freshPkmnForHealing.name} si è riposato e recupera ${newHp - freshPkmnForHealing.currentHp} HP!`);
+      }
+      // Other pure healing moves - bypass immunità SOLO se non sono drain
+      const healRatio = PURE_HEAL_MOVES[move.id];
+      if (!isHealMove && healRatio && !move.meta?.drain) {
+        isHealMove = true;
+        const healing = Math.floor(freshPkmnForHealing.stats.hp * healRatio);
+        const newHp = Math.min(freshPkmnForHealing.stats.hp, freshPkmnForHealing.currentHp + healing);
+        const actualHeal = newHp - freshPkmnForHealing.currentHp;
+        if (actualHeal > 0) {
+          updatePokemon(freshPkmnForHealing.id, { currentHp: newHp });
+          addLog(`${freshPkmnForHealing.name} ha recuperato ${actualHeal} HP!`);
         }
       }
+      
+      // Apply damage and effects ONLY for non-healing moves
+      if (!isHealMove) {
+        // Status e Healing logica (salta se bersaglio immune al tipo) 
+        const { newStatus, message } = typeMultiplier > 0 ? applyPlayerMoveEffects(move, liveEnemyAtStartOfMove, damage) : {}; 
+        if (message) addLog(message);
 
-      if (damage > 0) {
-        setEnemyHitAnim(true);
-        setTimeout(() => setEnemyHitAnim(false), 400);
-      }
+        if (isCrit) addLog('Brutto colpo!');
+        if (effLabel && (damage > 0 || typeMultiplier === 0)) addLog(effLabel);
+        if (typeMultiplier >= 2) playSound('hitSuper');
+        else if (typeMultiplier > 0 && typeMultiplier < 1) playSound('hitWeak');
 
-      setEnemy((prev: any) => {
-        const next = { 
-          ...prev, 
-          currentHp: newEnemyHp,
-          status: finalStatus !== undefined ? finalStatus : prev.status
-        };
-        enemyRef.current = next;
-        return next;
-      });
+        // Applica stato con immunità
+        let finalStatus = liveEnemyAtStartOfMove.status;
+        if (newStatus && !liveEnemyAtStartOfMove.status) {
+          if (isImmuneToStatus(liveEnemyAtStartOfMove.types, newStatus)) {
+            addLog(`${liveEnemyAtStartOfMove.name} è immune a ${newStatus}!`);
+          } else {
+            finalStatus = newStatus;
+          }
+        }
 
-      // Recoil giocatore
-      const recoilPctP = move.meta?.recoil ?? 0;
-      if (recoilPctP > 0 && damage > 0) {
-        const recoilDmgP = Math.max(1, Math.floor(damage * recoilPctP / 100));
-        const freshPkmnR = useStore.getState().team.find((p: any) => p.id === playerPkmn.id) ?? playerPkmn;
-        updatePokemon(freshPkmnR.id, { currentHp: Math.max(0, freshPkmnR.currentHp - recoilDmgP) });
-        addLog(`${playerPkmn.name} subisce ${recoilDmgP} danni di rimbalzo!`);
+        if (damage > 0) {
+          setEnemyHitAnim(true);
+          setTimeout(() => setEnemyHitAnim(false), 400);
+        }
+
+        setEnemy((prev: any) => {
+          const next = { 
+            ...prev, 
+            currentHp: newEnemyHp,
+            status: finalStatus !== undefined ? finalStatus : prev.status
+          };
+          enemyRef.current = next;
+          return next;
+        });
+
+        // Recoil giocatore
+        const recoilPctP = move.meta?.recoil ?? 0;
+        if (recoilPctP > 0 && damage > 0) {
+          const recoilDmgP = Math.max(1, Math.floor(damage * recoilPctP / 100));
+          const freshPkmnR = useStore.getState().team.find((p: any) => p.id === playerPkmn.id) ?? playerPkmn;
+          updatePokemon(freshPkmnR.id, { currentHp: Math.max(0, freshPkmnR.currentHp - recoilDmgP) });
+          addLog(`${playerPkmn.name} subisce ${recoilDmgP} danni di rimbalzo!`);
+        }
       }
 
       await new Promise(r => setTimeout(r, 800));
