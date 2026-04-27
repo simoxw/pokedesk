@@ -1,4 +1,4 @@
-const CACHE_NAME = 'pokedesk-v7'; // Bump ad ogni deploy con breaking changes
+const CACHE_NAME = 'pokedesk-v8';
 const ASSETS_TO_CACHE = [
   'index.html',
   'manifest.json',
