@@ -13,7 +13,7 @@ import confetti from 'canvas-confetti';
 import { generateRandomEVs, getTowerFloorConfig, TOWER_MILESTONES } from '../../services/battleTowerService';
 import { useLoadingWatchdog } from '../../useLoadingWatchdog';
 
-const SELF_DROP_MOVE_IDS = new Set(['276', '315', '354', '370', '434', '437', '557', '620', '705']);
+const SELF_DROP_MOVE_IDS = new Set(['276', '315', '354', '359', '370', '434', '437', '484', '528', '557', '620', '705']);
 
 export default function BattleScreen() {
   const { team, setScreen, incrementStat, addCoins, addItem, updatePokemon, inventory, useItem, gainExp, currentBattlePath, recordBattleWin, medals, expShareActive, expBoostActive, friendBattleTeam, clearFriendBattleTeam, leagueBattleTeam, clearLeagueBattleTeam, setLeagueBattleResult, masterBattleTeam, clearMasterBattleTeam, setMasterBattleResult, battleTower, startBattleTower, advanceBattleTowerFloor, abandonBattleTower, claimBattleTowerReward, reportGenBattleResult } = useStore();
@@ -1423,7 +1423,10 @@ export default function BattleScreen() {
           if (sc.change < 0) addLog(`Le statistiche di ${playerPkmn.name} sono diminuite!`);
           if (sc.change > 0) addLog(`Le statistiche di ${playerPkmn.name} sono aumentate!`);
         } else if (Math.random() * 100 < statChance) {
-          if (sc.change < 0) {
+          if (sc.change < 0 && SELF_DROP_MOVE_IDS.has(move.id)) {
+            setPlayerStages(prev => ({ ...prev, [statKey]: Math.max(-6, (prev[statKey] ?? 0) + sc.change) }));
+            addLog(`Le statistiche di ${playerPkmn.name} sono diminuite!`);
+          } else if (sc.change < 0) {
             // Effetto secondario sul nemico (es. Crunch -DEF, Psichica -SpDef)
             setEnemyStages(prev => ({ ...prev, [statKey]: Math.max(-6, (prev[statKey] ?? 0) + sc.change) }));
             addLog(`Le statistiche di ${currentEnemy?.name} sono diminuite!`);
