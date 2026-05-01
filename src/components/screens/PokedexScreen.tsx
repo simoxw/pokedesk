@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react'; 
 import { useStore } from '../../store'; 
 import { api } from '../../api'; 
+import { REGIONAL_FORMS } from '../../data/regionalForms';
 import { motion, AnimatePresence } from 'motion/react'; 
 import { ArrowLeft, X, Heart, Sword, Shield, Zap, Activity, Filter, Search, Calculator } from 'lucide-react';
 import { TYPE_CHART } from '../../BattleEngine'; 
@@ -61,7 +62,7 @@ export default function PokedexScreen() {
   const [searchQuery, setSearchQuery] = useState('');
   const [showFilters, setShowFilters] = useState(false);
   const [showTypeCalc, setShowTypeCalc] = useState(false);
-  const [showRegional, setShowRegional] = useState(false);
+  const [showProgress, setShowProgress] = useState(false);
   const [calcAttackType, setCalcAttackType] = useState<string | null>(null);
 
   const GEN_RANGES = [
@@ -119,6 +120,16 @@ export default function PokedexScreen() {
   const seen = Object.values(pokedex).length; // tutte le specie registrate (seen + caught)
   const regionalCaught = Object.entries(pokedex).filter(([id, status]) => status === 'caught' && Number(id) > 10000).length;
   const regionalTotal = Object.entries(pokedex).filter(([id]) => Number(id) > 10000).length;
+  const regionalCount = REGIONAL_FORMS.length;
+ 
+  const regionalProgress = {
+    id: 0,
+    label: 'Regionali',
+    caughtInGen: regionalCaught,
+    total: regionalCount,
+    pct: regionalCount > 0 ? Math.round((regionalCaught / regionalCount) * 100) : 0,
+    flag: '🌎',
+  };
  
   const regionalStats = GEN_RANGES.map(gen => { 
     const total = gen.range[1] - gen.range[0] + 1; 
@@ -185,6 +196,12 @@ export default function PokedexScreen() {
               className="p-2 rounded-xl transition-colors bg-[#1a1a2e] text-white/60"
             >
               <Calculator size={20} />
+            </button>
+            <button
+              onClick={() => setShowProgress(!showProgress)}
+              className={`p-2 rounded-xl transition-colors ${showProgress ? 'bg-[#e63946] text-white' : 'bg-[#1a1a2e] text-white/60'}`}
+            >
+              Progressi
             </button>
             <button 
               onClick={() => setShowFilters(!showFilters)}
@@ -271,7 +288,7 @@ export default function PokedexScreen() {
             </div>
           
           <AnimatePresence>
-            {showRegional && (
+            {showProgress && (
               <motion.div
                 initial={{ height: 0, opacity: 0 }}
                 animate={{ height: 'auto', opacity: 1 }}
@@ -279,9 +296,9 @@ export default function PokedexScreen() {
                 className="overflow-hidden mt-2"
               >
                 <div className="bg-[#1a1a2e]/50 rounded-2xl p-3 border border-white/5 space-y-3">
-                  {regionalStats.map(gen => {
-                    const isClaimed = claimedPokedexRewards.includes(`gen${gen.id}`);
-                    const canClaim = gen.pct === 100 && !isClaimed;
+                  {[regionalProgress, ...regionalStats].map(gen => {
+                    const isClaimed = gen.id !== 0 && claimedPokedexRewards.includes(`gen${gen.id}`);
+                    const canClaim = gen.id !== 0 && gen.pct === 100 && !isClaimed;
                     return (
                       <div key={gen.id} className="space-y-1.5">
                         <div className="flex items-center justify-between text-[10px] font-bold">
