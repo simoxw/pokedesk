@@ -366,8 +366,9 @@ export default function BoxScreen() {
             { key: 'gen8', label: 'Gen 8', icon: '⚔️' },
             { key: 'gen9', label: 'Gen 9', icon: '🔴' },
             { key: 'legendary', label: 'Leggendari', icon: '⭐' },
+            { key: 'regional', label: 'Regionali', icon: '🌐' },
             { key: 'favorite', label: 'Preferita', icon: '❤️' },
-          ] as { key: TeamPreset['category']; label: string; icon: string }[]).map(({ key, label, icon }) => {
+          ] as { key: TeamPreset['category']; label: string; icon: '🗾' | '🌸' | '🌊' | '❄️' | '🗽' | '🗼' | '🌺' | '⚔️' | '🔴' | '⭐' | '🌐' | '❤️' }[]).map(({ key, label, icon }) => {
             const preset = teamPresets[key];
             const validCount = preset
               ? preset.pokemonIds.filter(id => allOwnedPokemon.some(p => p.id === id)).length

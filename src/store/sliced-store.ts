@@ -19,6 +19,7 @@ const LEGACY_BACKUP_KEY = 'pokedesk-save-legacy-backup';
 const MIGRATION_FLAG_KEY = 'pokedesk-idb-migrated';
 const hasLocalStorage = typeof localStorage !== 'undefined';
 const hasIndexedDB = typeof indexedDB !== 'undefined';
+let migrationAttempted = false;
 
 // Verifica veloce accessibilità IndexedDB 
 async function checkIndexedDBHealth(): Promise<boolean> { 
@@ -40,7 +41,8 @@ const indexedDBStorage = {
   getItem: async (name: string): Promise<string | null> => {
     try {
       const migrationDone = hasLocalStorage ? localStorage.getItem(MIGRATION_FLAG_KEY) : null;
-      if (!migrationDone && hasLocalStorage) {
+      if (!migrationDone && !migrationAttempted && hasLocalStorage) {
+        migrationAttempted = true;
         const legacyData = localStorage.getItem(name);
         if (legacyData) {
           if (hasIndexedDB) {
@@ -152,6 +154,8 @@ export const useStore = create<GameStore>()(
         }
         if (!state.teamPresets) state.teamPresets = {};
         if (!state.dojoTrainingCount) state.dojoTrainingCount = {};
+        if (state.regionalCharges === undefined) state.regionalCharges = 3;
+        if (!state.lastRegionalTickTimestamp) state.lastRegionalTickTimestamp = Date.now();
         if (state.activePresetCategory === undefined) state.activePresetCategory = null;
         if (state.genChallenges === undefined) state.genChallenges = null;
         

@@ -30,26 +30,22 @@ import { useEffect, useRef } from 'react';
  
        if (toPreload.length === 0) return; 
  
-       const tasks = toPreload.flatMap(pokemonId => [ 
-         async () => { 
+const tasks = toPreload.map(pokemonId => async () => {
+         try {
            console.log(`[Preloader] Preloading data for ID: ${pokemonId}`);
-           const data = await api.getPokemon(pokemonId); 
-           preloadedRef.current.add(pokemonId); 
-           return data; 
-         }, 
-         async () => { 
-           console.log(`[Preloader] Preloading species and moves for ID: ${pokemonId}`);
-           const data = await api.getPokemon(pokemonId); 
-           const species = await api.getSpecies(pokemonId); 
-           // Precarichiamo anche le mosse al livello corrente del Pokémon 
-           const pokemon = team.find(p => p.pokemonId === pokemonId) 
-             ?? box.find(p => p.pokemonId === pokemonId); 
-           if (pokemon) { 
-             await api.getPokemonMoves(data, pokemon.level); 
-           } 
-           return species; 
-         }, 
-       ]); 
+           const data = await api.getPokemon(pokemonId);
+           await api.getSpecies(pokemonId);
+           const pokemon = team.find(p => p.pokemonId === pokemonId)
+             ?? box.find(p => p.pokemonId === pokemonId);
+           if (pokemon) {
+             await api.getPokemonMoves(data, pokemon.level);
+           }
+           preloadedRef.current.add(pokemonId);
+           return data;
+         } catch {
+           return null;
+         }
+       });
  
        console.log(`[Preloader] Starting queue with ${tasks.length} tasks`);
        throttledQueue(tasks, 200).then(() => console.log('[Preloader] Queue finished')); 

@@ -66,6 +66,7 @@ const GEN_CHALLENGE_REWARDS: Record<TeamPreset['category'], number> = {
   gen9: 950,
   legendary: 1500,
   favorite: 700,
+  regional: 900,
 };
 
 const GEN_COMMON_POOL: GenMissionTemplate[] = [
@@ -86,6 +87,7 @@ const SKILL_ENABLED_CATEGORIES: TeamPreset['category'][] = ['gen6', 'gen7', 'gen
 export function isPokemonInPresetCategory(pokemon: GameStore['team'][number], category: TeamPreset['category']): boolean {
   if (category === 'favorite') return true;
   if (category === 'legendary') return LEGENDARY_IDS.has(pokemon.pokemonId);
+  if (category === 'regional') return pokemon.pokemonId > 10000;
   const range = GEN_RANGES[category];
   if (!range) return false;
   return pokemon.pokemonId >= range[0] && pokemon.pokemonId <= range[1] && !LEGENDARY_IDS.has(pokemon.pokemonId);

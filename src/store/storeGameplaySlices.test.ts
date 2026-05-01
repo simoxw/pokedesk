@@ -178,6 +178,41 @@ describe('Store Gameplay Slices', () => {
     expect(state.box.some((p) => p.id === p3.id)).toBe(true);
   });
 
+  it('consumeRegionalCharge decrements regional charges until zero', () => {
+    useStore.setState({ regionalCharges: 3 });
+    useStore.getState().consumeRegionalCharge();
+    let state = useStore.getState();
+    expect(state.regionalCharges).toBe(2);
+    useStore.getState().consumeRegionalCharge();
+    expect(useStore.getState().regionalCharges).toBe(1);
+    useStore.getState().consumeRegionalCharge();
+    expect(useStore.getState().regionalCharges).toBe(0);
+    useStore.getState().consumeRegionalCharge();
+    expect(useStore.getState().regionalCharges).toBe(0);
+  });
+
+  it('saveTeamPreset regional only keeps regional pokemon', () => {
+    const regionalPkm = makePokemon({ id: 'reg1', pokemonId: 10010, baseSpeciesId: 10010, name: 'Alolan Rattata' });
+    const normalPkm = makePokemon({ id: 'norm1', pokemonId: 25, baseSpeciesId: 25, name: 'Pikachu' });
+    useStore.setState({ team: [regionalPkm, normalPkm], box: [] });
+    useStore.getState().saveTeamPreset('regional', [regionalPkm.id, normalPkm.id]);
+    const state = useStore.getState();
+    expect(state.teamPresets.regional).toBeDefined();
+    expect(state.teamPresets.regional.pokemonIds).toEqual([regionalPkm.id]);
+  });
+
+  it('loadTeamPreset regional loads only regional pokemon and sets category', () => {
+    const regionalPkm = makePokemon({ id: 'reg2', pokemonId: 10011, baseSpeciesId: 10011, name: 'Galarian Meowth' });
+    useStore.setState({ team: [], box: [regionalPkm] });
+    useStore.getState().saveTeamPreset('regional', [regionalPkm.id]);
+    useStore.setState({ team: [], box: [regionalPkm] });
+    useStore.getState().loadTeamPreset('regional');
+    const state = useStore.getState();
+    expect(state.activePresetCategory).toBe('regional');
+    expect(state.team[0]?.id).toBe(regionalPkm.id);
+    expect(state.genChallenges?.category).toBe('regional');
+  });
+
   it('startIncubation and hatchEgg complete full flow', async () => {
     const p1 = makePokemon({ id: 'b1', pokemonId: 1, baseSpeciesId: 1 });
     const p2 = makePokemon({ id: 'b2', pokemonId: 2, baseSpeciesId: 1 });

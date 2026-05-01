@@ -117,11 +117,12 @@ pokedesk/
 - **FloatingMuteButton.tsx**: Controllo audio rapido sempre visibile.
 
 ### Services (src/services/)
-- **levelUpService.ts**: Logica complessa per il controllo di nuove mosse ed evoluzioni al level-up.
+- **levelUpService.ts**: Logica complessa per il controllo di nuove mosse ed evoluzioni al level-up, con supporto alle forme regionali.
 - **battleTowerService.ts**: Generazione configurazioni piani e ricompense per la torre.
 
 ### Test (src/*.test.ts)
 - **Evolution.test.ts**: Test per i flussi di evoluzione e bug fix statistiche.
+- **evolutionService.test.ts**: Test mirati per la logica di evoluzione regionale, le evoluzioni a pietra e il controllo delle evoluzioni al livello.
 - **BattleStages.test.ts / StatsFormula.test.ts**: Validazione calcoli motore di lotta.
 - **CatchEngine.test.ts / ExpSystem.test.ts**: Test su cattura ed esperienza.
 - **TypeChart.test.ts**: Verifica correttezza debolezze e resistenze.

@@ -44,6 +44,7 @@ pokedesk/
 │   ├── CatchEngine.test.ts
 │   ├── CatchEngine.ts
 │   ├── Evolution.test.ts
+│   ├── evolutionService.test.ts
 │   ├── ExpSystem.test.ts
 │   ├── index.css
 │   ├── main.tsx
@@ -92,7 +93,8 @@ pokedesk/
 │   │       └── TypeBadge.tsx
 │   ├── data/
 │   │   ├── leagueData.ts
-│   │   └── legendaryIds.ts
+│   │   ├── legendaryIds.ts
+│   │   └── regionalForms.ts
 │   ├── services/
 │   │   ├── battleTowerService.ts
 │   │   └── levelUpService.ts
@@ -197,10 +199,11 @@ pokedesk/
 ### Cartella `src/data/`
 - `leagueData.ts`: dati strutturati per i team e le sfide della Lega e dei boss.
 - `legendaryIds.ts`: lista di ID dei Pokémon leggendari usati nei pool speciali.
+- `regionalForms.ts`: definizioni delle forme regionali, mapping delle pietre evolutive e logica di compatibilità.
 
 ### Cartella `src/services/`
 - `battleTowerService.ts`: logica per la generazione dei piani e delle ricompense della Torre Lotta.
-- `levelUpService.ts`: gestione delle evoluzioni, apprendimento mosse e crescita dei Pokémon.
+- `levelUpService.ts`: gestione delle evoluzioni, apprendimento mosse, crescita dei Pokémon e supporto alle forme regionali.
 
 ### Cartella `src/store/`
 - `index.ts`: inizializzazione dello store, composizione delle slice e helper per la persistenza.
@@ -224,8 +227,9 @@ pokedesk/
 - `BattleStages.test.ts`: verifica i passaggi di fase della battaglia.
 - `CatchEngine.test.ts`: test della logica di cattura e probabilità.
 - `Evolution.test.ts`: verifica dei nodi di evoluzione e transizioni.
+- `evolutionService.test.ts`: test mirati per la logica di evoluzione regionale, evoluzioni a pietra e controllo delle evoluzioni al livello.
 - `ExpSystem.test.ts`: test del sistema di esperienza.
-- `StatsFormula.test.ts`: validazione delle formule di statistiche.
+- `StatsFormula.test.ts`: validazione delle formule di statistica.
 - `TypeChart.test.ts`: test delle relazioni di tipo e dei moltiplicatori di danno.
 
 ### Configurazione di progetto

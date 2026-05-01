@@ -66,6 +66,7 @@ export const createTeamSlice: StateCreator<GameStore, [], [], TeamSlice> = (set)
       const isValidForCategory = (pokemon: (typeof state.team)[number]) => {
         if (category === 'favorite') return true;
         if (category === 'legendary') return LEGENDARY_IDS.has(pokemon.pokemonId);
+        if (category === 'regional') return pokemon.pokemonId > 10000;
         const range = GEN_RANGES[category];
         if (!range) return true;
         return pokemon.pokemonId >= range[0] && pokemon.pokemonId <= range[1] && !LEGENDARY_IDS.has(pokemon.pokemonId);

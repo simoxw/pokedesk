@@ -30,6 +30,7 @@ export default function HubScreen() {
     currentBattlePath,
     lastTickTimestamp, 
     lastSafariTickTimestamp,
+    lastRegionalTickTimestamp,
     dailyMissions,
     genChallenges,
     activePresetCategory,
@@ -47,6 +48,9 @@ export default function HubScreen() {
     lastStreakDate,
     battleTower,
     abandonBattleTower,
+    regionalCharges,
+    consumeRegionalCharge,
+    masterProgress,
   } = useStore();
 
   const handleBattleClick = () => {
@@ -92,6 +96,12 @@ export default function HubScreen() {
     if (charges >= 6) return 0;
     const elapsed = Date.now() - lastTickTimestamp;
     return Math.max(0, 300000 - (elapsed % 300000));
+  };
+
+  const getTimeToNextRegionalTick = () => {
+    if (regionalCharges >= 3) return 0;
+    const elapsed = Date.now() - lastRegionalTickTimestamp;
+    return Math.max(0, 28800000 - (elapsed % 28800000));
   };
 
   const getTimeToNextSafariTick = () => {
@@ -145,6 +155,10 @@ export default function HubScreen() {
   const seconds = Math.floor((nextTick % 60000) / 1000);
 
   const safariUnlocked = medals.filter(m => m.isUnlocked).length >= 20;
+  const regionalUnlocked = (masterProgress?.defeatedIds?.length ?? 0) >= 1;
+  const nextRegionalTick = getTimeToNextRegionalTick();
+  const regionalHours = Math.floor(nextRegionalTick / 3600000);
+  const regionalMins = Math.floor((nextRegionalTick % 3600000) / 60000);
   const medalsCount = medals.filter(m => m.isUnlocked).length;
   const nextSafariTick = getTimeToNextSafariTick();
   const safariMinutes = Math.floor(nextSafariTick / 60000);
@@ -372,7 +386,7 @@ export default function HubScreen() {
             whileTap={{ scale: 0.95 }}
             disabled={charges === 0}
             onClick={() => { consumeCharge(); setScreen('CATCH_SCREEN'); }}
-            className="w-full bg-[#e63946] disabled:opacity-50 disabled:grayscale py-4 rounded-3xl flex flex-col items-center justify-center shadow-2xl shadow-[#e63946]/30 gap-0.5"
+            className="w-full bg-[#e63946] disabled:opacity-50 disabled:grayscale py-3 rounded-3xl flex flex-col items-center justify-center shadow-2xl shadow-[#e63946]/30 gap-0.5"
           >
             <div className="flex items-center gap-3">
               <Target size={22} />
@@ -389,7 +403,7 @@ export default function HubScreen() {
             whileTap={{ scale: 0.95 }}
             disabled={safariCharges === 0 || !safariUnlocked}
             onClick={() => { consumeSafariCharge(); setScreen('SAFARI_SCREEN'); }}
-            className={`w-full py-4 rounded-2xl flex flex-col items-center justify-center gap-0.5 shadow-xl ${
+            className={`w-full py-3 rounded-2xl flex flex-col items-center justify-center gap-0.5 shadow-xl ${
               safariUnlocked
                 ? 'bg-[#1a3a1a] border border-green-800/40 text-white'
                 : 'bg-gray-800/60 border border-white/10 text-white/40'
@@ -453,7 +467,7 @@ export default function HubScreen() {
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}
               onClick={handleBattleClick}
-              className="bg-[#1a1a2e] border border-white/10 py-6 rounded-2xl flex flex-col items-center justify-center gap-2 shadow-xl"
+              className="bg-[#1a1a2e] border border-white/10 py-5 rounded-2xl flex flex-col items-center justify-center gap-2 shadow-xl"
             >
               <Sword size={24} />
               <span className="text-base font-black">LOTTA</span>
@@ -464,7 +478,7 @@ export default function HubScreen() {
               whileTap={{ scale: 0.95 }}
               disabled={medalsCount < 40}
               onClick={() => medalsCount >= 40 && setScreen('LEAGUE_SELECT_SCREEN')}
-              className={`relative py-6 rounded-2xl flex flex-col items-center justify-center gap-2 shadow-xl transition-all ${
+              className={`relative py-5 rounded-2xl flex flex-col items-center justify-center gap-2 shadow-xl transition-all ${
                 medalsCount >= 40
                   ? 'bg-gradient-to-b from-yellow-600/30 to-yellow-900/30 border border-yellow-500/40 text-yellow-300'
                   : 'bg-gray-800/60 border border-white/10 text-white/30'
@@ -483,32 +497,64 @@ export default function HubScreen() {
             </motion.button>
           </div>
 
-          {/* ISOLE */}
-          <motion.button
-            whileHover={{ scale: islandUnlocked ? 1.02 : 1 }}
-            whileTap={{ scale: islandUnlocked && islandAvailable ? 0.97 : 1 }}
-            disabled={!islandAvailable}
-            onClick={() => islandAvailable && setScreen('ISLAND_SCREEN')}
-            className={`w-full py-4 rounded-2xl flex flex-col items-center justify-center gap-0.5 shadow-xl transition-all ${
-              !islandUnlocked
-                ? 'bg-gray-800/60 border border-white/10 text-white/30'
-                : islandAvailable
-                ? 'bg-gradient-to-r from-[#0d2a3a] to-[#1a3d4a] border border-cyan-500/30 text-white'
-                : 'bg-[#0d1f2a] border border-white/10 text-white/40'
-            }`}
-          >
-            <div className="flex items-center gap-3">
-              {!islandUnlocked ? <span className="text-xl">🔒</span> : <span className="text-xl">🏝️</span>}
-              <span className="text-2xl font-black">ISOLE</span>
-            </div>
-            <span className="text-[10px] font-bold" style={{ color: !islandUnlocked ? 'rgba(255,255,255,0.25)' : islandAvailable ? 'rgba(100,210,255,0.8)' : 'rgba(255,255,255,0.35)' }}>
-              {!islandUnlocked
-                ? 'Completa la Lega una volta per sbloccare'
-                : islandAvailable
-                ? '⭐ Leggendario disponibile oggi!'
-                : `⏳ Prossimo tra ${islandHours}h ${islandMins}m`}
-            </span>
-          </motion.button>
+          <div className="grid grid-cols-2 gap-3">
+            <motion.button
+              whileHover={{ scale: islandUnlocked ? 1.02 : 1 }}
+              whileTap={{ scale: islandUnlocked && islandAvailable ? 0.97 : 1 }}
+              disabled={!islandAvailable}
+              onClick={() => islandAvailable && setScreen('ISLAND_SCREEN')}
+              className={`rounded-2xl flex flex-col items-center justify-center gap-2 shadow-xl transition-all py-5 ${
+                !islandUnlocked
+                  ? 'bg-gray-800/60 border border-white/10 text-white/30'
+                  : islandAvailable
+                  ? 'bg-gradient-to-r from-[#0d2a3a] to-[#1a3d4a] border border-cyan-500/30 text-white'
+                  : 'bg-[#0d1f2a] border border-white/10 text-white/40'
+              }`}
+            >
+              <span className="text-xl">{!islandUnlocked ? '🔒' : '🏝️'}</span>
+              <span className="text-base font-black">ISOLE</span>
+              <span className="text-[10px] font-bold text-white/60" style={{ color: !islandUnlocked ? 'rgba(255,255,255,0.25)' : islandAvailable ? 'rgba(100,210,255,0.8)' : 'rgba(255,255,255,0.35)' }}>
+                {!islandUnlocked
+                  ? 'Completa la Lega una volta per sbloccare'
+                  : islandAvailable
+                  ? '⭐ Leggendario disponibile oggi!'
+                  : `⏳ Prossimo tra ${islandHours}h ${islandMins}m`}
+              </span>
+            </motion.button>
+
+            <motion.button
+              whileHover={{ scale: regionalUnlocked ? 1.02 : 1 }}
+              whileTap={{ scale: regionalUnlocked && regionalCharges > 0 ? 0.97 : 1 }}
+              disabled={!regionalUnlocked || regionalCharges === 0}
+              onClick={() => {
+                if (regionalUnlocked && regionalCharges > 0) {
+                  consumeRegionalCharge();
+                  setScreen('REGIONAL_CATCH_SCREEN');
+                }
+              }}
+              className={`rounded-2xl flex flex-col items-center justify-center gap-2 shadow-xl transition-all py-5 ${
+                !regionalUnlocked
+                  ? 'bg-gray-800/60 border border-white/10 text-white/30'
+                  : regionalCharges > 0
+                  ? 'bg-gradient-to-r from-[#2d1a4a] to-[#1a2d4a] border border-purple-500/40 text-white'
+                  : 'bg-[#1a1a2e] border border-white/10 text-white/40'
+              }`}
+            >
+              <span className="text-xl">{!regionalUnlocked ? '🔒' : '🌐'}</span>
+              <span className="text-base font-black">REGIONALI</span>
+              <span className="text-[10px] font-bold" style={{
+                color: !regionalUnlocked ? 'rgba(255,255,255,0.25)'
+                  : regionalCharges > 0 ? 'rgba(200,150,255,0.9)'
+                  : 'rgba(255,255,255,0.35)'
+              }}>
+                {!regionalUnlocked
+                  ? 'Sconfiggi 1 Master Trainer per sbloccare'
+                  : regionalCharges > 0
+                  ? `🔮 ${regionalCharges}/3 cariche · Alola, Galar, Hisui, Paldea`
+                  : `⏳ Ricarica tra ${regionalHours}h ${regionalMins}m`}
+              </span>
+            </motion.button>
+          </div>
 
         </div>
       </div>

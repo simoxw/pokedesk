@@ -21,6 +21,7 @@ import IslandScreen from './components/screens/IslandScreen';
 import OptionsScreen from './components/screens/OptionsScreen';
 import AchievementScreen from './components/screens/AchievementScreen';
 import BattleTowerScreen from './components/screens/BattleTowerScreen';
+import RegionalCatchScreen from './components/screens/RegionalCatchScreen';
 import TradeEventScreen from './components/screens/TradeEventScreen';
 import BottomNav from './components/ui/BottomNav';
 import TypeBadge from './components/ui/TypeBadge';
@@ -128,6 +129,7 @@ export default function App() {
       case 'ISLAND_SCREEN': return <IslandScreen />;
       case 'ACHIEVEMENT_SCREEN': return <AchievementScreen />;
       case 'BATTLE_TOWER_SCREEN': return <BattleTowerScreen />;
+      case 'REGIONAL_CATCH_SCREEN': return <RegionalCatchScreen />;
       default: return <StartScreen />;
     }
   };
@@ -141,7 +143,8 @@ export default function App() {
     'FRIEND_BATTLE_SCREEN',
     'LEAGUE_BATTLE_SCREEN',
     'MASTER_BATTLE_SCREEN',
-    'BATTLE_TOWER_SCREEN'
+    'BATTLE_TOWER_SCREEN',
+    'REGIONAL_CATCH_SCREEN',
   ].includes(currentScreen);
 
   return (

@@ -5,9 +5,11 @@ import { NotificationService } from './NotificationService';
 const TICK_INTERVAL = 300000; // 5 minutes in ms
 const SAFARI_TICK_INTERVAL = 900000; // 15 minutes in ms
 const SAFARI_MAX_CHARGES = 8;
+const REGIONAL_TICK_INTERVAL = 28800000; // 8 ore in ms
+const REGIONAL_MAX_CHARGES = 3;
 
 export const useTickSystem = () => {
-  const { charges, lastTickTimestamp, addCharge, consumeCharge, safariCharges, lastSafariTickTimestamp, addSafariCharge } = useStore();
+  const { charges, lastTickTimestamp, addCharge, consumeCharge, safariCharges, lastSafariTickTimestamp, addSafariCharge, regionalCharges, lastRegionalTickTimestamp, addRegionalCharge } = useStore();
 
   useEffect(() => {
     const checkTicks = () => {
@@ -31,6 +33,21 @@ export const useTickSystem = () => {
 
     checkTicks();
 
+    const checkRegionalTicks = () => {
+      const now = Date.now();
+      const elapsed = now - lastRegionalTickTimestamp;
+      const newCharges = Math.floor(elapsed / REGIONAL_TICK_INTERVAL);
+      if (newCharges > 0 && regionalCharges < REGIONAL_MAX_CHARGES) {
+        const amountToAdd = Math.min(REGIONAL_MAX_CHARGES - regionalCharges, newCharges);
+        if (amountToAdd > 0) {
+          addRegionalCharge(amountToAdd);
+          useStore.setState({
+            lastRegionalTickTimestamp: lastRegionalTickTimestamp + amountToAdd * REGIONAL_TICK_INTERVAL,
+          });
+        }
+      }
+    };
+
     const checkSafariTicks = () => {
       const now = Date.now();
       const elapsed = now - lastSafariTickTimestamp;
@@ -49,12 +66,14 @@ export const useTickSystem = () => {
     };
 
     checkSafariTicks();
+    checkRegionalTicks();
     const interval = setInterval(() => {
       checkTicks();
       checkSafariTicks();
+      checkRegionalTicks();
     }, 10000); // Check every 10 seconds
     return () => clearInterval(interval);
-  }, [charges, lastTickTimestamp, addCharge, safariCharges, lastSafariTickTimestamp, addSafariCharge]);
+  }, [charges, lastTickTimestamp, addCharge, safariCharges, lastSafariTickTimestamp, addSafariCharge, regionalCharges, lastRegionalTickTimestamp, addRegionalCharge]);
 
   const getTimeToNextTick = () => {
     if (charges >= 6) return 0;
@@ -69,5 +88,11 @@ export const useTickSystem = () => {
     return Math.max(0, SAFARI_TICK_INTERVAL - (elapsed % SAFARI_TICK_INTERVAL));
   };
 
-  return { getTimeToNextTick, getTimeToNextSafariTick };
+  const getTimeToNextRegionalTick = () => {
+    if (regionalCharges >= REGIONAL_MAX_CHARGES) return 0;
+    const elapsed = Date.now() - lastRegionalTickTimestamp;
+    return Math.max(0, REGIONAL_TICK_INTERVAL - (elapsed % REGIONAL_TICK_INTERVAL));
+  };
+
+  return { getTimeToNextTick, getTimeToNextSafariTick, getTimeToNextRegionalTick };
 };

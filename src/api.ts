@@ -1,4 +1,5 @@
 import { Pokemon, Move, Item, Medal, GameState, ScreenName, PokemonSpecies, EvolutionChain } from './types';
+import { apiCache } from './lib/apiCache';
 
 const BASE_URL = 'https://pokeapi.co/api/v2';
 const MAX_CACHE = 200;
@@ -23,6 +24,12 @@ const RETRY_BASE_DELAY = 500;
 async function fetchWithCache(url: string): Promise<any> {
   if (cache.has(url)) return cache.get(url);
 
+  const cached = await apiCache.get<any>(url);
+  if (cached !== undefined) {
+    cacheSet(url, cached);
+    return cached;
+  }
+
   if (!navigator.onLine) {
     throw new Error('OFFLINE');
   }
@@ -42,6 +49,7 @@ async function fetchWithCache(url: string): Promise<any> {
       const data = await response.json();
       if (data) {
         cacheSet(url, data);
+        apiCache.set(url, data).catch(() => undefined);
         if (import.meta.env.DEV) console.debug(`[API] Success: ${url}`);
       }
       return data;
@@ -62,6 +70,12 @@ export const api = {
   },
 
   async getSpecies(id: number | string): Promise<any> {
+    // Forme regionali (id > 10000) condividono la species con la forma base.
+    // Non esiste /pokemon-species/10091, serve usare l'URL dalla risposta pokemon.
+    if (typeof id === 'number' && id > 10000) {
+      const pokemonData = await this.getPokemon(id);
+      return fetchWithCache(pokemonData.species.url);
+    }
     return fetchWithCache(`${BASE_URL}/pokemon-species/${id}`);
   },
 
@@ -115,6 +129,12 @@ export const api = {
     ]);
 
     const SELF_DROP_MOVE_IDS = new Set(['276', '315', '354', '370', '434', '437', '557', '620', '705']);
+
+    const cacheKey = `pokemon-moves:${pokemonData.id ?? pokemonData.name}:${level}`;
+    const cachedMoves = await apiCache.get<Move[]>(cacheKey);
+    if (cachedMoves !== undefined) {
+      return cachedMoves;
+    }
 
     const levelUpMoves = pokemonData.moves
       .filter((m: any) =>
@@ -192,6 +212,7 @@ export const api = {
       });
     }
 
+    await apiCache.set(cacheKey, moves);
     return moves;
   },
 
@@ -271,13 +292,38 @@ export const api = {
     }
   },
 
-  async getEvolutionByItem(speciesData: any, itemName: string): Promise<{ 
+  async getEvolutionByItem(speciesData: any, itemName: string, pokemonFormId?: number): Promise<{ 
     newId: number; 
     newName: string;
     newBaseStats?: any;
     newTypes?: string[];
   } | null> {
     try {
+      // Override per forme regionali con evoluzioni via pietra
+      if (pokemonFormId && pokemonFormId > 10000) {
+        const { REGIONAL_STONE_EVOLUTIONS } = await import('./data/regionalForms');
+        const currentPkm = await this.getPokemon(pokemonFormId);
+        const regionalEvo = REGIONAL_STONE_EVOLUTIONS[currentPkm.name];
+        if (regionalEvo && regionalEvo.item === itemName) {
+          const nextPokemon = await this.getPokemon(regionalEvo.targetSlug);
+          const nextSpecies = await this.getSpecies(nextPokemon.id);
+          const getStat = (name: string) =>
+            nextPokemon.stats.find((s: any) => s.stat.name === name)?.base_stat || 0;
+          return {
+            newId: nextPokemon.id,
+            newName: this.getItalianName(nextSpecies.names),
+            newBaseStats: {
+              hp: getStat('hp'), attack: getStat('attack'), defense: getStat('defense'),
+              spAtk: getStat('special-attack'), spDef: getStat('special-defense'),
+              speed: getStat('speed'),
+            },
+            newTypes: nextPokemon.types.map((t: any) => t.type.name),
+          };
+        }
+        // Forma regionale senza evoluzione via questa pietra → null
+        return null;
+      }
+
       // Override manuale per Eevee
       if (speciesData.id === 133 || speciesData.name === 'eevee') {
         let manualEvolution = null;

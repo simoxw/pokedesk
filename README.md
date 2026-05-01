@@ -67,10 +67,8 @@ Il progetto implementa un `TickSystem.ts` robusto per la rigenerazione dello sta
   - costo `Caramella Rara` in shop aumentato a `4000`.
   - IA mosse nemica migliorata (preferenza KO/superefficaci a danno atteso).
   - Team avversari Lega/Master potenziati con IV/EV migliori.
-
-## Aggiornamenti Dati e Salvataggio (Apr 2026)
-
-- **Persistenza su IndexedDB**: lo store Zustand usa ora `idb-keyval` con storage asincrono (`createJSONStorage`) mantenendo fallback sicuro su `localStorage`.
+  - **Forme Regionali**: introdotto supporto alle evoluzioni regionali e pulsante `REGIONALI` in Hub con layout quadrato compatto per `ISOLE` e `REGIONALI`.
+  - **Copertura test evolutive**: aggiunti test mirati per evoluzioni a pietra, evoluzioni a livello e gestione delle forme regionali in `src/evolutionService.test.ts`.
 - **Migrazione automatica**: al primo avvio utile, i dati legacy vengono copiati da `localStorage` a IndexedDB con verifica di scrittura e flag di migrazione.
 - **Backup legacy**: mantenuto un backup in `localStorage` (`pokedesk-save-legacy-backup`) per resilienza durante la transizione.
 - **Export/Import migliorati** (`OptionsScreen`):

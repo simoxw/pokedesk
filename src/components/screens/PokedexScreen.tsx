@@ -57,6 +57,7 @@ export default function PokedexScreen() {
   const [evolutions, setEvolutions] = useState<{ name: string; id: number; sprite: string }[]>([]); 
   const [filterType, setFilterType] = useState<string | null>(null);
   const [filterGen, setFilterGen] = useState<number | null>(null);
+  const [filterRegional, setFilterRegional] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [showFilters, setShowFilters] = useState(false);
   const [showTypeCalc, setShowTypeCalc] = useState(false);
@@ -116,6 +117,8 @@ export default function PokedexScreen() {
  
   const caught = Object.values(pokedex).filter(s => s === 'caught').length;
   const seen = Object.values(pokedex).length; // tutte le specie registrate (seen + caught)
+  const regionalCaught = Object.entries(pokedex).filter(([id, status]) => status === 'caught' && Number(id) > 10000).length;
+  const regionalTotal = Object.entries(pokedex).filter(([id]) => Number(id) > 10000).length;
  
   const regionalStats = GEN_RANGES.map(gen => { 
     const total = gen.range[1] - gen.range[0] + 1; 
@@ -133,6 +136,7 @@ export default function PokedexScreen() {
         const range = GEN_RANGES.find(g => g.id === filterGen)?.range;
         if (range && (id < range[0] || id > range[1])) return false;
       }
+      if (filterRegional && id <= 10000) return false;
       return true;
     })
     .sort((a, b) => a.id - b.id);
@@ -220,6 +224,23 @@ export default function PokedexScreen() {
                     ))}
                   </div>
                 </div>
+                <div>
+                  <p className="text-[10px] font-black text-white/30 uppercase mb-2">Categoria</p>
+                  <div className="flex flex-wrap gap-2">
+                    <button 
+                      onClick={() => setFilterRegional(false)}
+                      className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all ${!filterRegional ? 'bg-[#e63946] text-white' : 'bg-white/5 text-white/40'}`}
+                    >
+                      TUTTE
+                    </button>
+                    <button 
+                      onClick={() => setFilterRegional(true)}
+                      className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all ${filterRegional ? 'bg-[#e63946] text-white' : 'bg-white/5 text-white/40'}`}
+                    >
+                      REGIONALI
+                    </button>
+                  </div>
+                </div>
               </div>
             </motion.div>
           )}
@@ -238,19 +259,16 @@ export default function PokedexScreen() {
             <div className="text-xl font-black text-white/60">1025</div> 
             <div className="text-[10px] text-white/40 font-bold uppercase">Totali</div> 
           </div> 
-        </div> 
-
-        {/* COMPLETAMENTO REGIONALE */}
-        <div className="mt-4">
-          <button
-            onClick={() => setShowRegional(!showRegional)}
-            className="w-full flex items-center justify-between p-3 bg-[#1a1a2e] border border-white/5 rounded-2xl transition-all active:scale-[0.98]"
-          >
-            <span className="text-[10px] font-black uppercase tracking-widest text-white/60 flex items-center gap-2">
-              📊 PER REGIONE
-            </span>
-            <span className={`transition-transform ${showRegional ? 'rotate-180' : ''}`}>▼</span>
-          </button>
+          </div> 
+          <div className="mt-3 grid grid-cols-2 gap-3">
+            <div className="bg-[#1a1a2e] rounded-2xl p-3 text-center border border-white/5"> 
+              <div className="text-xl font-black text-purple-400">{regionalCaught}</div> 
+              <div className="text-[10px] text-white/40 font-bold uppercase">Regionali catturati</div> 
+            </div>
+            <div className="bg-[#1a1a2e] rounded-2xl p-3 text-center border border-white/5"> 
+              <div className="text-xl font-black text-purple-400">{regionalTotal}</div> 
+              <div className="text-[10px] text-white/40 font-bold uppercase">Regionali totali</div> 
+            </div>
           
           <AnimatePresence>
             {showRegional && (

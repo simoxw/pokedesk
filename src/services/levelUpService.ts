@@ -42,8 +42,12 @@ export async function checkLevelUp(
       }
     }
 
-    // Evolution check
-    const evolution = await api.getEvolutionTarget(speciesData, newLevel);
+    // Skip evolution check for regional forms (pokemonId > 10000):
+    // their evolution chain would return the base form, not the regional variant.
+    // Stone evolutions for regional forms are handled separately in BagScreen.
+    const evolution = pokemon.pokemonId > 10000
+      ? null
+      : await api.getEvolutionTarget(speciesData, newLevel);
     if (evolution && !getStore().pendingEvolution) {
       try {
         const newPokemonData = await api.getPokemon(evolution.newId);

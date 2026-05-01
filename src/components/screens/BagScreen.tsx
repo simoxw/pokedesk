@@ -301,7 +301,7 @@ export default function BagScreen() {
                     try {
                       const species = await api.getSpecies(p.pokemonId);
                       const itemNameForApi = pendingItem.id.replace('_', '-');
-                      const evolution = await api.getEvolutionByItem(species, itemNameForApi);
+                      const evolution = await api.getEvolutionByItem(species, itemNameForApi, p.pokemonId);
                       
                       if (evolution) {
                         // Usa setState direttamente per impostare pendingEvolution con TUTTI i dati necessari

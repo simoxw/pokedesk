@@ -20,7 +20,8 @@ export type ScreenName =
   | 'MASTER_BATTLE_SCREEN'
   | 'ISLAND_SCREEN'
   | 'ACHIEVEMENT_SCREEN'
-  | 'BATTLE_TOWER_SCREEN';
+  | 'BATTLE_TOWER_SCREEN'
+  | 'REGIONAL_CATCH_SCREEN';
 export type PokemonType = 
   | 'normal' | 'fire' | 'water' | 'electric' | 'grass' | 'ice' 
   | 'fighting' | 'poison' | 'ground' | 'flying' | 'psychic' 
@@ -89,6 +90,7 @@ export interface Pokemon {
   caughtAt: number;
   growthRate: string;
   baseSpeciesId: number;
+  form?: 'alola' | 'galar' | 'hisui' | 'paldea' | null;
   spriteUrl?: string;
 }
 
@@ -140,7 +142,7 @@ export interface BattleTowerState {
 
 export interface TeamPreset {
   label: string;
-  category: 'gen1'|'gen2'|'gen3'|'gen4'|'gen5'|'gen6'|'gen7'|'gen8'|'gen9'|'legendary'|'favorite';
+  category: 'gen1'|'gen2'|'gen3'|'gen4'|'gen5'|'gen6'|'gen7'|'gen8'|'gen9'|'legendary'|'favorite'|'regional';
   pokemonIds: string[];
   updatedAt: number;
 }
@@ -195,6 +197,8 @@ export interface GameState {
   battleTower: BattleTowerState;
   teamPresets: Record<string, TeamPreset>;
   dojoTrainingCount: Record<string, number>;
+  regionalCharges: number;
+  lastRegionalTickTimestamp: number;
 }
 
 export interface PokemonSpecies {

@@ -16,11 +16,15 @@ export type ProgressSlice = Pick<
   | 'safariCharges'
   | 'lastSafariTickTimestamp'
   | 'islandLastCatch'
+  | 'regionalCharges'
+  | 'lastRegionalTickTimestamp'
   | 'unlockMedal'
   | 'addCharge'
   | 'consumeCharge'
   | 'consumeSafariCharge'
   | 'addSafariCharge'
+  | 'consumeRegionalCharge'
+  | 'addRegionalCharge'
   | 'resetGame'
   | 'startLeagueRun'
   | 'advanceLeagueTrainer'
@@ -55,6 +59,8 @@ export const createProgressSlice: StateCreator<GameStore, [], [], ProgressSlice>
   safariCharges: 0,
   lastSafariTickTimestamp: Date.now(),
   islandLastCatch: null,
+  regionalCharges: 3,
+  lastRegionalTickTimestamp: Date.now(),
   unlockMedal: (id) =>
     set((state) => ({
       medals: state.medals.map((m) => (m.id === id ? { ...m, isUnlocked: true } : m)),
@@ -170,6 +176,8 @@ export const createProgressSlice: StateCreator<GameStore, [], [], ProgressSlice>
       claimedPokedexRewards: [],
       lastStreakDate: null,
       islandLastCatch: null,
+      regionalCharges: 3,
+      lastRegionalTickTimestamp: Date.now(),
       pendingMissionToast: null,
       settings: { audio: true, notifications: true },
       expShareActive: false,
@@ -284,4 +292,16 @@ export const createProgressSlice: StateCreator<GameStore, [], [], ProgressSlice>
       };
     }),
   setIslandLastCatch: (date) => set({ islandLastCatch: date }),
+  consumeRegionalCharge: () =>
+    set((state) => {
+      if (state.regionalCharges >= 3) {
+        return { regionalCharges: 2, lastRegionalTickTimestamp: Date.now() };
+      }
+      return { regionalCharges: Math.max(0, state.regionalCharges - 1) };
+    }),
+  addRegionalCharge: (amount) =>
+    set((state) => ({
+      regionalCharges: Math.min(3, state.regionalCharges + amount),
+      lastRegionalTickTimestamp: Date.now(),
+    })),
 });
