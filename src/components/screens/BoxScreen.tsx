@@ -546,6 +546,7 @@ export default function BoxScreen() {
                 // Filtro Pokémon disponibili per questa categoria
                 const range = GEN_RANGES[activePreset];
                 const availableInBox = box.filter(p => {
+                  if (activePreset === 'regional') return p.pokemonId > 10000;
                   if (activePreset === 'legendary') return LEGENDARY_IDS.has(p.pokemonId);
                   if (activePreset === 'favorite') return true;
                   if (range) return p.pokemonId >= range[0] && p.pokemonId <= range[1] && !LEGENDARY_IDS.has(p.pokemonId);
@@ -555,7 +556,7 @@ export default function BoxScreen() {
                 const LABELS: Record<string, string> = {
                   gen1:'Gen 1',gen2:'Gen 2',gen3:'Gen 3',gen4:'Gen 4',
                   gen5:'Gen 5',gen6:'Gen 6',gen7:'Gen 7',gen8:'Gen 8',
-                  legendary:'Leggendari',favorite:'Preferita'
+                  legendary:'Leggendari',favorite:'Preferita',regional:'Regionali'
                 };
 
                 if (!presetSelecting) {

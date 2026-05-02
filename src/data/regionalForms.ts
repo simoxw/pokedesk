@@ -80,9 +80,29 @@ export const REGIONAL_FORMS_BY_REGION = {
 // Overrides manuali evoluzioni con pietre per forme regionali
 // Chiave = slug del pokemon, valore = { item API slug → slug evoluzione }
 export const REGIONAL_STONE_EVOLUTIONS: Record<string, { item: string; targetSlug: string }> = {
-  'sandshrew-alola':  { item: 'ice-stone',  targetSlug: 'sandslash-alola'         },
-  'vulpix-alola':     { item: 'ice-stone',  targetSlug: 'ninetales-alola'          },
-  'darumaka-galar':   { item: 'ice-stone',  targetSlug: 'darmanitan-galar-standard'},
+  'sandshrew-alola': { item: 'ice-stone',  targetSlug: 'sandslash-alola'  },
+  'vulpix-alola':    { item: 'ice-stone',  targetSlug: 'ninetales-alola'  },
+  'voltorb-hisui':   { item: 'leaf-stone', targetSlug: 'electrode-hisui' },
+  'sneasel-hisui':   { item: 'dawn-stone', targetSlug: 'sneasler'         },
+};
+
+// Forme regionali che evolvono via LIVELLO (gestite da levelUpService)
+export const REGIONAL_LEVEL_EVOLUTIONS: Record<string, { minLevel: number; targetSlug: string }> = {
+  'rattata-alola':   { minLevel: 20, targetSlug: 'raticate-alola'          },
+  'diglett-alola':   { minLevel: 26, targetSlug: 'dugtrio-alola'           },
+  'meowth-alola':    { minLevel: 30, targetSlug: 'persian-alola'           },
+  'geodude-alola':   { minLevel: 25, targetSlug: 'graveler-alola'          },
+  'graveler-alola':  { minLevel: 36, targetSlug: 'golem-alola'             },
+  'grimer-alola':    { minLevel: 38, targetSlug: 'muk-alola'               },
+  'meowth-galar':    { minLevel: 28, targetSlug: 'perrserker'              },
+  'slowpoke-galar':  { minLevel: 36, targetSlug: 'slowbro-galar'           },
+  'zigzagoon-galar': { minLevel: 20, targetSlug: 'linoone-galar'           },
+  'linoone-galar':   { minLevel: 35, targetSlug: 'obstagoon'               },
+  'darumaka-galar':  { minLevel: 35, targetSlug: 'darmanitan-galar-standard'},
+  'zorua-hisui':     { minLevel: 30, targetSlug: 'zoroark-hisui'           },
+  'sliggoo-hisui':   { minLevel: 50, targetSlug: 'goodra-hisui'            },
+  'qwilfish-hisui':  { minLevel: 28, targetSlug: 'overqwil'                },
+  'wooper-paldea':   { minLevel: 20, targetSlug: 'clodsire'                },
 };
 
 // Identificatore: un pokemon con pokemonId > 10000 è una forma regionale

@@ -42,12 +42,28 @@ export async function checkLevelUp(
       }
     }
 
-    // Skip evolution check for regional forms (pokemonId > 10000):
-    // their evolution chain would return the base form, not the regional variant.
-    // Stone evolutions for regional forms are handled separately in BagScreen.
-    const evolution = pokemon.pokemonId > 10000
-      ? null
-      : await api.getEvolutionTarget(speciesData, newLevel);
+    // Forme regionali (pokemonId > 10000): usa tabella dedicata invece della chain API
+    // La chain API restituirebbe la forma base (es. Raticate normale invece di Raticate-Alola)
+    let evolution = null;
+    if (pokemon.pokemonId > 10000) {
+      try {
+        const { REGIONAL_LEVEL_EVOLUTIONS } = await import('../data/regionalForms');
+        const rawData = await api.getPokemon(pokemon.pokemonId);
+        const regionalEvo = REGIONAL_LEVEL_EVOLUTIONS[rawData.name];
+        if (regionalEvo && newLevel >= regionalEvo.minLevel) {
+          const evoData = await api.getPokemon(regionalEvo.targetSlug);
+          const evoSpecies = await api.getSpecies(evoData.id);
+          evolution = {
+            newId: evoData.id,
+            newName: api.getItalianName(evoSpecies.names),
+          };
+        }
+      } catch {
+        // Fail silenzioso: nessuna evoluzione se l'API fallisce
+      }
+    } else {
+      evolution = await api.getEvolutionTarget(speciesData, newLevel);
+    }
     if (evolution && !getStore().pendingEvolution) {
       try {
         const newPokemonData = await api.getPokemon(evolution.newId);

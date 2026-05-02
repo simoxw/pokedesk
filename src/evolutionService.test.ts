@@ -119,7 +119,7 @@ describe('Evolution and regional evolution service', () => {
     }));
   });
 
-  it('checkLevelUp does not queue evolution for regional forms', async () => {
+  it('checkLevelUp does not call getEvolutionTarget for regional forms that evolve via level lookup', async () => {
     const updatePokemon = vi.fn();
     const setStore = vi.fn();
     const regionalPokemon = { ...mockPokemon, pokemonId: 10010 };
@@ -139,5 +139,32 @@ describe('Evolution and regional evolution service', () => {
 
     expect(evolutionSpy).not.toHaveBeenCalled();
     expect(setStore).not.toHaveBeenCalledWith(expect.objectContaining({ pendingEvolution: expect.anything() }));
+  });
+
+  it('checkLevelUp queues evolution for regional forms with a level evolution trigger', async () => {
+    const updatePokemon = vi.fn();
+    const setStore = vi.fn();
+    const regionalPokemon = { ...mockPokemon, pokemonId: 10022, name: 'Darumaka-Galar' };
+    const nextPokemon = { id: 10023, stats: [], types: [] } as any;
+
+    vi.spyOn(api, 'getPokemon').mockImplementation(async (query: any) => {
+      if (query === 10022) return { name: 'darumaka-galar', stats: [], types: [] } as any;
+      if (query === 'darmanitan-galar-standard') return nextPokemon;
+      return null as any;
+    });
+    vi.spyOn(api, 'getSpecies').mockResolvedValue({ names: [{ name: 'Darmanitan-Galar', language: { name: 'en' } }] } as any);
+    vi.spyOn(api, 'getMovesLearnedAtLevel').mockResolvedValue([] as any);
+    const evolutionSpy = vi.spyOn(api, 'getEvolutionTarget');
+
+    await checkLevelUp(
+      regionalPokemon,
+      35,
+      [],
+      () => ({ updatePokemon, pendingEvolution: null, pendingNewMoveQueue: [] }),
+      setStore
+    );
+
+    expect(evolutionSpy).not.toHaveBeenCalled();
+    expect(setStore).toHaveBeenCalledWith(expect.objectContaining({ pendingEvolution: expect.objectContaining({ newPokemonId: 10023, newName: 'Darmanitan-Galar' }) }));
   });
 });

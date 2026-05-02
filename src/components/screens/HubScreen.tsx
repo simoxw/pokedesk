@@ -101,7 +101,7 @@ export default function HubScreen() {
   const getTimeToNextRegionalTick = () => {
     if (regionalCharges >= 3) return 0;
     const elapsed = Date.now() - lastRegionalTickTimestamp;
-    return Math.max(0, 28800000 - (elapsed % 28800000));
+    return Math.max(0, 7200000 - (elapsed % 7200000));
   };
 
   const getTimeToNextSafariTick = () => {

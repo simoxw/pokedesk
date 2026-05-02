@@ -5,7 +5,7 @@ import { NotificationService } from './NotificationService';
 const TICK_INTERVAL = 300000; // 5 minutes in ms
 const SAFARI_TICK_INTERVAL = 900000; // 15 minutes in ms
 const SAFARI_MAX_CHARGES = 8;
-const REGIONAL_TICK_INTERVAL = 28800000; // 8 ore in ms
+const REGIONAL_TICK_INTERVAL = 7200000; // 2 ore in ms
 const REGIONAL_MAX_CHARGES = 3;
 
 export const useTickSystem = () => {
