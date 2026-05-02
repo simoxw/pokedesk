@@ -263,44 +263,48 @@ export default function PokedexScreen() {
           )}
         </AnimatePresence>
 
-        <div className="flex gap-3"> 
-          <div className="flex-1 bg-[#1a1a2e] rounded-2xl p-3 text-center border border-white/5"> 
-            <div className="text-xl font-black text-yellow-400">{caught}</div> 
-            <div className="text-[10px] text-white/40 font-bold uppercase">Catturati</div> 
-          </div> 
-          <div className="flex-1 bg-[#1a1a2e] rounded-2xl p-3 text-center border border-white/5"> 
-            <div className="text-xl font-black text-blue-400">{seen}</div> 
-            <div className="text-[10px] text-white/40 font-bold uppercase">Visti</div> 
-          </div> 
-          <div className="flex-1 bg-[#1a1a2e] rounded-2xl p-3 text-center border border-white/5"> 
-            <div className="text-xl font-black text-white/60">1025</div> 
-            <div className="text-[10px] text-white/40 font-bold uppercase">Totali</div> 
-          </div> 
-          </div> 
-          <div className="mt-3 grid grid-cols-2 gap-3">
-            <div className="bg-[#1a1a2e] rounded-2xl p-3 text-center border border-white/5"> 
-              <div className="text-xl font-black text-purple-400">{regionalCaught}</div> 
-              <div className="text-[10px] text-white/40 font-bold uppercase">Regionali catturati</div> 
+        <div className="mt-3 grid grid-cols-1 sm:grid-cols-[minmax(0,320px)_1fr] gap-3">
+          <div className="space-y-3">
+            <div className="grid grid-cols-3 gap-3">
+              <div className="bg-[#1a1a2e] rounded-2xl p-3 text-center border border-white/5">
+                <div className="text-xl font-black text-yellow-400">{caught}</div>
+                <div className="text-[10px] text-white/40 font-bold uppercase">Catturati</div>
+              </div>
+              <div className="bg-[#1a1a2e] rounded-2xl p-3 text-center border border-white/5">
+                <div className="text-xl font-black text-blue-400">{seen}</div>
+                <div className="text-[10px] text-white/40 font-bold uppercase">Visti</div>
+              </div>
+              <div className="bg-[#1a1a2e] rounded-2xl p-3 text-center border border-white/5">
+                <div className="text-xl font-black text-white/60">1025</div>
+                <div className="text-[10px] text-white/40 font-bold uppercase">Totali</div>
+              </div>
             </div>
-            <div className="bg-[#1a1a2e] rounded-2xl p-3 text-center border border-white/5"> 
-              <div className="text-xl font-black text-purple-400">{regionalTotal}</div> 
-              <div className="text-[10px] text-white/40 font-bold uppercase">Regionali totali</div> 
+            <div className="grid grid-cols-2 gap-3">
+              <div className="bg-[#1a1a2e] rounded-2xl p-3 text-center border border-white/5">
+                <div className="text-xl font-black text-purple-400">{regionalCaught}</div>
+                <div className="text-[10px] text-white/40 font-bold uppercase">Regionali catturati</div>
+              </div>
+              <div className="bg-[#1a1a2e] rounded-2xl p-3 text-center border border-white/5">
+                <div className="text-xl font-black text-purple-400">{regionalTotal}</div>
+                <div className="text-[10px] text-white/40 font-bold uppercase">Regionali totali</div>
+              </div>
             </div>
-          
+          </div>
+
           <AnimatePresence>
             {showProgress && (
               <motion.div
                 initial={{ height: 0, opacity: 0 }}
                 animate={{ height: 'auto', opacity: 1 }}
                 exit={{ height: 0, opacity: 0 }}
-                className="overflow-hidden mt-2"
+                className="overflow-hidden"
               >
-                <div className="bg-[#1a1a2e]/50 rounded-2xl p-3 border border-white/5 space-y-3">
+                <div className="bg-[#1a1a2e]/50 rounded-2xl p-3 border border-white/5 max-h-[24rem] overflow-y-auto">
                   {[regionalProgress, ...regionalStats].map(gen => {
                     const isClaimed = gen.id !== 0 && claimedPokedexRewards.includes(`gen${gen.id}`);
                     const canClaim = gen.id !== 0 && gen.pct === 100 && !isClaimed;
                     return (
-                      <div key={gen.id} className="space-y-1.5">
+                      <div key={gen.id} className="space-y-1.5 mb-3 last:mb-0">
                         <div className="flex items-center justify-between text-[10px] font-bold">
                           <span className="flex items-center gap-2">
                             <span>{gen.flag}</span>
