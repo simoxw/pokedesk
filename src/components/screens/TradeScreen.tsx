@@ -6,6 +6,7 @@ import { CatchEngine } from '../../CatchEngine';
 import { motion, AnimatePresence } from 'motion/react';
 import TypeBadge from '../ui/TypeBadge';
 import PokemonSprite from '../ui/PokemonSprite';
+import { MEGA_IDS } from '../../data/legendaryIds';
 import {
   ArrowLeft, Search, X, Copy, ArrowLeftRight,
   SlidersHorizontal, Sparkles, Check, Users, Shuffle
@@ -100,7 +101,7 @@ export default function TradeScreen() {
       const isValid =
         pkmn.name && typeof pkmn.name === 'string' &&
         pkmn.level && typeof pkmn.level === 'number' && pkmn.level >= 1 && pkmn.level <= 100 &&
-        pkmn.pokemonId && typeof pkmn.pokemonId === 'number' && pkmn.pokemonId >= 1 && pkmn.pokemonId <= 1025 &&
+        pkmn.pokemonId && typeof pkmn.pokemonId === 'number' && pkmn.pokemonId >= 1 && pkmn.pokemonId <= 11000 &&
         Array.isArray(pkmn.moves) && pkmn.moves.length >= 1 &&
         pkmn.stats && typeof pkmn.stats === 'object' &&
         ['hp', 'attack', 'defense', 'spAtk', 'spDef', 'speed'].every(s => typeof pkmn.stats[s] === 'number' && pkmn.stats[s] > 0) &&
@@ -112,6 +113,11 @@ export default function TradeScreen() {
         pkmn.growthRate && typeof pkmn.growthRate === 'string';
 
       if (!isValid) { alert('Pokémon non valido o corrotto!'); return; }
+
+      // Fix name if it's a Mega and prefix is missing
+      if (MEGA_IDS.has(pkmn.pokemonId) && !pkmn.name.toLowerCase().startsWith('mega')) {
+        pkmn.name = 'Mega ' + pkmn.name;
+      }
 
       const newPkmn = {
         ...pkmn,

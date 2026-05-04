@@ -143,7 +143,7 @@ export default function RegionalCatchScreen() {
       addPokemon({
         id: Math.random().toString(36).substr(2, 9),
         pokemonId: pokemon.id,
-        name: api.getItalianName(pokemon.species.names),
+        name: api.getItalianName(pokemon.species.names) + ` (${region})`,
         level: pokemon.level,
         exp: startExp,
         types: pokemon.types.map((t: any) => t.type.name),
@@ -213,8 +213,8 @@ export default function RegionalCatchScreen() {
             Forma di {region}
           </span>
         </div>
-        <h2 className="text-3xl font-black drop-shadow-lg">
-          {api.getItalianName(pokemon.species.names)}
+        <h2 className="text-3xl font-black text-white uppercase tracking-tighter drop-shadow-lg">
+          {api.getItalianName(pokemon.species.names)} ({region})
         </h2>
         <p className="font-bold opacity-60 text-sm">Lv. {pokemon.level}</p>
       </div>

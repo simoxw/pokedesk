@@ -393,7 +393,7 @@ export default function PokedexScreen() {
                       style={isSeen ? { filter: 'brightness(0) opacity(0.5)' } : undefined}
                     /> 
                     <span className="text-[10px] font-mono text-white/30"> 
-                      #{id.toString().padStart(3, '0')} 
+                      #{id > 10000 ? id : id.toString().padStart(3, '0')} 
                     </span>
                     {isSeen && <span className="text-[8px] text-white/20 font-bold uppercase">Visto</span>}
                   </button> 
@@ -437,7 +437,7 @@ export default function PokedexScreen() {
                       #{selected.id.toString().padStart(3, '0')} 
                     </p> 
                     <h2 className="text-2xl font-black uppercase"> 
-                      {api.getItalianName(selected.species.names)} 
+                      {(MEGA_IDS.has(selected.id) ? 'Mega ' : '') + api.getItalianName(selected.species.names) + (selected.id > 10000 && !MEGA_IDS.has(selected.id) ? ' (Regionale)' : '')} 
                     </h2> 
                     <div className="flex gap-2 mt-1"> 
                       {selected.types.map((t: any) => ( 

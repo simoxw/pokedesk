@@ -169,7 +169,7 @@ export default function IslandScreen() {
       addPokemon({
         id: Math.random().toString(36).substr(2, 9),
         pokemonId: pokemon.id,
-        name: api.getItalianName(pokemon.species.names),
+        name: (isMega ? 'Mega ' : '') + api.getItalianName(pokemon.species.names),
         level: pokemon.level,
         exp: startExp,
         types: pokemon.types.map((t: any) => t.type.name),
@@ -241,7 +241,7 @@ export default function IslandScreen() {
           </span>
         </div>
         <h2 className="text-3xl font-black text-white uppercase tracking-tighter drop-shadow-lg">
-          {api.getItalianName(pokemon.species.names)}
+          {(isMega ? 'Mega ' : '') + api.getItalianName(pokemon.species.names)}
         </h2>
         <div className="text-white/60 font-bold text-sm">Livello {pokemon.level}</div>
         {isPerfectIVs && (
