@@ -142,7 +142,7 @@ export interface BattleTowerState {
 
 export interface TeamPreset {
   label: string;
-  category: 'gen1'|'gen2'|'gen3'|'gen4'|'gen5'|'gen6'|'gen7'|'gen8'|'gen9'|'legendary'|'favorite'|'regional';
+  category: 'gen1'|'gen2'|'gen3'|'gen4'|'gen5'|'gen6'|'gen7'|'gen8'|'gen9'|'legendary'|'favorite'|'regional'|'mega';
   pokemonIds: string[];
   updatedAt: number;
 }
@@ -179,7 +179,9 @@ export interface GameState {
   dailyMissions: { date: string; missions: DailyMission[] } | null;
   genChallenges: { date: string; category: TeamPreset['category'] | null; missions: GenMission[] } | null;
   activePresetCategory: TeamPreset['category'] | null;
-  islandLastCatch: string | null;
+  islandLastCatch: string | null;      // mantieni per retrocompat (verrà ignorato)
+  islandCharges: number;
+  lastIslandTickTimestamp: number;
   pendingMissionToast: string | null;
   streak: number;
   lastStreakDate: string | null;

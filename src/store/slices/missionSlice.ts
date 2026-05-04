@@ -1,5 +1,5 @@
 import { StateCreator } from 'zustand';
-import { GEN_RANGES, LEGENDARY_IDS } from '../../data/legendaryIds';
+import { GEN_RANGES, LEGENDARY_IDS, MEGA_IDS } from '../../data/legendaryIds';
 import { DailyMission, GameStore, GenMission, TeamPreset } from '../types';
 
 export type MissionSlice = Pick<
@@ -67,6 +67,7 @@ const GEN_CHALLENGE_REWARDS: Record<TeamPreset['category'], number> = {
   legendary: 1500,
   favorite: 700,
   regional: 900,
+  mega: 1200,
 };
 
 const GEN_COMMON_POOL: GenMissionTemplate[] = [
@@ -88,6 +89,7 @@ export function isPokemonInPresetCategory(pokemon: GameStore['team'][number], ca
   if (category === 'favorite') return true;
   if (category === 'legendary') return LEGENDARY_IDS.has(pokemon.pokemonId);
   if (category === 'regional') return pokemon.pokemonId > 10000;
+  if (category === 'mega') return MEGA_IDS.has(pokemon.pokemonId);
   const range = GEN_RANGES[category];
   if (!range) return false;
   return pokemon.pokemonId >= range[0] && pokemon.pokemonId <= range[1] && !LEGENDARY_IDS.has(pokemon.pokemonId);

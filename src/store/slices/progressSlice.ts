@@ -16,6 +16,8 @@ export type ProgressSlice = Pick<
   | 'safariCharges'
   | 'lastSafariTickTimestamp'
   | 'islandLastCatch'
+  | 'islandCharges'
+  | 'lastIslandTickTimestamp'
   | 'regionalCharges'
   | 'lastRegionalTickTimestamp'
   | 'unlockMedal'
@@ -25,6 +27,8 @@ export type ProgressSlice = Pick<
   | 'addSafariCharge'
   | 'consumeRegionalCharge'
   | 'addRegionalCharge'
+  | 'consumeIslandCharge'
+  | 'addIslandCharge'
   | 'resetGame'
   | 'startLeagueRun'
   | 'advanceLeagueTrainer'
@@ -59,6 +63,8 @@ export const createProgressSlice: StateCreator<GameStore, [], [], ProgressSlice>
   safariCharges: 0,
   lastSafariTickTimestamp: Date.now(),
   islandLastCatch: null,
+  islandCharges: 3,
+  lastIslandTickTimestamp: Date.now(),
   regionalCharges: 3,
   lastRegionalTickTimestamp: Date.now(),
   unlockMedal: (id) =>
@@ -154,6 +160,9 @@ export const createProgressSlice: StateCreator<GameStore, [], [], ProgressSlice>
       lastTickTimestamp: Date.now(),
       safariCharges: 0,
       lastSafariTickTimestamp: Date.now(),
+      islandLastCatch: null,
+      islandCharges: 3,
+      lastIslandTickTimestamp: Date.now(),
       pokedex: {},
       pokedexTypes: {},
       stats: { totalCaught: 0, totalBattles: 0, shiniesFound: 0, pokemonReleased: 0 },
@@ -175,7 +184,6 @@ export const createProgressSlice: StateCreator<GameStore, [], [], ProgressSlice>
       eggs: [],
       claimedPokedexRewards: [],
       lastStreakDate: null,
-      islandLastCatch: null,
       regionalCharges: 3,
       lastRegionalTickTimestamp: Date.now(),
       pendingMissionToast: null,
@@ -303,5 +311,17 @@ export const createProgressSlice: StateCreator<GameStore, [], [], ProgressSlice>
     set((state) => ({
       regionalCharges: Math.min(3, state.regionalCharges + amount),
       lastRegionalTickTimestamp: Date.now(),
+    })),
+  consumeIslandCharge: () =>
+    set((state) => {
+      if (state.islandCharges >= 3) {
+        return { islandCharges: 2, lastIslandTickTimestamp: Date.now() };
+      }
+      return { islandCharges: Math.max(0, state.islandCharges - 1) };
+    }),
+  addIslandCharge: (amount) =>
+    set((state) => ({
+      islandCharges: Math.min(3, state.islandCharges + amount),
+      lastIslandTickTimestamp: Date.now(),
     })),
 });

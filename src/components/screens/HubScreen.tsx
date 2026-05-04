@@ -51,6 +51,8 @@ export default function HubScreen() {
     regionalCharges,
     consumeRegionalCharge,
     masterProgress,
+    islandCharges,
+    lastIslandTickTimestamp,
   } = useStore();
 
   const handleBattleClick = () => {
@@ -164,17 +166,15 @@ export default function HubScreen() {
   const safariMinutes = Math.floor(nextSafariTick / 60000);
   const safariSeconds = Math.floor((nextSafariTick % 60000) / 1000);
 
-  const today = new Date().toISOString().split('T')[0];
-  const islandAvailable = leagueProgress.completedRuns >= 1 && islandLastCatch !== today;
   const islandUnlocked = leagueProgress.completedRuns >= 1;
-  const msToMidnight = (() => {
-    const now = new Date();
-    const midnight = new Date(now);
-    midnight.setHours(24, 0, 0, 0);
-    return midnight.getTime() - now.getTime();
+  const islandAvailable = islandUnlocked && islandCharges > 0;
+  const islandNextTick = (() => {
+    if (islandCharges >= 3) return 0;
+    const elapsed = Date.now() - lastIslandTickTimestamp;
+    return Math.max(0, 14400000 - (elapsed % 14400000));
   })();
-  const islandHours = Math.floor(msToMidnight / 3600000);
-  const islandMins = Math.floor((msToMidnight % 3600000) / 60000);
+  const islandHours = Math.floor(islandNextTick / 3600000);
+  const islandMins = Math.floor((islandNextTick % 3600000) / 60000);
 
   const STREAK_REWARDS: Record<number, string> = {
     1: '50¢ + 3× Pokéball',
@@ -516,9 +516,11 @@ export default function HubScreen() {
               <span className="text-[10px] font-bold text-white/60" style={{ color: !islandUnlocked ? 'rgba(255,255,255,0.25)' : islandAvailable ? 'rgba(100,210,255,0.8)' : 'rgba(255,255,255,0.35)' }}>
                 {!islandUnlocked
                   ? 'Completa la Lega una volta per sbloccare'
-                  : islandAvailable
-                  ? '⭐ Leggendario disponibile oggi!'
-                  : `⏳ Prossimo tra ${islandHours}h ${islandMins}m`}
+                  : islandCharges >= 3
+                    ? '⭐ Cariche al massimo!'
+                    : islandCharges > 0
+                      ? `⭐ ${islandCharges}/3 cariche disponibili`
+                      : `⏳ Prossima carica tra ${islandHours}h ${islandMins}m`}
               </span>
             </motion.button>
 

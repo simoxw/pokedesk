@@ -8,6 +8,7 @@ import { Sparkles } from 'lucide-react';
 import confetti from 'canvas-confetti';
 import { useSoundEffects } from '../../useSoundEffects';
 import PokemonSprite from '../ui/PokemonSprite';
+import { MEGA_SLUGS } from '../../data/legendaryIds';
 
 const ISLAND_LEGENDARIES = [
   // Gen 1
@@ -37,7 +38,7 @@ const isEventDay = (date: Date) => {
 };
 
 export default function IslandScreen() {
-  const { addPokemon, setScreen, incrementStat, addItem, inventory, updatePokedex, setIslandLastCatch, team, settings } = useStore();
+  const { addPokemon, setScreen, incrementStat, addItem, inventory, updatePokedex, islandCharges, consumeIslandCharge, team, settings } = useStore();
   const [pokemon, setPokemon] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [isShiny, setIsShiny] = useState(false);
@@ -58,19 +59,37 @@ export default function IslandScreen() {
   }, [inventory, ballType]);
 
   const [isPerfectIVs, setIsPerfectIVs] = useState(false);
+  const [isMega, setIsMega] = useState(false);
 
   useEffect(() => {
     const init = async () => {
       setLoading(true);
       try {
-        const today = new Date().toISOString().split('T')[0];
-        const dayHash = today.split('').reduce((a, b) => a + b.charCodeAt(0), 0);
-        const id = ISLAND_LEGENDARIES[dayHash % ISLAND_LEGENDARIES.length];
         const avgLevel = team.length > 0 ? Math.floor(team.reduce((acc, p) => acc + p.level, 0) / team.length) : 50;
-        const level = Math.max(45, Math.min(70, Math.min(100, avgLevel + 5)));
-        const data = await api.getPokemon(id);
-        const species = await api.getSpecies(id);
-        setPokemon({ ...data, species, level });
+        let id: number;
+        let level: number;
+        let pokemonData: any;
+        let speciesData: any;
+
+        if (Math.random() < 0.5) {
+          // Legendary branch
+          setIsMega(false);
+          const randomLegendaryId = ISLAND_LEGENDARIES[Math.floor(Math.random() * ISLAND_LEGENDARIES.length)];
+          id = randomLegendaryId;
+          level = Math.max(45, Math.min(70, Math.min(100, avgLevel + 5)));
+          pokemonData = await api.getPokemon(id);
+          speciesData = await api.getSpecies(id);
+        } else {
+          // Mega branch
+          setIsMega(true);
+          const randomMegaSlug = MEGA_SLUGS[Math.floor(Math.random() * MEGA_SLUGS.length)];
+          pokemonData = await api.getPokemon(randomMegaSlug);
+          id = pokemonData.id;
+          level = Math.max(50, Math.min(70, avgLevel + 5));
+          speciesData = await api.getSpecies(pokemonData.species.name);
+        }
+
+        setPokemon({ ...pokemonData, species: speciesData, level });
 
         // Check evento mensile (10% chance di IVs perfetti)
         const eventActive = isEventDay(new Date());
@@ -119,9 +138,9 @@ export default function IslandScreen() {
     await new Promise(r => setTimeout(r, 1200));
     setBallVisible(false);
     await new Promise(r => setTimeout(r, 300));
-    const today = new Date().toISOString().split('T')[0];
     if (success) {
       setResult('success');
+      consumeIslandCharge();
       confetti({ particleCount: 150, spread: 80, origin: { y: 0.6 }, colors: ['#fbbf24','#60a5fa','#a78bfa','#34d399'] });
       // IVs perfetti se evento, altrimenti random
       const ivs = isPerfectIVs 
@@ -170,10 +189,9 @@ export default function IslandScreen() {
       addItem('potion', 2);
       setDropMessage('🔴 2 Pokéball · 🧪 2 Pozioni');
       updatePokedex(pokemon.id, 'caught');
-      setIslandLastCatch(today);
     } else {
       if (newAttempts >= maxAttempts) {
-        setIslandLastCatch(today);
+        consumeIslandCharge();
         setResult('fail');
       } else {
         setCatching(false);
@@ -205,7 +223,8 @@ export default function IslandScreen() {
         <div className="absolute inset-0 pointer-events-none" style={{ boxShadow: 'inset 0 0 80px rgba(0,0,0,0.4)' }} />
       </div>
 
-      <div className="relative z-10 pt-6 pb-2 text-center">
+      {/* Header Info */}
+      <div className="relative z-10 p-6 pt-10 flex flex-col items-center">
         {isPerfectIVs && (
           <motion.div 
             animate={{ scale: [1, 1.05, 1], opacity: [0.8, 1, 0.8] }}
@@ -215,13 +234,16 @@ export default function IslandScreen() {
             <span className="text-yellow-300 font-black text-xs uppercase tracking-widest">🌟 EVENTO SPECIALE - IVs PERFETTI!</span>
           </motion.div>
         )}
-        <div className="inline-flex items-center gap-2 bg-yellow-500/20 border border-yellow-500/40 rounded-full px-4 py-1.5 mb-2">
-          <span className="text-yellow-400 font-black text-xs uppercase tracking-widest">⭐ Pokémon Leggendario</span>
+        <div className={`px-4 py-1.5 rounded-2xl border backdrop-blur-md mb-2 flex items-center gap-2 ${isMega ? 'bg-purple-500/10 border-purple-500/40' : 'bg-yellow-500/10 border-yellow-500/40'}`}>
+          <Sparkles size={14} className={isMega ? 'text-purple-400' : 'text-yellow-400'} />
+          <span className={`text-[10px] font-black uppercase tracking-widest ${isMega ? 'text-purple-400' : 'text-yellow-400'}`}>
+            {isMega ? '⚡ Mega Pokémon' : '⭐ Leggendario'}
+          </span>
         </div>
-        <h2 className="text-3xl font-black drop-shadow-lg text-cyan-300">
+        <h2 className="text-3xl font-black text-white uppercase tracking-tighter drop-shadow-lg">
           {api.getItalianName(pokemon.species.names)}
         </h2>
-        <p className="font-bold opacity-60 text-sm">Lv. {pokemon.level}</p>
+        <div className="text-white/60 font-bold text-sm">Livello {pokemon.level}</div>
         {isPerfectIVs && (
           <div className="mt-2 flex items-center justify-center gap-1">
             {[31,31,31,31,31,31].map((iv, i) => (
@@ -320,7 +342,12 @@ export default function IslandScreen() {
               <p className="text-center text-xs text-white/50">
                 {attempts < maxAttempts ? `Tentativi rimasti: ${maxAttempts - attempts}` : 'Nessun tentativo rimasto!'}
               </p>
-              <button disabled={catching || attempts >= maxAttempts} onClick={handleCatch}
+              <p className="text-center text-xs text-white/50 mb-2">
+                {isMega ? '✨ Mega Pokémon' : '⭐ Leggendario'} • Cariche: {islandCharges}/3
+              </p>
+              <button 
+                 disabled={catching || !!result || attempts >= maxAttempts || !inventory[ballType]} 
+                 onClick={handleCatch}
                 className="w-full bg-[#e63946] py-4 rounded-2xl font-black text-xl shadow-xl active:scale-95 transition-transform disabled:opacity-50">
                 {catching ? 'LANCIO...' : 'LANCIA POKÉBALL'}
               </button>

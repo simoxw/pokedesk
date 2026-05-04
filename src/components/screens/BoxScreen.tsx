@@ -7,7 +7,7 @@ import PokemonCard from '../ui/PokemonCard';
 import PokemonSprite from '../ui/PokemonSprite';
 import { VirtuosoGrid } from 'react-virtuoso';
 import { ArrowLeft, Search, ChevronLeft, ChevronRight, Sparkles, Users, Trash2, Info, SlidersHorizontal, X, CheckSquare, Square, BookmarkPlus, BookmarkCheck } from 'lucide-react'; 
-import { LEGENDARY_IDS, GEN_RANGES } from '../../data/legendaryIds';
+import { LEGENDARY_IDS, GEN_RANGES, MEGA_IDS } from '../../data/legendaryIds';
 import { TeamPreset } from '../../types';
 
 const BOX_SIZE = 30; 
@@ -367,8 +367,9 @@ export default function BoxScreen() {
             { key: 'gen9', label: 'Gen 9', icon: '🔴' },
             { key: 'legendary', label: 'Leggendari', icon: '⭐' },
             { key: 'regional', label: 'Regionali', icon: '🌐' },
+            { key: 'mega', label: 'Mega', icon: '⚡' },
             { key: 'favorite', label: 'Preferita', icon: '❤️' },
-          ] as { key: TeamPreset['category']; label: string; icon: '🗾' | '🌸' | '🌊' | '❄️' | '🗽' | '🗼' | '🌺' | '⚔️' | '🔴' | '⭐' | '🌐' | '❤️' }[]).map(({ key, label, icon }) => {
+          ] as { key: TeamPreset['category']; label: string; icon: string }[]).map(({ key, label, icon }) => {
             const preset = teamPresets[key];
             const validCount = preset
               ? preset.pokemonIds.filter(id => allOwnedPokemon.some(p => p.id === id)).length
@@ -548,6 +549,7 @@ export default function BoxScreen() {
                 const availableInBox = box.filter(p => {
                   if (activePreset === 'regional') return p.pokemonId > 10000;
                   if (activePreset === 'legendary') return LEGENDARY_IDS.has(p.pokemonId);
+                  if (activePreset === 'mega') return MEGA_IDS.has(p.pokemonId);
                   if (activePreset === 'favorite') return true;
                   if (range) return p.pokemonId >= range[0] && p.pokemonId <= range[1] && !LEGENDARY_IDS.has(p.pokemonId);
                   return true;
@@ -556,7 +558,7 @@ export default function BoxScreen() {
                 const LABELS: Record<string, string> = {
                   gen1:'Gen 1',gen2:'Gen 2',gen3:'Gen 3',gen4:'Gen 4',
                   gen5:'Gen 5',gen6:'Gen 6',gen7:'Gen 7',gen8:'Gen 8',
-                  legendary:'Leggendari',favorite:'Preferita',regional:'Regionali'
+                  legendary:'Leggendari',favorite:'Preferita',regional:'Regionali',mega:'Mega'
                 };
 
                 if (!presetSelecting) {

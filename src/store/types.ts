@@ -99,6 +99,8 @@ export interface GameStore extends GameState {
   claimBattleTowerReward: (floor: number) => void;
   consumeRegionalCharge: () => void;
   addRegionalCharge: (amount: number) => void;
+  consumeIslandCharge: () => void;
+  addIslandCharge: (amount: number) => void;
   trainPokemon: (pokemonId: string, category: 'iv' | 'ev', stat: keyof Pokemon['ivs'], amount?: number) => void;
   changeNature: (pokemonId: string, newNature: string) => void;
 }

@@ -156,6 +156,8 @@ export const useStore = create<GameStore>()(
         if (!state.dojoTrainingCount) state.dojoTrainingCount = {};
         if (state.regionalCharges === undefined) state.regionalCharges = 3;
         if (!state.lastRegionalTickTimestamp) state.lastRegionalTickTimestamp = Date.now();
+        if (state.islandCharges === undefined) state.islandCharges = 3;
+        if (!state.lastIslandTickTimestamp) state.lastIslandTickTimestamp = Date.now();
         if (state.activePresetCategory === undefined) state.activePresetCategory = null;
         if (state.genChallenges === undefined) state.genChallenges = null;
         

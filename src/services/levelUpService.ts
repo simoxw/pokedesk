@@ -15,6 +15,10 @@ export async function checkLevelUp(
   setStore: (partial: Partial<GameState>) => void
 ): Promise<void> {
   try {
+    // Mega e forme speciali (pokemonId > 10000 con ID nella lista mega) non evolvono mai
+    const { MEGA_IDS } = await import('../data/legendaryIds');
+    if (MEGA_IDS.has(pokemon.pokemonId)) return;
+
     const pokemonData = await api.getPokemon(pokemon.pokemonId);
     const speciesData = await api.getSpecies(pokemon.pokemonId);
 

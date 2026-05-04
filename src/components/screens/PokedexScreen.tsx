@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useStore } from '../../store'; 
 import { api } from '../../api'; 
 import { REGIONAL_FORMS } from '../../data/regionalForms';
+import { MEGA_IDS } from '../../data/legendaryIds';
 import { motion, AnimatePresence } from 'motion/react'; 
 import { ArrowLeft, X, Heart, Sword, Shield, Zap, Activity, Filter, Search, Calculator } from 'lucide-react';
 import { TYPE_CHART } from '../../BattleEngine'; 
@@ -59,6 +60,7 @@ export default function PokedexScreen() {
   const [filterType, setFilterType] = useState<string | null>(null);
   const [filterGen, setFilterGen] = useState<number | null>(null);
   const [filterRegional, setFilterRegional] = useState(false);
+  const [filterMega, setFilterMega] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [showFilters, setShowFilters] = useState(false);
   const [showTypeCalc, setShowTypeCalc] = useState(false);
@@ -75,6 +77,7 @@ export default function PokedexScreen() {
     { id: 7, label: 'Gen 7', range: [722, 809] },
     { id: 8, label: 'Gen 8', range: [810, 898] },
     { id: 9, label: 'Gen 9', range: [906, 1025] },
+    { id: 10, label: 'Mega', range: [10033, 10080] },
   ];
 
   const TYPES = [
@@ -119,6 +122,7 @@ export default function PokedexScreen() {
   const caught = Object.values(pokedex).filter(s => s === 'caught').length;
   const seen = Object.values(pokedex).length; // tutte le specie registrate (seen + caught)
   const regionalCaught = Object.entries(pokedex).filter(([id, status]) => status === 'caught' && Number(id) > 10000).length;
+  const megaCaught = Object.entries(pokedex).filter(([id, status]) => status === 'caught' && MEGA_IDS.has(Number(id))).length;
   const regionalTotal = Object.entries(pokedex).filter(([id]) => Number(id) > 10000).length;
   const regionalCount = REGIONAL_FORMS.length;
  
@@ -148,6 +152,7 @@ export default function PokedexScreen() {
         if (range && (id < range[0] || id > range[1])) return false;
       }
       if (filterRegional && id <= 10000) return false;
+      if (filterMega && !MEGA_IDS.has(Number(id))) return false;
       return true;
     })
     .sort((a, b) => a.id - b.id);
@@ -256,6 +261,14 @@ export default function PokedexScreen() {
                     >
                       REGIONALI
                     </button>
+                    <button 
+                      onClick={() => setFilterMega(m => !m)}
+                      className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all ${
+                        filterMega ? 'bg-[#e63946] text-white' : 'bg-white/5 text-white/40'
+                      }`}
+                    >
+                      MEGA
+                    </button>
                   </div>
                 </div>
               </div>
@@ -279,14 +292,18 @@ export default function PokedexScreen() {
                 <div className="text-[10px] text-white/40 font-bold uppercase">Totali</div>
               </div>
             </div>
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-3 gap-3">
               <div className="bg-[#1a1a2e] rounded-2xl p-3 text-center border border-white/5">
                 <div className="text-xl font-black text-purple-400">{regionalCaught}</div>
-                <div className="text-[10px] text-white/40 font-bold uppercase">Regionali catturati</div>
+                <div className="text-[10px] text-white/40 font-bold uppercase">Regionali</div>
               </div>
               <div className="bg-[#1a1a2e] rounded-2xl p-3 text-center border border-white/5">
                 <div className="text-xl font-black text-purple-400">{regionalTotal}</div>
-                <div className="text-[10px] text-white/40 font-bold uppercase">Regionali totali</div>
+                <div className="text-[10px] text-white/40 font-bold uppercase">Regionali tot.</div>
+              </div>
+              <div className="bg-[#1a1a2e] rounded-2xl p-3 text-center border border-white/5">
+                <div className="text-xl font-black text-pink-400">{megaCaught}</div>
+                <div className="text-[10px] text-white/40 font-bold uppercase">Mega</div>
               </div>
             </div>
           </div>
