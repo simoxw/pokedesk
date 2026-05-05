@@ -3,6 +3,7 @@ import { useStore } from '../../store';
 import { motion, AnimatePresence } from 'motion/react';
 import { Trophy, Star, CheckCircle, Circle, Award, Sparkles, Zap, Target, Swords, TreePine, ArrowLeft } from 'lucide-react';
 import PokemonSprite from '../ui/PokemonSprite';
+import { MEGA_IDS } from '../../data/legendaryIds';
 
 const ACHIEVEMENTS_DATA = [
   // CATTURE
@@ -122,6 +123,30 @@ const ACHIEVEMENTS_DATA = [
   { id: 'col_gen8_full', name: 'Maestro Galar', description: 'Cattura tutti i 89 Pokémon di Gen 8', category: 'collection' as const, target: 89, reward: { coins: 12000, items: { rare_candy: 4, masterball: 2 } } },
   { id: 'col_gen9', name: 'Esploratore Paldea', description: 'Cattura 30 Pokémon di Gen 9', category: 'collection' as const, target: 30, reward: { coins: 4500, items: { rare_candy: 2 } } },
   { id: 'col_gen9_full', name: 'Maestro Paldea', description: 'Cattura tutti i 120 Pokémon di Gen 9', category: 'collection' as const, target: 120, reward: { coins: 14000, items: { rare_candy: 4, masterball: 2 } } },
+  { 
+    id: 'mega_first', 
+    name: 'Primo Passo Mega', 
+    description: 'Cattura la tua prima Mega Evoluzione', 
+    category: 'collection' as const, 
+    target: 1, 
+    reward: { coins: 5000, items: { rare_candy: 2 } }, 
+  }, 
+  { 
+    id: 'mega_10', 
+    name: 'Cacciatore di Mega', 
+    description: 'Cattura 10 Mega Evoluzioni', 
+    category: 'collection' as const, 
+    target: 10, 
+    reward: { coins: 15000, items: { rare_candy: 5, masterball: 1 } }, 
+  }, 
+  { 
+    id: 'mega_all', 
+    name: 'Maestro delle Mega', 
+    description: 'Cattura almeno 1 esemplare di ogni Mega (48)', 
+    category: 'collection' as const, 
+    target: 48, 
+    reward: { coins: 50000, items: { masterball: 3, rare_candy: 10 }, title: 'Mega Master' }, 
+  },
   
   // LEGA
   {
@@ -239,6 +264,9 @@ export default function AchievementScreen() {
         col_gen8_full: countInRange(810, 898), 
         col_gen9: countInRange(906, 1025),
         col_gen9_full: countInRange(906, 1025),
+        mega_first: caughtIds.filter(id => MEGA_IDS.has(id)).length, 
+        mega_10: caughtIds.filter(id => MEGA_IDS.has(id)).length, 
+        mega_all: new Set(caughtIds.filter(id => MEGA_IDS.has(id))).size, 
       }; 
  
       Object.entries(progressMap).forEach(([id, progress]) => { 
@@ -328,6 +356,10 @@ export default function AchievementScreen() {
       case 'col_gen9':
       case 'col_gen9_full':
         return countInRange(906, 1025);
+      case 'mega_first': 
+      case 'mega_10': 
+      case 'mega_all': 
+        return caughtIds.filter(id => MEGA_IDS.has(id)).length; 
       case 'breed_10': 
         return achievements.find(a => a.id === 'breed_10')?.progress ?? 0; 
       case 'no_damage': 

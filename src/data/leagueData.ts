@@ -1175,4 +1175,112 @@ export const MASTER_TRAINERS: MasterTrainer[] = [
     lose: ['Come sempre, PERDI!', 'Sono il Rivale! Il Rivale vince sempre!'],
     reward: { coins: 5000, items: { rare_candy: 3, megaball: 5 } },
   },
+  {
+    id: 'nemona',
+    name: 'Nemona',
+    spriteFile: 'nemona-masters',
+    pokemon: [
+      { id: 908, level: 100 },  // Meowscarada 
+      { id: 914, level: 100 },  // Skeledirge 
+      { id: 916, level: 100 },  // Quaquaval 
+      { id: 1007, level: 98 },  // Koraidon 
+    ],
+    intro: [
+      'Finalmente un avversario degno di me! Sono sempre pronta a combattere!',
+      'Non ti farò sconti — questa è la mia battaglia preferita!',
+    ],
+    win: ['Incredibile! Sei il rivale che aspettavo da sempre!', 'Rivincita presto, promesso!'],
+    lose: ['Sì! È questo il brivido della battaglia!', 'Sei forte, ma io sono più forte!'],
+    reward: { coins: 5500, items: { rare_candy: 3, ultraball: 4 } },
+  },
+  {
+    id: 'geeta',
+    name: 'Geeta',
+    spriteFile: 'geeta',
+    pokemon: [
+      { id: 869, level: 100 },  // Alcremie 
+      { id: 957, level: 98 },   // Tinkatuff 
+      { id: 976, level: 98 },   // Espathra 
+      { id: 1024, level: 100 }, // Terapagos 
+    ],
+    intro: [
+      'Sono la presidente della Lega di Paldea. Non mostro pietà in battaglia.',
+      'Dimmi che sei pronto — sarà una lotta che ricorderai a lungo.',
+    ],
+    win: ['...Sei davvero straordinario. Meriti un posto nella Top Champions.', 'Raro vedere una simile padronanza.'],
+    lose: ['La presidenza non si conquista senza determinazione assoluta.', 'Ritorna quando avrai affinato ogni dettaglio.'],
+    reward: { coins: 6000, items: { rare_candy: 4, masterball: 1 } },
+  },
+  {
+    id: 'arven',
+    name: 'Arven',
+    spriteFile: 'arven-s',
+    pokemon: [
+      { id: 911, level: 100 },  // Greedent (Sandwich) 
+      { id: 925, level: 98 },   // Toedscruel 
+      { id: 980, level: 98 },   // Dondozo 
+      { id: 1008, level: 100 }, // Miraidon 
+    ],
+    intro: [
+      'Non pensavo di arrivare qui... ma ci sono.',
+      'Ho allenato con tutto me stesso. Questo è per te, Mabosstiff.',
+    ],
+    win: ['...Grazie. Questa vittoria significa tutto per me.', 'Sei forte quanto speravo.'],
+    lose: ['È andata. Ma sono cresciuto combattendo.', 'La prossima volta andrà diversamente.'],
+    reward: { coins: 5500, items: { rare_candy: 3, hyperpotion: 4 } },
+  },
+  {
+    id: 'kieran',
+    name: 'Kieran',
+    spriteFile: 'kieran',
+    pokemon: [
+      { id: 960, level: 100 },  // Farigiraf 
+      { id: 918, level: 100 },  // Brambleghast 
+      { id: 1025, level: 100 }, // Pecharunt 
+      { id: 1021, level: 98 },  // Gouging Fire 
+    ],
+    intro: [
+      'Ho aspettato questo momento ogni giorno.',
+      'Non sono più quello di prima. Preparati.',
+    ],
+    win: ['Finalmente... finalmente ho perso contro qualcuno degno.', '...Capisco ora cosa significa essere forti davvero.'],
+    lose: ['Sì! Lo sapevo! Sono il più forte!', 'Nessuno mi può fermare!'],
+    reward: { coins: 6000, items: { rare_candy: 4, masterball: 1 } },
+  },
+  {
+    id: 'mega-red',
+    name: 'Red Mega',
+    spriteFile: 'red',
+    pokemon: [
+      { id: 10044, level: 100 }, // mega-mewtwo-y 
+      { id: 10041, level: 100 }, // mega-gyarados 
+      { id: 10034, level: 100 }, // mega-charizard-x 
+      { id: 10076, level: 100 }, // mega-rayquaza 
+    ],
+    intro: [
+      '...',
+      '(Red estrae quattro Mega Stone. Il silenzio è assordante.)',
+    ],
+    win: ['...', '(Red annuisce. I suoi occhi brillano di rispetto puro.)'],
+    lose: ['...'],
+    reward: { coins: 8000, items: { rare_candy: 5, masterball: 2 } },
+  },
+  {
+    id: 'mega-champion',
+    name: 'Campione Mega',
+    spriteFile: 'steven',
+    pokemon: [
+      { id: 10073, level: 100 }, // mega-metagross 
+      { id: 10072, level: 100 }, // mega-salamence 
+      { id: 10075, level: 100 }, // mega-latios 
+      { id: 10074, level: 100 }, // mega-latias 
+    ],
+    intro: [
+      'Le Mega Evoluzioni sono il legame supremo tra allenatore e Pokémon.',
+      'Dimostrami che il tuo legame supera il mio.',
+    ],
+    win: ['...Magnifico. Il tuo legame brilla più delle pietre più rare.', 'Sei degno di questo titolo.'],
+    lose: ["L'acciaio e le mega non cedono a chi non è pronto.", 'Torna quando il tuo legame sarà completo.'],
+    reward: { coins: 8000, items: { rare_candy: 5, masterball: 2 } },
+  },
 ];

@@ -19,11 +19,27 @@ const generateMasterIvs = () => ({
   spDef: randomIv(28, 31),
   speed: randomIv(28, 31),
 });
-const generateMasterEvs = () => {
-  const focusPhysical = Math.random() < 0.5;
-  return focusPhysical
-    ? { hp: 120, attack: 252, defense: 68, spAtk: 0, spDef: 0, speed: 68 }
-    : { hp: 120, attack: 0, defense: 68, spAtk: 252, spDef: 0, speed: 68 };
+const generateMasterEvs = (baseStats?: { 
+  attack: number; spAtk: number; speed: number; 
+}) => { 
+  if (!baseStats) { 
+    // fallback invariato 
+    const focusPhysical = Math.random() < 0.5; 
+    return focusPhysical 
+      ? { hp: 120, attack: 252, defense: 68, spAtk: 0, spDef: 0, speed: 68 } 
+      : { hp: 120, attack: 0, defense: 68, spAtk: 252, spDef: 0, speed: 68 }; 
+  } 
+  const isPhysical = baseStats.attack >= baseStats.spAtk; 
+  const needsSpeed = baseStats.speed >= 90; 
+  if (isPhysical && needsSpeed) { 
+    return { hp: 4, attack: 252, defense: 0, spAtk: 0, spDef: 0, speed: 252 }; 
+  } else if (isPhysical) { 
+    return { hp: 252, attack: 252, defense: 4, spAtk: 0, spDef: 0, speed: 0 }; 
+  } else if (needsSpeed) { 
+    return { hp: 4, attack: 0, defense: 0, spAtk: 252, spDef: 0, speed: 252 }; 
+  } else { 
+    return { hp: 252, attack: 0, defense: 4, spAtk: 252, spDef: 0, speed: 0 }; 
+  } 
 };
 
 export default function MasterBattleScreen() {
@@ -62,7 +78,11 @@ export default function MasterBattleScreen() {
           const data = await api.getPokemon(entry.id);
           const species = await api.getSpecies(entry.id);
           const ivs = generateMasterIvs();
-          const evs = generateMasterEvs();
+          const evs = generateMasterEvs({ 
+            attack: data.stats[1].base_stat, 
+            spAtk: data.stats[3].base_stat, 
+            speed: data.stats[5].base_stat, 
+          }); 
           const baseStats = {
             hp: data.stats[0].base_stat,
             attack: data.stats[1].base_stat,
