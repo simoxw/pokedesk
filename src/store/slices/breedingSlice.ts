@@ -3,6 +3,7 @@ import { api } from '../../api';
 import { BattleEngine } from '../../BattleEngine';
 import { CatchEngine } from '../../CatchEngine';
 import { Egg, GameStore, Pokemon } from '../types';
+import { REGIONAL_FORMS } from '../../data/regionalForms';
 
 export type BreedingSlice = Pick<
   GameStore,
@@ -18,6 +19,15 @@ export const createBreedingSlice: StateCreator<GameStore, [], [], BreedingSlice>
       const compatible = isDitto(p1) || isDitto(p2) || (p1.baseSpeciesId === p2.baseSpeciesId && p1.id !== p2.id);
       if (!compatible) return {};
       const nonDitto = isDitto(p1) ? p2 : p1;
+      const regionalSlug = nonDitto.pokemonId > 10000
+        ? REGIONAL_FORMS.find(f => {
+            // cerca il form che corrisponde al pokemonId tramite api slug
+            // usiamo il nome già salvato nel pokemon come fallback
+            return nonDitto.name?.toLowerCase().includes(f.slug.split('-')[0])
+              && (nonDitto.types?.length ?? 0) > 0;
+          })?.slug
+        : undefined;
+
       const bestIvs = {
         hp: Math.max(p1.ivs.hp, p2.ivs.hp),
         attack: Math.max(p1.ivs.attack, p2.ivs.attack),
@@ -38,6 +48,8 @@ export const createBreedingSlice: StateCreator<GameStore, [], [], BreedingSlice>
         ivs: bestIvs,
         nature: CatchEngine.getNature(),
         isShiny: false,
+        regionalSlug,
+        pokemonName: nonDitto.name,
       };
       return { eggs: [...state.eggs, egg] };
     }),
@@ -47,8 +59,9 @@ export const createBreedingSlice: StateCreator<GameStore, [], [], BreedingSlice>
     if (!egg || Date.now() < egg.hatchAt) return;
 
     try {
-      const pokemonData = await api.getPokemon(egg.basePokemonId);
-      const speciesData = await api.getSpecies(egg.basePokemonId);
+      const targetId = egg.regionalSlug ?? egg.basePokemonId;
+      const pokemonData = await api.getPokemon(targetId);
+      const speciesData = await api.getSpecies(pokemonData.id);
       const baseStats = {
         hp: pokemonData.stats[0].base_stat,
         attack: pokemonData.stats[1].base_stat,
@@ -67,7 +80,7 @@ export const createBreedingSlice: StateCreator<GameStore, [], [], BreedingSlice>
       const moves = await api.getPokemonMoves(pokemonData, 1);
       const newPokemon: Pokemon = {
         id: Math.random().toString(36).substr(2, 9),
-        pokemonId: egg.basePokemonId,
+        pokemonId: pokemonData.id,
         name: api.getItalianName(speciesData.names),
         level: 1,
         exp: 0,

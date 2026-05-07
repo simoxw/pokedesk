@@ -67,6 +67,8 @@ export interface Egg {
   isShiny: boolean;
   createdAt: number;
   hatchAt: number;
+  regionalSlug?: string;
+  pokemonName?: string;
 }
 
 export interface Pokemon {

@@ -1023,7 +1023,7 @@ export default function HubScreen() {
                           <div className="flex items-center gap-3 mb-2">
                             <span className="text-3xl">{ready ? '🐣' : '🥚'}</span>
                             <div className="flex-1">
-                              <p className="font-black text-sm">Pokémon #{egg.basePokemonId}</p>
+                              <p className="font-black text-sm">{egg.pokemonName ? `Uovo di ${egg.pokemonName}` : `Pokémon #${egg.basePokemonId}`}</p>
                               <p className="text-[10px] text-white/40">
                                 IV {Object.values(egg.ivs).reduce((a, b) => a + b, 0)}/186{egg.isShiny ? ' · ✨ Shiny!' : ''}
                               </p>
@@ -1249,7 +1249,17 @@ export default function HubScreen() {
                           className="w-14 h-14 object-contain"
                         />
                         <div>
-                          <p className="font-black text-sm uppercase">{incubPreview.name} <span className="text-yellow-400">Lv.5</span></p>
+                          <div className="flex items-center gap-2">
+                            <p className="font-black text-sm uppercase">{incubPreview.name} <span className="text-yellow-400">Lv.5</span></p>
+                            {(() => {
+                              const nonDitto = incubPreview.p1.pokemonId === 132 ? incubPreview.p2 : incubPreview.p1;
+                              return nonDitto.pokemonId > 10000 && (
+                                <span className="text-[9px] font-black text-purple-400 bg-purple-500/20 px-2 py-0.5 rounded-full">
+                                  🌐 Forma Regionale
+                                </span>
+                              );
+                            })()}
+                          </div>
                           <div className="mt-1 flex flex-wrap gap-x-1.5 gap-y-0.5">
                             {Object.entries(incubPreview.ivs).map(([stat, val]) => (
                               <span key={stat} className="text-[9px] uppercase font-bold">
