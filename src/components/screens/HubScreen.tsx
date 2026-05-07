@@ -10,6 +10,7 @@ import PokemonSprite from '../ui/PokemonSprite';
 import { LEGENDARY_IDS, GEN_RANGES } from '../../data/legendaryIds'; 
  import { usePreloader } from '../../usePreloader'; 
  import { useImagePreloader } from '../../useImagePreloader'; 
+import { REGIONAL_FORMS } from '../../data/regionalForms';
 
 const getStatTotal = (ivs: Stats) => (Object.values(ivs) as number[]).reduce((a, b) => a + b, 0);
 
@@ -1253,11 +1254,26 @@ export default function HubScreen() {
                             <p className="font-black text-sm uppercase">{incubPreview.name} <span className="text-yellow-400">Lv.5</span></p>
                             {(() => {
                               const nonDitto = incubPreview.p1.pokemonId === 132 ? incubPreview.p2 : incubPreview.p1;
-                              return nonDitto.pokemonId > 10000 && (
-                                <span className="text-[9px] font-black text-purple-400 bg-purple-500/20 px-2 py-0.5 rounded-full">
-                                  🌐 Forma Regionale
-                                </span>
+                              const isRegional = nonDitto.pokemonId > 10000 && REGIONAL_FORMS.some(f => 
+                                nonDitto.name?.toLowerCase().includes(f.slug.split('-')[0])
                               );
+                              const isMega = nonDitto.name?.toLowerCase().includes('mega');
+
+                              if (isRegional) {
+                                return (
+                                  <span className="text-[9px] font-black text-purple-400 bg-purple-500/20 px-2 py-0.5 rounded-full">
+                                    🌐 Forma Regionale
+                                  </span>
+                                );
+                              }
+                              if (isMega) {
+                                return (
+                                  <span className="text-[9px] font-black text-orange-400 bg-orange-500/20 px-2 py-0.5 rounded-full">
+                                    🧬 Mega Evoluzione
+                                  </span>
+                                );
+                              }
+                              return null;
                             })()}
                           </div>
                           <div className="mt-1 flex flex-wrap gap-x-1.5 gap-y-0.5">
