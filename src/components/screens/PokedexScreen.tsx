@@ -121,9 +121,9 @@ export default function PokedexScreen() {
  
   const caught = Object.values(pokedex).filter(s => s === 'caught').length;
   const seen = Object.values(pokedex).length; // tutte le specie registrate (seen + caught)
-  const regionalCaught = Object.entries(pokedex).filter(([id, status]) => status === 'caught' && Number(id) > 10000).length;
+  const regionalCaught = Object.entries(pokedex).filter(([id, status]) => status === 'caught' && Number(id) > 10000 && !MEGA_IDS.has(Number(id))).length;
   const megaCaught = Object.entries(pokedex).filter(([id, status]) => status === 'caught' && MEGA_IDS.has(Number(id))).length;
-  const regionalTotal = Object.entries(pokedex).filter(([id]) => Number(id) > 10000).length;
+  const regionalTotal = Object.entries(pokedex).filter(([id]) => Number(id) > 10000 && !MEGA_IDS.has(Number(id))).length;
   const regionalCount = REGIONAL_FORMS.length;
  
   const regionalProgress = {
