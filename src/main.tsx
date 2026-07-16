@@ -2,6 +2,7 @@ import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
 import App from './App.tsx';
 import { ErrorBoundary } from './ErrorBoundary.tsx';
+import { setupDebugConsole } from './debugConsole';
 import './index.css';
 
 // Registrazione del Service Worker solo in produzione, per non interferire con il dev server
@@ -55,6 +56,7 @@ if (import.meta.env.PROD && 'serviceWorker' in navigator) {
   });
 }
 
+setupDebugConsole();
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>

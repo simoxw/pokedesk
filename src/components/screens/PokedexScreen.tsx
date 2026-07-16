@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react'; 
 import { useStore } from '../../store'; 
 import { api } from '../../api'; 
-import { REGIONAL_FORMS } from '../../data/regionalForms';
+import { REGIONAL_FORMS, REGIONAL_FORM_IDS } from '../../data/regionalForms';
 import { MEGA_IDS } from '../../data/legendaryIds';
 import { motion, AnimatePresence } from 'motion/react'; 
 import { ArrowLeft, X, Heart, Sword, Shield, Zap, Activity, Filter, Search, Calculator } from 'lucide-react';
@@ -49,6 +49,24 @@ function extractEvolutions(chain: any): { name: string; id: number }[] {
   }; 
   traverse(chain); 
   return result; 
+} 
+ 
+function formatMegaNameFromSlug(slug: string): string { 
+  let name = slug; 
+  if (name.startsWith('mega-')) name = name.replace(/^mega-/, ''); 
+  name = name.replace(/-mega-(x|y)$/, ' $1'); 
+  name = name.replace(/-mega$/, ''); 
+  return name 
+    .split('-') 
+    .map(part => part.charAt(0).toUpperCase() + part.slice(1)) 
+    .join(' '); 
+} 
+ 
+function getPokedexDisplayName(pokemon: any): string { 
+  if (MEGA_IDS.has(pokemon.id) && typeof pokemon.name === 'string') { 
+    return `Mega ${formatMegaNameFromSlug(pokemon.name)}`; 
+  } 
+  return `${api.getItalianName(pokemon.species.names)}${pokemon.id > 10000 && !MEGA_IDS.has(pokemon.id) ? ' (Regionale)' : ''}`; 
 } 
  
 export default function PokedexScreen() { 
@@ -121,10 +139,10 @@ export default function PokedexScreen() {
  
   const caught = Object.values(pokedex).filter(s => s === 'caught').length;
   const seen = Object.values(pokedex).length; // tutte le specie registrate (seen + caught)
-  const regionalCaught = Object.entries(pokedex).filter(([id, status]) => status === 'caught' && Number(id) > 10000 && !MEGA_IDS.has(Number(id))).length;
+  const regionalCaught = Object.entries(pokedex).filter(([id, status]) => status === 'caught' && REGIONAL_FORM_IDS.includes(Number(id))).length;
   const megaCaught = Object.entries(pokedex).filter(([id, status]) => status === 'caught' && MEGA_IDS.has(Number(id))).length;
-  const regionalTotal = Object.entries(pokedex).filter(([id]) => Number(id) > 10000 && !MEGA_IDS.has(Number(id))).length;
-  const regionalCount = REGIONAL_FORMS.length;
+  const regionalTotal = REGIONAL_FORM_IDS.length;
+  const regionalCount = regionalTotal;
  
   const regionalProgress = {
     id: 0,
@@ -151,7 +169,7 @@ export default function PokedexScreen() {
         const range = GEN_RANGES.find(g => g.id === filterGen)?.range;
         if (range && (id < range[0] || id > range[1])) return false;
       }
-      if (filterRegional && id <= 10000) return false;
+      if (filterRegional && !REGIONAL_FORM_IDS.includes(id)) return false;
       if (filterMega && !MEGA_IDS.has(Number(id))) return false;
       return true;
     })
@@ -437,7 +455,7 @@ export default function PokedexScreen() {
                       #{selected.id.toString().padStart(3, '0')} 
                     </p> 
                     <h2 className="text-2xl font-black uppercase"> 
-                      {(MEGA_IDS.has(selected.id) ? 'Mega ' : '') + api.getItalianName(selected.species.names) + (selected.id > 10000 && !MEGA_IDS.has(selected.id) ? ' (Regionale)' : '')} 
+                      {getPokedexDisplayName(selected)} 
                     </h2> 
                     <div className="flex gap-2 mt-1"> 
                       {selected.types.map((t: any) => ( 

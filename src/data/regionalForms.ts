@@ -45,7 +45,7 @@ export const REGIONAL_FORMS: RegionalFormEntry[] = [
   { slug: 'zigzagoon-galar',   region: 'Galar', rarity: 'common'   },
   { slug: 'linoone-galar',     region: 'Galar', rarity: 'uncommon' },
   { slug: 'darumaka-galar',    region: 'Galar', rarity: 'uncommon' },
-  { slug: 'darmanitan-galar',  region: 'Galar', rarity: 'rare'     },
+  { slug: 'darmanitan-galar-standard',  region: 'Galar', rarity: 'rare'     },
   { slug: 'yamask-galar',      region: 'Galar', rarity: 'uncommon' },
   { slug: 'stunfisk-galar',    region: 'Galar', rarity: 'uncommon' },
   // ── HISUI ──
@@ -70,6 +70,11 @@ export const REGIONAL_FORMS: RegionalFormEntry[] = [
 ];
 
 export const REGIONAL_FORM_SLUGS = REGIONAL_FORMS.map(f => f.slug);
+export const REGIONAL_FORM_IDS = [
+  10091, 10092, 10100, 10101, 10102, 10103, 10104, 10105, 10106, 10107, 10108, 10109, 10110, 10111, 10112, 10113, 10114, 10115,
+  10161, 10162, 10163, 10164, 10165, 10172, 10166, 10167, 10168, 10169, 10170, 10171, 10173, 10174, 10175, 10176, 10177, 10179, 10180,
+  10229, 10230, 10231, 10232, 10233, 10234, 10235, 10236, 10237, 10238, 10239, 10240, 10241, 10242, 10243, 10244, 10253,
+];
 export const REGIONAL_FORMS_BY_REGION = {
   Alola:  REGIONAL_FORMS.filter(f => f.region === 'Alola'),
   Galar:  REGIONAL_FORMS.filter(f => f.region === 'Galar'),

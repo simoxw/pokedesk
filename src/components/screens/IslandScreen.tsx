@@ -12,6 +12,24 @@ import { LEGENDARY_IDS, MEGA_SLUGS } from '../../data/legendaryIds';
 
 const ISLAND_LEGENDARIES = Array.from(LEGENDARY_IDS);
 
+function formatMegaNameFromSlug(slug: string): string {
+  let name = slug;
+  if (name.startsWith('mega-')) name = name.replace(/^mega-/, '');
+  name = name.replace(/-mega-(x|y)$/, ' $1');
+  name = name.replace(/-mega$/, '');
+  return name
+    .split('-')
+    .map(part => part.charAt(0).toUpperCase() + part.slice(1))
+    .join(' ');
+}
+
+function getIslandPokemonDisplayName(pokemon: any, isMega: boolean): string {
+  if (isMega && typeof pokemon.name === 'string') {
+    return `Mega ${formatMegaNameFromSlug(pokemon.name)}`;
+  }
+  return api.getItalianName(pokemon.species.names);
+}
+
 // Evento mensile: primo lunedì del mese (giorni 1-7)
 const isEventDay = (date: Date) => {
   const day = date.getDate(); // 1-31
@@ -152,7 +170,7 @@ export default function IslandScreen() {
       addPokemon({
         id: Math.random().toString(36).substr(2, 9),
         pokemonId: pokemon.id,
-        name: (isMega ? 'Mega ' : '') + api.getItalianName(pokemon.species.names),
+        name: getIslandPokemonDisplayName(pokemon, isMega),
         level: pokemon.level,
         exp: startExp,
         types: pokemon.types.map((t: any) => t.type.name),
@@ -224,7 +242,7 @@ export default function IslandScreen() {
           </span>
         </div>
         <h2 className="text-3xl font-black text-white uppercase tracking-tighter drop-shadow-lg">
-          {(isMega ? 'Mega ' : '') + api.getItalianName(pokemon.species.names)}
+          {getIslandPokemonDisplayName(pokemon, isMega)}
         </h2>
         <div className="text-white/60 font-bold text-sm">Livello {pokemon.level}</div>
         {isPerfectIVs && (
