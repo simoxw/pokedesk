@@ -94,8 +94,19 @@ export const createAchievementSlice: StateCreator<GameStore, [], [], Achievement
       ];
 
       const existingIds = new Set(state.achievements.map((a) => a.id));
-      const merged = [...state.achievements, ...achievements.filter((a) => !existingIds.has(a.id))];
-      return { achievements: merged };
+      const merged = achievements.map((definition) => {
+        const existing = state.achievements.find((a) => a.id === definition.id);
+        if (!existing) return definition;
+        return {
+          ...existing,
+          ...definition,
+          target: definition.target,
+          progress: Math.min(existing.progress ?? 0, definition.target),
+          unlocked: existing.unlocked ?? false,
+        };
+      });
+      const staleLegacyEntries = state.achievements.filter((a) => !existingIds.has(a.id));
+      return { achievements: [...merged, ...staleLegacyEntries] };
     }),
   updateAchievementProgress: (achievementId, progress) =>
     set((state: any) => ({

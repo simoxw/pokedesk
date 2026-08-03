@@ -214,15 +214,16 @@ export default function AchievementScreen() {
   const { achievements, stats, team, box, pokedex, incrementStat, addCoins, addItem, setScreen, initializeAchievements, updateAchievementProgress, unlockAchievement: unlockAchievementStore, leagueProgress, masterProgress } = useStore();
   const [showNotification, setShowNotification] = useState<string | null>(null);
 
-  // Inizializza achievements se vuoto o se ne mancano alcuni
+  // Inizializza achievements se vuoto, se ne mancano alcuni o se il target persistito è obsoleto
   useEffect(() => { 
     const knownIds = new Set(ACHIEVEMENTS_DATA.map(a => a.id)); 
     const storeIds = new Set(achievements.map(a => a.id)); 
     const missingAny = [...knownIds].some(id => !storeIds.has(id)); 
-    if (achievements.length === 0 || missingAny) { 
+    const masterTargetMismatch = achievements.some(a => a.id === 'league_master' && a.target !== MASTER_TRAINERS.length);
+    if (achievements.length === 0 || missingAny || masterTargetMismatch) { 
       initializeAchievements(); 
     } 
-  }, [achievements.length, initializeAchievements]); 
+  }, [achievements, initializeAchievements]); 
 
   // Calcola progressi retroattivi
   useEffect(() => {
