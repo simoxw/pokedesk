@@ -4,6 +4,7 @@ import { motion, AnimatePresence } from 'motion/react';
 import { Trophy, Star, CheckCircle, Circle, Award, Sparkles, Zap, Target, Swords, TreePine, ArrowLeft } from 'lucide-react';
 import PokemonSprite from '../ui/PokemonSprite';
 import { MEGA_IDS } from '../../data/legendaryIds';
+import { MASTER_TRAINERS } from '../../data/leagueData';
 
 const ACHIEVEMENTS_DATA = [
   // CATTURE
@@ -162,7 +163,7 @@ const ACHIEVEMENTS_DATA = [
     name: 'Campione',
     description: 'Sconfiggi tutti i Master',
     category: 'special' as const,
-    target: 8,
+    target: MASTER_TRAINERS.length,
     reward: { coins: 20000, title: 'Champion' }
   },
   

@@ -1,4 +1,5 @@
 import { StateCreator } from 'zustand';
+import { MASTER_TRAINERS } from '../../data/leagueData';
 import { Achievement, GameStore } from '../types';
 
 export type AchievementSlice = Pick<
@@ -83,7 +84,7 @@ export const createAchievementSlice: StateCreator<GameStore, [], [], Achievement
           unlocked: false,
         },
         { id: 'league_win', name: 'Aspirante', description: 'Sconfiggi un membro della Lega', category: 'special', target: 1, reward: { coins: 5000 }, progress: 0, unlocked: false },
-        { id: 'league_master', name: 'Campione', description: 'Sconfiggi tutti i Master', category: 'special', target: 8, reward: { coins: 20000, title: 'Champion' }, progress: 0, unlocked: false },
+        { id: 'league_master', name: 'Campione', description: 'Sconfiggi tutti i Master', category: 'special', target: MASTER_TRAINERS.length, reward: { coins: 20000, title: 'Champion' }, progress: 0, unlocked: false },
         { id: 'no_damage', name: 'Invincibile', description: 'Vinci una battaglia senza subire danni', category: 'special', target: 1, reward: { coins: 3000 }, progress: 0, unlocked: false },
         { id: 'streak_10', name: 'Serie Vincente', description: '10 vittorie consecutive', category: 'special', target: 10, reward: { coins: 5000 }, progress: 0, unlocked: false },
         { id: 'breed_10', name: 'Allevatore', description: 'Schiudi 10 uova', category: 'special', target: 10, reward: { coins: 5000, items: { rare_candy: 5 } }, progress: state.eggs.filter((e) => e.hatchAt < Date.now()).length, unlocked: false },

@@ -2,7 +2,7 @@ import React from 'react';
 import { useStore } from '../../store';
 import { motion } from 'motion/react';
 import { ArrowLeft, Lock, Star } from 'lucide-react';
-import { LEAGUE_REGIONS, scaleLeagueLevel } from '../../data/leagueData';
+import { LEAGUE_REGIONS, MASTER_TRAINERS, scaleLeagueLevel } from '../../data/leagueData';
 
 const REGION_FLAGS: Record<string, string> = {
   kanto:  '🗾',
@@ -127,7 +127,7 @@ export default function LeagueSelectScreen() {
         {(() => {
           const masterUnlocked = leagueProgress.completedRuns >= 1;
           const masterDefeatedCount = masterProgress?.defeatedIds?.length ?? 0;
-          const MASTER_TOTAL = 15;
+          const MASTER_TOTAL = MASTER_TRAINERS.length;
           return (
             <motion.button
               whileTap={{ scale: masterUnlocked ? 0.97 : 1 }}
