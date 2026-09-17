@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useStore } from './store';
 import StartScreen from './components/screens/StartScreen';
+import ProfessorIntroScreen from './components/screens/ProfessorIntroScreen';
 import StarterDraft from './components/screens/StarterDraft';
 import HubScreen from './components/screens/HubScreen';
 import CatchScreen from './components/screens/CatchScreen';
@@ -108,6 +109,7 @@ export default function App() {
   const renderScreen = () => {
     switch (currentScreen) {
       case 'START_SCREEN': return <StartScreen />;
+      case 'PROFESSOR_INTRO': return <ProfessorIntroScreen />;
       case 'STARTER_DRAFT': return <StarterDraft />;
       case 'HUB_SCREEN': return <HubScreen />;
       case 'CATCH_SCREEN': return <CatchScreen />;
@@ -136,6 +138,7 @@ export default function App() {
 
   const showNav = ![
     'START_SCREEN', 
+    'PROFESSOR_INTRO',
     'STARTER_DRAFT', 
     'CATCH_SCREEN', 
     'SAFARI_SCREEN',

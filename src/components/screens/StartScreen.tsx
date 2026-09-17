@@ -25,7 +25,7 @@ export default function StartScreen() {
         <MenuButton 
           icon={<Play size={20} />} 
           label={isFirstRun ? "INIZIA AVVENTURA" : "CONTINUA"} 
-          onClick={() => setScreen(isFirstRun ? 'STARTER_DRAFT' : 'HUB_SCREEN')}
+          onClick={() => setScreen(isFirstRun ? 'PROFESSOR_INTRO' : 'HUB_SCREEN')}
           primary
         />
         <div className="relative"> 

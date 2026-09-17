@@ -1,5 +1,6 @@
 export type ScreenName =
   | 'START_SCREEN'
+  | 'PROFESSOR_INTRO'
   | 'STARTER_DRAFT'
   | 'HUB_SCREEN'
   | 'CATCH_SCREEN'

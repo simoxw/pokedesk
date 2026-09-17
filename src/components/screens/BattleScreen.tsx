@@ -12,6 +12,7 @@ import PokemonSprite from '../ui/PokemonSprite';
 import confetti from 'canvas-confetti';
 import { generateRandomEVs, getTowerFloorConfig, TOWER_MILESTONES } from '../../services/battleTowerService';
 import { useLoadingWatchdog } from '../../useLoadingWatchdog';
+import { getExpForLevel } from '../../utils/expUtils';
 
 const SELF_DROP_MOVE_IDS = new Set(['276', '315', '354', '359', '370', '434', '437', '484', '528', '557', '620', '705']);
 
@@ -45,6 +46,7 @@ export default function BattleScreen() {
   const [enemy4, setEnemy4] = useState<any>(null);
   const [activeMoveTooltip, setActiveMoveTooltip] = useState<any>(null);
   const [lastEnemyMove, setLastEnemyMove] = useState<{ name: string; type: string } | null>(null);
+  const [battleSummary, setBattleSummary] = useState<{ title: string; subtitle: string; reward: number; xp: number; levelUps: string[]; badge?: string } | null>(null);
   const tooltipTimeout = React.useRef<any>(null);
   const battleTimeoutRef = React.useRef<ReturnType<typeof setTimeout> | null>(null);
   const longPressActive = React.useRef(false);
@@ -84,6 +86,25 @@ export default function BattleScreen() {
   const friendTrainerName = friendBattleTeam?.[0]?.trainerName ?? 'Amico';
   const leagueTrainerName = leagueBattleTeam?.[0]?.trainerName ?? 'Trainer';
   const masterTrainerName = masterBattleTeam?.[0]?.trainerName ?? 'Master Trainer';
+
+  const getPokemonExpProgress = (pokemon: any) => {
+    if (!pokemon) return { current: 0, needed: 0, percent: 100, nextLabel: 'Lv. max' };
+    if (pokemon.level >= 100) return { current: 0, needed: 0, percent: 100, nextLabel: 'Lv. max' };
+    const expThisLevel = getExpForLevel(pokemon.growthRate ?? 'medium', pokemon.level);
+    const expNextLevel = getExpForLevel(pokemon.growthRate ?? 'medium', pokemon.level + 1);
+    const current = Math.max(0, (pokemon.exp ?? 0) - expThisLevel);
+    const needed = Math.max(0, expNextLevel - expThisLevel);
+    const percent = needed > 0 ? Math.min(100, Math.floor((current / needed) * 100)) : 100;
+    return { current, needed, percent, nextLabel: `Lv. ${pokemon.level + 1}` };
+  };
+
+  const activeExpProgress = getPokemonExpProgress(playerPkmn);
+  const teamExpSummary = team
+    .filter((p: any) => p && p.id)
+    .map((p: any) => ({
+      ...p,
+      expProgress: getPokemonExpProgress(p),
+    }));
 
   const applyEvGain = (pokemon: any, enemyData: any) => { 
     if (!enemyData?.rawStats) return; 
@@ -576,6 +597,14 @@ export default function BattleScreen() {
       setPlayerFlinch(false);
       award40MedalExpItems();
       clearLeagueBattleTeam();
+      setBattleSummary({
+        title: 'Vittoria!',
+        subtitle: `Hai sconfitto ${leagueTrainerName}!`,
+        reward: 500,
+        xp: 120,
+        levelUps: team.filter((p) => p.currentHp > 0).map((p) => `${p.name} Lv.${p.level}`),
+        badge: 'Lega vinta'
+      });
       setIsFinished(true);
       setIsAnimating(false);
       return false;
@@ -596,6 +625,14 @@ export default function BattleScreen() {
       award40MedalExpItems();
       clearMasterBattleTeam();
       setMasterBattleResult('win');
+      setBattleSummary({
+        title: 'Vittoria master!',
+        subtitle: `Hai sconfitto ${masterTrainerName}!`,
+        reward: 800,
+        xp: 180,
+        levelUps: team.filter((p) => p.currentHp > 0).map((p) => `${p.name} Lv.${p.level}`),
+        badge: 'Master Trainer'
+      });
       setIsFinished(true);
       setIsAnimating(false);
       return false;
@@ -663,6 +700,14 @@ export default function BattleScreen() {
       setEnemyFlinch(false);
       setPlayerFlinch(false);
       clearFriendBattleTeam();
+      setBattleSummary({
+        title: 'Vittoria!',
+        subtitle: `Hai sconfitto ${friendTrainerName}!`,
+        reward: 300,
+        xp: 110,
+        levelUps: team.filter((p) => p.currentHp > 0).map((p) => `${p.name} Lv.${p.level}`),
+        badge: 'Sfida amichevole'
+      });
       setIsFinished(true);
       setIsAnimating(false);
       return false;
@@ -688,14 +733,31 @@ export default function BattleScreen() {
       addItem('superpotion', 2); 
       if (Math.random() < 0.10) addItem('rare_candy', 1); 
       if (Math.random() < 0.10) addItem('ultraball', 1); 
-      addLog('🎁 Ricompense Capopalestra ricevute!'); 
+      addLog('🎁 Ricompense Capopalestra ricevute!');
+      setBattleSummary({
+        title: 'Vittoria!',
+        subtitle: 'Hai sconfitto il Capopalestra!',
+        reward: Math.floor(500 + (defeatedEnemy?.level ?? 5) * 2),
+        xp: 150,
+        levelUps: team.filter((p) => p.currentHp > 0).map((p) => `${p.name} Lv.${p.level}`),
+        badge: 'Medaglia ottenuta'
+      });
     } else { 
-      addCoins(Math.floor(200 + (defeatedEnemy?.level ?? 5) * 2)); 
+      const reward = Math.floor(200 + (defeatedEnemy?.level ?? 5) * 2);
+      addCoins(reward);
       addItem('pokeball', 1); 
       addItem('potion', 2); 
       addItem('full_heal', 1); 
       if (Math.random() < 0.10) addItem('superpotion', 1); 
       if (Math.random() < 0.10) addItem('megaball', 1); 
+      setBattleSummary({
+        title: 'Vittoria!',
+        subtitle: 'Battaglia vinta!',
+        reward,
+        xp: 90,
+        levelUps: team.filter((p) => p.currentHp > 0).map((p) => `${p.name} Lv.${p.level}`),
+        badge: 'Ricompensa ottenuta'
+      });
     } 
     incrementStat('totalBattles');
     useStore.getState().team.forEach(p => { 
@@ -2332,6 +2394,147 @@ export default function BattleScreen() {
         </div>
       </div>
 
+      {battleSummary && !wasTowerBattle.current && (
+        <div className="fixed inset-0 z-[200] flex items-center justify-center bg-black/80 p-2 backdrop-blur-sm">
+          <motion.div
+            initial={{ opacity: 0, scale: 0.92, y: 18 }}
+            animate={{ opacity: 1, scale: 1, y: 0 }}
+            className="relative w-full max-w-md max-h-[calc(100vh-1rem)] overflow-hidden rounded-[26px] border border-orange-400/50 bg-[#101a2b] shadow-[0_0_30px_rgba(251,146,60,0.18)]"
+          >
+            <div className="max-h-[calc(100vh-1rem)] overflow-y-auto overscroll-contain">
+                  <div className="bg-gradient-to-r from-orange-400 to-amber-300 px-4 py-4 text-center text-slate-900">
+                    <div className="mb-2 text-2xl">✨</div>
+                    <p className="text-3xl font-black uppercase tracking-tight">{battleSummary.title}</p>
+                    <p className="text-sm font-bold opacity-80">{battleSummary.subtitle}</p>
+                  </div>
+
+                  <div className="bg-[#0f172a] p-4 text-white">
+                    <div className="mb-4 rounded-2xl border border-white/10 bg-slate-800/60 p-3">
+                      <div className="flex items-center justify-between gap-3">
+                        <div className="flex items-center gap-3">
+                          <div className="flex h-14 w-14 items-center justify-center overflow-hidden rounded-2xl bg-slate-700">
+                            {playerPkmn ? (
+                              <img
+                                src={playerPkmn.spriteUrl || `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/${playerPkmn.pokemonId}.png`}
+                                alt={playerPkmn.name}
+                                className="h-12 w-12 object-contain"
+                              />
+                            ) : (
+                              <span className="text-xl">⚡</span>
+                            )}
+                          </div>
+                          <div>
+                            <p className="text-xl font-black uppercase">{playerPkmn?.name ?? 'Pokémon'}</p>
+                            <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-white/50">Lv. {playerPkmn?.level ?? 1}</p>
+                          </div>
+                        </div>
+                        <div className="text-right">
+                          <p className="text-xs font-black uppercase tracking-[0.18em] text-emerald-400">+EXP</p>
+                          <p className="text-xl font-black text-emerald-300">+{battleSummary.xp}</p>
+                        </div>
+                      </div>
+
+                      <div className="mt-3 rounded-full bg-slate-700/80 p-1">
+                        <div
+                          className="h-2 rounded-full bg-gradient-to-r from-cyan-400 to-emerald-400 transition-all duration-300"
+                          style={{ width: `${activeExpProgress.percent}%` }}
+                        />
+                      </div>
+
+                      <div className="mt-3 flex items-center justify-between text-[11px] text-white/60">
+                        <span>
+                          {playerPkmn?.level >= 100
+                            ? 'Esp. massima: 100%'
+                            : `Esp. attuale: ${activeExpProgress.current}`}
+                        </span>
+                        <span>
+                          {playerPkmn?.level >= 100 ? 'Lv. max' : `Prossimo: ${activeExpProgress.nextLabel}`}
+                        </span>
+                      </div>
+                    </div>
+
+                    {teamExpSummary.length > 1 && (
+                      <div className="mb-4 rounded-2xl border border-white/10 bg-slate-900/60 p-3">
+                        <p className="mb-2 text-[10px] font-black uppercase tracking-[0.2em] text-cyan-300">EXP squadra</p>
+                        <div className="space-y-2">
+                          {teamExpSummary.map((teamMember) => {
+                            const progress = teamMember.expProgress;
+                            const isMax = teamMember.level >= 100;
+                            return (
+                              <div key={teamMember.id} className="space-y-1">
+                                <div className="flex items-center justify-between text-[10px] font-bold text-white/80">
+                                  <span>{teamMember.name}</span>
+                                  <span>{isMax ? 'Lv. max' : `Lv.${teamMember.level}`}</span>
+                                </div>
+                                <div className="h-1.5 rounded-full bg-slate-700/80">
+                                  <div
+                                    className="h-1.5 rounded-full bg-gradient-to-r from-emerald-400 to-cyan-400"
+                                    style={{ width: `${progress.percent}%` }}
+                                  />
+                                </div>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    )}
+
+                    <div className="mb-4 rounded-2xl border border-cyan-400/20 bg-cyan-500/5 p-3">
+                      <p className="mb-2 text-[10px] font-black uppercase tracking-[0.2em] text-cyan-300">Punti allenamento</p>
+                      <div className="flex items-center justify-between text-sm font-bold text-white">
+                        <span>Attacco</span>
+                        <span className="text-cyan-300">+1</span>
+                      </div>
+                    </div>
+
+                    <div className="mb-4 grid grid-cols-2 gap-2 text-sm">
+                      <div className="rounded-2xl border border-white/10 bg-white/3 p-3 text-center">
+                        <p className="text-[10px] font-black uppercase tracking-[0.18em] text-white/55">Ricompensa</p>
+                        <p className="mt-1 text-xl font-black text-yellow-300">+{battleSummary.reward}</p>
+                      </div>
+                      <div className="rounded-2xl border border-white/10 bg-white/3 p-3 text-center">
+                        <p className="text-[10px] font-black uppercase tracking-[0.18em] text-white/55">Badge</p>
+                        <p className="mt-1 text-sm font-black text-emerald-300">{battleSummary.badge}</p>
+                      </div>
+                    </div>
+
+                    {battleSummary.levelUps.length > 0 && (
+                      <div className="mb-4 rounded-2xl border border-emerald-500/20 bg-emerald-500/5 p-3">
+                        <p className="text-[10px] font-black uppercase tracking-[0.18em] text-emerald-300">Team</p>
+                        <div className="mt-2 flex flex-wrap gap-2">
+                          {battleSummary.levelUps.map((entry) => (
+                            <span key={entry} className="rounded-full border border-emerald-500/30 bg-emerald-500/10 px-2 py-1 text-[10px] font-bold text-emerald-200">
+                              {entry}
+                            </span>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
+                    <button
+                      onClick={() => {
+                        setBattleSummary(null);
+                        clearFriendBattleTeam();
+                        clearLeagueBattleTeam();
+                        clearMasterBattleTeam();
+                        if (isLeagueBattle) {
+                          setScreen('LEAGUE_BATTLE_SCREEN');
+                        } else if (isMasterBattle) {
+                          setScreen('LEAGUE_SELECT_SCREEN');
+                        } else {
+                          setScreen('HUB_SCREEN');
+                        }
+                      }}
+                      className="w-full rounded-2xl bg-gradient-to-r from-emerald-400 to-cyan-400 px-4 py-4 text-lg font-black text-slate-950 shadow-lg shadow-emerald-500/20 transition-transform active:scale-[0.98]"
+                    >
+                      CONTINUA
+                    </button>
+                  </div>
+                </div>
+              </motion.div>
+            </div>
+          )}
+
       {/* LOG + CONTROLLI */}
       <div className="bg-[#0f0f1a]/95 backdrop-blur-md border-t border-white/5 p-4 space-y-2 relative z-20 shrink-0">
         
@@ -2361,69 +2564,68 @@ export default function BattleScreen() {
 
         {isFinished ? (
           <div className="space-y-2">
-            {/* TORRE: mostra riepilogo diverso per vittoria vs sconfitta */}
-            {wasTowerBattle.current ? (
-              <>
-                {/* Controlla se è vittoria (battleTower.isActive ancora true) 
-                    o sconfitta (abandonBattleTower già chiamato, isActive=false) */}
-                {useStore.getState().battleTower?.isActive ? (
-                  // VITTORIA piano torre
-                  <>
-                    <div className="bg-yellow-500/10 border border-yellow-500/30 rounded-2xl p-3 text-center">
-                      <p className="text-yellow-400 font-black text-sm">
-                        🗼 Piano {(useStore.getState().battleTower?.currentFloor ?? 1) - 1} completato!
-                      </p>
-                    </div>
-                    <button
-                      onClick={() => setScreen('BATTLE_TOWER_SCREEN')}
-                      className="w-full bg-[#e63946] py-4 rounded-2xl font-black text-lg shadow-lg active:scale-[0.98] transition-all"
-                    >
-                      PROSSIMO PIANO →
-                    </button>
-                    <button
-                      onClick={() => { abandonBattleTower(); setScreen('BATTLE_TOWER_SCREEN'); }}
-                      className="w-full bg-white/5 border border-white/10 py-3 rounded-2xl font-bold text-sm text-white/40"
-                    >
-                      ABBANDONA TORRE
-                    </button>
-                  </>
-                ) : (
-                  // SCONFITTA torre
-                  <>
-                    <div className="bg-red-500/10 border border-red-500/30 rounded-2xl p-4 text-center space-y-1">
-                      <p className="text-red-400 font-black text-lg">💀 SCONFITTA</p>
-                      <p className="text-white/50 text-sm">
-                        Scalata terminata al piano {wasTowerFloor.current}
-                      </p>
-                      <p className="text-white/30 text-[10px] font-bold uppercase tracking-widest">
-                        Record: Piano {useStore.getState().battleTower?.bestFloor ?? 0}
-                      </p>
-                    </div>
-                    <button
-                      onClick={() => setScreen('BATTLE_TOWER_SCREEN')}
-                      className="w-full bg-[#e63946] py-4 rounded-2xl font-black text-lg shadow-lg active:scale-[0.98] transition-all"
-                    >
-                      TORNA ALLA TORRE
-                    </button>
-                  </>
-                )}
-              </>
-            ) : (
-              // Tutte le altre battaglie — comportamento invariato
-              <button
-                onClick={() => { 
-                  clearFriendBattleTeam(); 
-                  if (isLeagueBattle) {
-                    setScreen('LEAGUE_BATTLE_SCREEN');
-                  } else {
+            {!battleSummary && (
+              wasTowerBattle.current ? (
+                <>
+                  {useStore.getState().battleTower?.isActive ? (
+                    <>
+                      <div className="bg-yellow-500/10 border border-yellow-500/30 rounded-2xl p-3 text-center">
+                        <p className="text-yellow-400 font-black text-sm">
+                          🗼 Piano {(useStore.getState().battleTower?.currentFloor ?? 1) - 1} completato!
+                        </p>
+                      </div>
+                      <button
+                        onClick={() => setScreen('BATTLE_TOWER_SCREEN')}
+                        className="w-full bg-[#e63946] py-4 rounded-2xl font-black text-lg shadow-lg active:scale-[0.98] transition-all"
+                      >
+                        PROSSIMO PIANO →
+                      </button>
+                      <button
+                        onClick={() => { abandonBattleTower(); setScreen('BATTLE_TOWER_SCREEN'); }}
+                        className="w-full bg-white/5 border border-white/10 py-3 rounded-2xl font-bold text-sm text-white/40"
+                      >
+                        ABBANDONA TORRE
+                      </button>
+                    </>
+                  ) : (
+                    <>
+                      <div className="bg-red-500/10 border border-red-500/30 rounded-2xl p-4 text-center space-y-1">
+                        <p className="text-red-400 font-black text-lg">💀 SCONFITTA</p>
+                        <p className="text-white/50 text-sm">
+                          Scalata terminata al piano {wasTowerFloor.current}
+                        </p>
+                        <p className="text-white/30 text-[10px] font-bold uppercase tracking-widest">
+                          Record: Piano {useStore.getState().battleTower?.bestFloor ?? 0}
+                        </p>
+                      </div>
+                      <button
+                        onClick={() => setScreen('BATTLE_TOWER_SCREEN')}
+                        className="w-full bg-[#e63946] py-4 rounded-2xl font-black text-lg shadow-lg active:scale-[0.98] transition-all"
+                      >
+                        TORNA ALLA TORRE
+                      </button>
+                    </>
+                  )}
+                </>
+              ) : (
+                <button
+                  onClick={() => { 
+                    clearFriendBattleTeam(); 
                     clearLeagueBattleTeam();
-                    setScreen('HUB_SCREEN'); 
-                  }
-                }}
-                className="w-full bg-[#e63946] py-4 rounded-2xl font-black text-lg shadow-lg shadow-red-500/20 active:scale-[0.98] transition-all"
-              >
-                TORNA ALL'HUB
-              </button>
+                    clearMasterBattleTeam();
+                    if (isLeagueBattle) {
+                      setScreen('LEAGUE_BATTLE_SCREEN');
+                    } else if (isMasterBattle) {
+                      setScreen('LEAGUE_SELECT_SCREEN');
+                    } else {
+                      setScreen('HUB_SCREEN'); 
+                    }
+                  }}
+                  className="w-full bg-[#e63946] py-4 rounded-2xl font-black text-lg shadow-lg shadow-red-500/20 active:scale-[0.98] transition-all"
+                >
+                  TORNA ALL'HUB
+                </button>
+              )
             )}
           </div>
         ) : (
