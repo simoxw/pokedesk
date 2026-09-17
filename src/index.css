@@ -12,6 +12,14 @@ body {
   font-size: clamp(12px, 3.5vw, 16px);
 }
 
+@media all and (display-mode: standalone) {
+  html,
+  body {
+    overscroll-behavior: none;
+    overscroll-behavior-y: none;
+  }
+}
+
 img {
   max-width: 100%;
   height: auto;
