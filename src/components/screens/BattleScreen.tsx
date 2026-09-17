@@ -46,7 +46,7 @@ export default function BattleScreen() {
   const [enemy4, setEnemy4] = useState<any>(null);
   const [activeMoveTooltip, setActiveMoveTooltip] = useState<any>(null);
   const [lastEnemyMove, setLastEnemyMove] = useState<{ name: string; type: string } | null>(null);
-  const [battleSummary, setBattleSummary] = useState<{ title: string; subtitle: string; reward: number; xp: number; levelUps: string[]; badge?: string } | null>(null);
+  const [battleSummary, setBattleSummary] = useState<{ title: string; subtitle: string; reward: number; xp: number; levelUps: string[]; badge?: string; evGains?: Record<string, number>; expShareAmount?: number } | null>(null);
   const tooltipTimeout = React.useRef<any>(null);
   const battleTimeoutRef = React.useRef<ReturnType<typeof setTimeout> | null>(null);
   const longPressActive = React.useRef(false);
@@ -105,6 +105,31 @@ export default function BattleScreen() {
       ...p,
       expProgress: getPokemonExpProgress(p),
     }));
+
+  const getBattleExpAward = (enemyData: any) => {
+    const baseExp = enemyData?.base_experience || 100;
+    const boostedBaseExp = expBoostActive ? baseExp * 2 : baseExp;
+    return BattleEngine.calculateExp(boostedBaseExp, enemyData?.level ?? 1);
+  };
+
+  const getExpShareAmount = (enemyData: any) => {
+    if (!expShareActive) return 0;
+    const award = getBattleExpAward(enemyData);
+    return Math.max(1, Math.floor(award / 2));
+  };
+
+  const getEvGainMap = (enemyData: any): Record<string, number> => {
+    const entries = enemyData?.rawStats ?? [];
+    return entries.reduce((acc: Record<string, number>, entry: any) => {
+      const effort = Number(entry?.effort || 0);
+      if (!effort) return acc;
+      const key = entry?.stat?.name;
+      if (!key) return acc;
+      const mappedKey = key === 'special-attack' ? 'spAtk' : key === 'special-defense' ? 'spDef' : key;
+      acc[mappedKey] = (acc[mappedKey] ?? 0) + effort;
+      return acc;
+    }, {});
+  };
 
   const applyEvGain = (pokemon: any, enemyData: any) => { 
     if (!enemyData?.rawStats) return; 
@@ -601,7 +626,9 @@ export default function BattleScreen() {
         title: 'Vittoria!',
         subtitle: `Hai sconfitto ${leagueTrainerName}!`,
         reward: 500,
-        xp: 120,
+        xp: getBattleExpAward(enemy),
+        expShareAmount: getExpShareAmount(enemy),
+        evGains: getEvGainMap(enemy),
         levelUps: team.filter((p) => p.currentHp > 0).map((p) => `${p.name} Lv.${p.level}`),
         badge: 'Lega vinta'
       });
@@ -629,7 +656,9 @@ export default function BattleScreen() {
         title: 'Vittoria master!',
         subtitle: `Hai sconfitto ${masterTrainerName}!`,
         reward: 800,
-        xp: 180,
+        xp: getBattleExpAward(enemy),
+        expShareAmount: getExpShareAmount(enemy),
+        evGains: getEvGainMap(enemy),
         levelUps: team.filter((p) => p.currentHp > 0).map((p) => `${p.name} Lv.${p.level}`),
         badge: 'Master Trainer'
       });
@@ -704,7 +733,9 @@ export default function BattleScreen() {
         title: 'Vittoria!',
         subtitle: `Hai sconfitto ${friendTrainerName}!`,
         reward: 300,
-        xp: 110,
+        xp: getBattleExpAward(enemy),
+        expShareAmount: getExpShareAmount(enemy),
+        evGains: getEvGainMap(enemy),
         levelUps: team.filter((p) => p.currentHp > 0).map((p) => `${p.name} Lv.${p.level}`),
         badge: 'Sfida amichevole'
       });
@@ -738,7 +769,9 @@ export default function BattleScreen() {
         title: 'Vittoria!',
         subtitle: 'Hai sconfitto il Capopalestra!',
         reward: Math.floor(500 + (defeatedEnemy?.level ?? 5) * 2),
-        xp: 150,
+        xp: getBattleExpAward(defeatedEnemy),
+        expShareAmount: getExpShareAmount(defeatedEnemy),
+        evGains: getEvGainMap(defeatedEnemy),
         levelUps: team.filter((p) => p.currentHp > 0).map((p) => `${p.name} Lv.${p.level}`),
         badge: 'Medaglia ottenuta'
       });
@@ -754,7 +787,9 @@ export default function BattleScreen() {
         title: 'Vittoria!',
         subtitle: 'Battaglia vinta!',
         reward,
-        xp: 90,
+        xp: getBattleExpAward(defeatedEnemy),
+        expShareAmount: getExpShareAmount(defeatedEnemy),
+        evGains: getEvGainMap(defeatedEnemy),
         levelUps: team.filter((p) => p.currentHp > 0).map((p) => `${p.name} Lv.${p.level}`),
         badge: 'Ricompensa ottenuta'
       });
@@ -2453,38 +2488,48 @@ export default function BattleScreen() {
                       </div>
                     </div>
 
-                    {teamExpSummary.length > 1 && (
-                      <div className="mb-4 rounded-2xl border border-white/10 bg-slate-900/60 p-3">
-                        <p className="mb-2 text-[10px] font-black uppercase tracking-[0.2em] text-cyan-300">EXP squadra</p>
+                    <div className="mb-4 rounded-2xl border border-cyan-400/20 bg-cyan-500/5 p-3">
+                      <div className="mb-2 flex items-center justify-between gap-2">
+                        <p className="text-[10px] font-black uppercase tracking-[0.2em] text-cyan-300">ESP</p>
+                        {battleSummary.expShareAmount ? (
+                          <span className="text-[9px] font-bold text-emerald-300">Condivisa: +{battleSummary.expShareAmount}</span>
+                        ) : (
+                          <span className="text-[9px] font-bold text-white/40">Nessuna condivisione</span>
+                        )}
+                      </div>
+                      <div className="flex items-center justify-between text-sm font-bold text-white">
+                        <span>Totale ottenuta</span>
+                        <span className="text-emerald-300">+{battleSummary.xp}</span>
+                      </div>
+                    </div>
+
+                    <div className="mb-4 rounded-2xl border border-cyan-400/20 bg-cyan-500/5 p-3">
+                      <p className="mb-2 text-[10px] font-black uppercase tracking-[0.2em] text-cyan-300">EV ottenuti</p>
+                      {Object.entries(battleSummary.evGains ?? {}).length > 0 ? (
                         <div className="space-y-2">
-                          {teamExpSummary.map((teamMember) => {
-                            const progress = teamMember.expProgress;
-                            const isMax = teamMember.level >= 100;
+                          {Object.entries(battleSummary.evGains ?? {}).map(([key, value]) => {
+                            const labelMap: Record<string, string> = {
+                              hp: 'PS',
+                              attack: 'Attacco',
+                              defense: 'Difesa',
+                              spAtk: 'Sp. Att.',
+                              spDef: 'Sp. Dif.',
+                              speed: 'Velocità',
+                            };
                             return (
-                              <div key={teamMember.id} className="space-y-1">
-                                <div className="flex items-center justify-between text-[10px] font-bold text-white/80">
-                                  <span>{teamMember.name}</span>
-                                  <span>{isMax ? 'Lv. max' : `Lv.${teamMember.level}`}</span>
-                                </div>
-                                <div className="h-1.5 rounded-full bg-slate-700/80">
-                                  <div
-                                    className="h-1.5 rounded-full bg-gradient-to-r from-emerald-400 to-cyan-400"
-                                    style={{ width: `${progress.percent}%` }}
-                                  />
-                                </div>
+                              <div key={key} className="flex items-center justify-between text-sm font-bold text-white">
+                                <span>{labelMap[key] ?? key}</span>
+                                <span className="text-cyan-300">+{value}</span>
                               </div>
                             );
                           })}
                         </div>
-                      </div>
-                    )}
-
-                    <div className="mb-4 rounded-2xl border border-cyan-400/20 bg-cyan-500/5 p-3">
-                      <p className="mb-2 text-[10px] font-black uppercase tracking-[0.2em] text-cyan-300">Punti allenamento</p>
-                      <div className="flex items-center justify-between text-sm font-bold text-white">
-                        <span>Attacco</span>
-                        <span className="text-cyan-300">+1</span>
-                      </div>
+                      ) : (
+                        <div className="flex items-center justify-between text-sm font-bold text-white/70">
+                          <span>Nessun EV</span>
+                          <span>+0</span>
+                        </div>
+                      )}
                     </div>
 
                     <div className="mb-4 grid grid-cols-2 gap-2 text-sm">
