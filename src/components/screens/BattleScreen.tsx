@@ -2437,14 +2437,13 @@ export default function BattleScreen() {
             className="relative w-full max-w-md max-h-[calc(100vh-1rem)] overflow-hidden rounded-[26px] border border-orange-400/50 bg-[#101a2b] shadow-[0_0_30px_rgba(251,146,60,0.18)]"
           >
             <div className="max-h-[calc(100vh-1rem)] overflow-y-auto overscroll-contain">
-                  <div className="bg-gradient-to-r from-orange-400 to-amber-300 px-4 py-4 text-center text-slate-900">
-                    <div className="mb-2 text-2xl">✨</div>
-                    <p className="text-3xl font-black uppercase tracking-tight">{battleSummary.title}</p>
-                    <p className="text-sm font-bold opacity-80">{battleSummary.subtitle}</p>
+                  <div className="bg-gradient-to-r from-amber-300 via-yellow-200 to-yellow-300 px-2 py-1.5 text-center text-slate-900">
+                    <p className="text-[1.55rem] font-black uppercase tracking-tight leading-none">{battleSummary.title}</p>
+                    <p className="mt-1 text-[10px] font-bold opacity-80">{battleSummary.subtitle}</p>
                   </div>
 
-                  <div className="bg-[#0f172a] p-4 text-white">
-                    <div className="mb-4 rounded-2xl border border-white/10 bg-slate-800/60 p-3">
+                  <div className="bg-[#0f172a] p-2.5 text-white">
+                    <div className="mb-2.5 rounded-2xl border border-white/10 bg-slate-800/60 p-2">
                       <div className="flex items-center justify-between gap-3">
                         <div className="flex items-center gap-3">
                           <div className="flex h-14 w-14 items-center justify-center overflow-hidden rounded-2xl bg-slate-700">
@@ -2488,8 +2487,8 @@ export default function BattleScreen() {
                       </div>
                     </div>
 
-                    <div className="mb-4 rounded-2xl border border-cyan-400/20 bg-cyan-500/5 p-3">
-                      <div className="mb-2 flex items-center justify-between gap-2">
+                    <div className="mb-2.5 rounded-2xl border border-cyan-400/20 bg-cyan-500/5 p-2">
+                      <div className="mb-1.5 flex items-center justify-between gap-2">
                         <p className="text-[10px] font-black uppercase tracking-[0.2em] text-cyan-300">ESP</p>
                         {battleSummary.expShareAmount ? (
                           <span className="text-[9px] font-bold text-emerald-300">Condivisa: +{battleSummary.expShareAmount}</span>
@@ -2503,8 +2502,8 @@ export default function BattleScreen() {
                       </div>
                     </div>
 
-                    <div className="mb-4 rounded-2xl border border-cyan-400/20 bg-cyan-500/5 p-3">
-                      <p className="mb-2 text-[10px] font-black uppercase tracking-[0.2em] text-cyan-300">EV ottenuti</p>
+                    <div className="mb-2.5 rounded-2xl border border-cyan-400/20 bg-cyan-500/5 p-2">
+                      <p className="mb-1.5 text-[10px] font-black uppercase tracking-[0.2em] text-cyan-300">EV ottenuti</p>
                       {Object.entries(battleSummary.evGains ?? {}).length > 0 ? (
                         <div className="space-y-2">
                           {Object.entries(battleSummary.evGains ?? {}).map(([key, value]) => {
@@ -2532,25 +2531,38 @@ export default function BattleScreen() {
                       )}
                     </div>
 
-                    <div className="mb-4 grid grid-cols-2 gap-2 text-sm">
-                      <div className="rounded-2xl border border-white/10 bg-white/3 p-3 text-center">
+                    <div className="mb-2.5 grid grid-cols-2 gap-2 text-sm">
+                      <div className="rounded-2xl border border-white/10 bg-white/3 p-2 text-center">
                         <p className="text-[10px] font-black uppercase tracking-[0.18em] text-white/55">Ricompensa</p>
                         <p className="mt-1 text-xl font-black text-yellow-300">+{battleSummary.reward}</p>
                       </div>
-                      <div className="rounded-2xl border border-white/10 bg-white/3 p-3 text-center">
+                      <div className="rounded-2xl border border-white/10 bg-white/3 p-2 text-center">
                         <p className="text-[10px] font-black uppercase tracking-[0.18em] text-white/55">Badge</p>
                         <p className="mt-1 text-sm font-black text-emerald-300">{battleSummary.badge}</p>
                       </div>
                     </div>
 
                     {battleSummary.levelUps.length > 0 && (
-                      <div className="mb-4 rounded-2xl border border-emerald-500/20 bg-emerald-500/5 p-3">
+                      <div className="mb-2.5 rounded-2xl border border-emerald-500/20 bg-emerald-500/5 p-2">
                         <p className="text-[10px] font-black uppercase tracking-[0.18em] text-emerald-300">Team</p>
-                        <div className="mt-2 flex flex-wrap gap-2">
-                          {battleSummary.levelUps.map((entry) => (
-                            <span key={entry} className="rounded-full border border-emerald-500/30 bg-emerald-500/10 px-2 py-1 text-[10px] font-bold text-emerald-200">
-                              {entry}
-                            </span>
+                        <div className="mt-1.5 space-y-1.5">
+                          {teamExpSummary.map((member) => (
+                            <div key={member.id} className="rounded-xl border border-white/5 bg-slate-900/60 p-2">
+                              <div className="mb-1 flex items-center justify-between gap-2 text-[10px] font-bold text-white/80">
+                                <span className="truncate uppercase">{member.name}</span>
+                                <span>Lv.{member.level}</span>
+                              </div>
+                              <div className="h-1.5 w-full overflow-hidden rounded-full bg-white/10">
+                                <div
+                                  className="h-full rounded-full bg-gradient-to-r from-cyan-400 to-emerald-400 transition-all duration-300"
+                                  style={{ width: `${member.expProgress.percent}%` }}
+                                />
+                              </div>
+                              <div className="mt-1 flex items-center justify-between text-[9px] text-white/50">
+                                <span>{member.expProgress.percent}%</span>
+                                <span>{member.level >= 100 ? 'Lv. max' : `Next ${member.level + 1}`}</span>
+                              </div>
+                            </div>
                           ))}
                         </div>
                       </div>
@@ -2809,34 +2821,49 @@ export default function BattleScreen() {
                   <X size={18} />
                 </button>
               </div>
-              {team.map((p, idx) => (
-                <button
-                  key={p.id}
-                  onClick={() => handleSwitchPokemon(idx)}
-                  disabled={idx === activeIdx || p.currentHp <= 0}
-                  className={`w-full flex items-center gap-4 p-3 rounded-2xl border transition-all disabled:opacity-40 ${
-                    idx === activeIdx ? 'border-[#e63946] bg-[#e63946]/10' : 'border-white/10 bg-white/5 active:bg-white/10'
-                  }`}
-                >
-                  <img
-                    src={`https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/${p.pokemonId}.png`}
-                    className="w-12 h-12 object-contain"
-                  />
-                  <div className="flex-1 text-left">
-                    <div className="font-black text-sm uppercase">{p.name}</div>
-                    <div className="flex items-center gap-2 mt-1">
-                      <div className="flex-1 bg-white/10 rounded-full h-1.5">
-                        <div
-                          className="h-1.5 rounded-full bg-green-400"
-                          style={{ width: `${(p.currentHp / p.stats.hp) * 100}%` }}
-                        />
+              {team.map((p, idx) => {
+                const expProgress = getPokemonExpProgress(p);
+                return (
+                  <button
+                    key={p.id}
+                    onClick={() => handleSwitchPokemon(idx)}
+                    disabled={idx === activeIdx || p.currentHp <= 0}
+                    className={`w-full flex items-center gap-4 p-3 rounded-2xl border transition-all disabled:opacity-40 ${
+                      idx === activeIdx ? 'border-[#e63946] bg-[#e63946]/10' : 'border-white/10 bg-white/5 active:bg-white/10'
+                    }`}
+                  >
+                    <img
+                      src={`https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/${p.pokemonId}.png`}
+                      className="w-12 h-12 object-contain"
+                    />
+                    <div className="flex-1 text-left">
+                      <div className="font-black text-sm uppercase">{p.name}</div>
+                      <div className="flex items-center gap-2 mt-1">
+                        <div className="flex-1 bg-white/10 rounded-full h-1.5">
+                          <div
+                            className="h-1.5 rounded-full bg-green-400"
+                            style={{ width: `${(p.currentHp / p.stats.hp) * 100}%` }}
+                          />
+                        </div>
+                        <span className="text-[10px] text-white/50">{p.currentHp}/{p.stats.hp}</span>
                       </div>
-                      <span className="text-[10px] text-white/50">{p.currentHp}/{p.stats.hp}</span>
+                      <div className="mt-2">
+                        <div className="flex items-center justify-between text-[9px] text-white/45">
+                          <span>EXP</span>
+                          <span>{expProgress.percent}%</span>
+                        </div>
+                        <div className="mt-1 w-full bg-white/10 rounded-full h-1.5">
+                          <div
+                            className="h-1.5 rounded-full bg-blue-400"
+                            style={{ width: `${expProgress.percent}%` }}
+                          />
+                        </div>
+                      </div>
                     </div>
-                  </div>
-                  {idx === activeIdx && <span className="text-[10px] text-[#e63946] font-bold">IN CAMPO</span>}
-                </button>
-              ))}
+                    {idx === activeIdx && <span className="text-[10px] text-[#e63946] font-bold">IN CAMPO</span>}
+                  </button>
+                );
+              })}
             </motion.div>
           </motion.div>
         )}
