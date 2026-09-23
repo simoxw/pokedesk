@@ -241,9 +241,18 @@ export default function IslandScreen() {
             {isMega ? '⚡ Mega Pokémon' : '⭐ Leggendario'}
           </span>
         </div>
-        <h2 className="text-3xl font-black text-white uppercase tracking-tighter drop-shadow-lg">
-          {getIslandPokemonDisplayName(pokemon, isMega)}
-        </h2>
+        <div className="flex items-center justify-center gap-2">
+          <h2 className="text-3xl font-black text-white uppercase tracking-tighter drop-shadow-lg">
+            {getIslandPokemonDisplayName(pokemon, isMega)}
+          </h2>
+          {useStore.getState().pokedex?.[pokemon.id] === 'caught' && (
+            <img
+              src="https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/items/poke-ball.png"
+              alt="Pokéball"
+              className="w-6 h-6 object-contain drop-shadow-[0_0_12px_rgba(255,255,255,0.5)]"
+            />
+          )}
+        </div>
         <div className="text-white/60 font-bold text-sm">Livello {pokemon.level}</div>
         {isPerfectIVs && (
           <div className="mt-2 flex items-center justify-center gap-1">

@@ -2732,13 +2732,22 @@ export default function BattleScreen() {
                   disabled={turn !== 'player' || isAnimating || move.pp <= 0}
                   className="bg-[#1a1a2e] border border-white/10 rounded-xl p-3 flex flex-col items-start justify-between active:bg-[#e63946]/20 disabled:opacity-40 transition-colors h-16"
                 >
-                  <div className="flex justify-between w-full items-center">
+                  <div className="flex justify-between w-full items-center gap-2">
                     <span className="font-black text-xs uppercase truncate">{move.name}</span>
                     <TypeBadge type={move.type as any} small />
                   </div>
-                  <div className="flex justify-between w-full items-center mt-1">
+                  <div className="flex justify-between w-full items-center mt-1 gap-2">
                     <span className="text-[10px] opacity-50 uppercase font-bold">{move.category}</span>
-                    <span className="text-[10px] font-bold">PP {move.pp}/{move.maxPp}</span>
+                    {(() => {
+                      const moveMultiplier = BattleEngine.getTypeEffectiveness(move.type, enemy?.types ?? []);
+                      const badge = BattleEngine.getTypeEffectivenessBadge(moveMultiplier);
+                      return badge ? (
+                        <span className={`text-[8px] font-black px-1.5 py-[2px] rounded border ${badge.tone}`}>
+                          {badge.label}
+                        </span>
+                      ) : null;
+                    })()}
+                    <span className="text-[10px] font-bold ml-auto">PP {move.pp}/{move.maxPp}</span>
                   </div>
                 </button>
               ))}

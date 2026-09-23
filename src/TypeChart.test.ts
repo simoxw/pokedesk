@@ -49,6 +49,14 @@ describe('TYPE_CHART', () => {
     testEffectiveness('fairy', 'steel', 0.5); // Fairy move vs Steel (Resistito)
   });
 
+  describe('UI effectiveness badges', () => {
+    it('classifies move effectiveness for the user-facing badges', () => {
+      expect(BattleEngine.getTypeEffectivenessBadge(4)).toMatchObject({ label: 'SUPEREFF.', tone: expect.stringContaining('emerald') });
+      expect(BattleEngine.getTypeEffectivenessBadge(0.5)).toMatchObject({ label: 'POCO EFF.', tone: expect.stringContaining('orange') });
+      expect(BattleEngine.getTypeEffectivenessBadge(0)).toMatchObject({ label: 'IMMUNE', tone: expect.stringContaining('violet') });
+    });
+  });
+
   describe('Dual-type effectiveness multiplication', () => {
     it('Water move vs Fire/Rock type: should be 4x', () => {
       expect(BattleEngine.getTypeEffectiveness('water', ['fire', 'rock'])).toBe(4);

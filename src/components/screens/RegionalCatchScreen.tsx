@@ -213,9 +213,18 @@ export default function RegionalCatchScreen() {
             Forma di {region}
           </span>
         </div>
-        <h2 className="text-3xl font-black text-white uppercase tracking-tighter drop-shadow-lg">
-          {api.getItalianName(pokemon.species.names)} ({region})
-        </h2>
+        <div className="flex items-center justify-center gap-2">
+          <h2 className="text-3xl font-black text-white uppercase tracking-tighter drop-shadow-lg">
+            {api.getItalianName(pokemon.species.names)} ({region})
+          </h2>
+          {useStore.getState().pokedex?.[pokemon.id] === 'caught' && (
+            <img
+              src="https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/items/poke-ball.png"
+              alt="Pokéball"
+              className="w-6 h-6 object-contain drop-shadow-[0_0_12px_rgba(255,255,255,0.5)]"
+            />
+          )}
+        </div>
         <p className="font-bold opacity-60 text-sm">Lv. {pokemon.level}</p>
       </div>
 

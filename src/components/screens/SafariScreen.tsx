@@ -295,9 +295,18 @@ export default function SafariScreen() {
       {/* Pokemon */}
       <div className="flex-1 flex flex-col items-center justify-center relative z-10">
         <div className="text-center mb-12">
-          <h2 className="text-3xl font-black drop-shadow-lg text-emerald-400">
-            {api.getItalianName(pokemon.species.names)}
-          </h2>
+          <div className="flex items-center justify-center gap-2">
+            <h2 className="text-3xl font-black drop-shadow-lg text-emerald-400">
+              {api.getItalianName(pokemon.species.names)}
+            </h2>
+            {useStore.getState().pokedex?.[pokemon.id] === 'caught' && (
+              <img
+                src="https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/items/poke-ball.png"
+                alt="Pokéball"
+                className="w-6 h-6 object-contain drop-shadow-[0_0_12px_rgba(255,255,255,0.5)]"
+              />
+            )}
+          </div>
           {RARITY[currentRarity].label && (
             <p className={`text-xs font-black uppercase tracking-widest mt-1 ${RARITY[currentRarity].color}`}>
               {RARITY[currentRarity].label}

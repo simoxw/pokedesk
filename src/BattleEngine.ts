@@ -239,6 +239,19 @@ export const BattleEngine = {
     return null;
   },
 
+  getTypeEffectivenessBadge(multiplier: number): { label: string; tone: string } | null {
+    if (multiplier === 0) {
+      return { label: 'IMMUNE', tone: 'border-violet-500/40 bg-violet-500/15 text-violet-200' };
+    }
+    if (multiplier < 1) {
+      return { label: 'POCO EFF.', tone: 'border-orange-500/40 bg-orange-500/15 text-orange-200' };
+    }
+    if (multiplier >= 2) {
+      return { label: 'SUPEREFF.', tone: 'border-emerald-500/40 bg-emerald-500/15 text-emerald-300' };
+    }
+    return null;
+  },
+
   getTypeEffectiveness(moveType: PokemonType, defenderTypes: PokemonType[]): number {
     let multiplier = 1.0;
     for (const defType of defenderTypes) {
