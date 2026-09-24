@@ -1,7 +1,7 @@
 import React, { useState, useMemo } from 'react';
 import { useStore } from '../../store';
 import { api } from '../../api';
-import { BattleEngine } from '../../BattleEngine';
+import { BattleEngine, getNatureLabel, serializeNatureForTransfer, deserializeNatureFromTransfer } from '../../BattleEngine';
 import { CatchEngine } from '../../CatchEngine';
 import { motion, AnimatePresence } from 'motion/react';
 import TypeBadge from '../ui/TypeBadge';
@@ -73,7 +73,11 @@ export default function TradeScreen() {
 
   const handleSelect = (pkmn: any) => {
     try {
-      const json = JSON.stringify(pkmn);
+      const transferPkmn = {
+        ...pkmn,
+        nature: serializeNatureForTransfer(pkmn.nature),
+      };
+      const json = JSON.stringify(transferPkmn);
       const b64 = btoa(unescape(encodeURIComponent(json)));
       setSelectedPkmn(pkmn);
       setCode(b64);
@@ -98,6 +102,7 @@ export default function TradeScreen() {
     try {
       const json = decodeURIComponent(escape(atob(importCode.trim())));
       const pkmn = JSON.parse(json);
+      pkmn.nature = deserializeNatureFromTransfer(pkmn.nature);
       const isValid =
         pkmn.name && typeof pkmn.name === 'string' &&
         pkmn.level && typeof pkmn.level === 'number' && pkmn.level >= 1 && pkmn.level <= 100 &&
@@ -620,7 +625,7 @@ export default function TradeScreen() {
                 />
                 <p className="font-black text-xl uppercase">{wonderResult.name}</p>
                 {wonderResult.isShiny && <p className="text-yellow-400 font-black text-sm">✨ È SHINY!</p>}
-                <p className="text-white/50 text-sm">Lv.{wonderResult.level} · {wonderResult.nature}</p>
+                <p className="text-white/50 text-sm">Lv.{wonderResult.level} · {getNatureLabel(wonderResult.nature)}</p>
                 <div className="flex gap-2 flex-wrap justify-center">
                   {wonderResult.types.map((t: string) => <TypeBadge key={t} type={t as any} small />)}
                 </div>
@@ -657,7 +662,7 @@ export default function TradeScreen() {
               />
               <div className="flex-1 min-w-0">
                 <p className="font-black text-sm uppercase truncate">{selectedPkmn.name}</p>
-                <p className="text-[10px] text-white/40">Lv.{selectedPkmn.level} • {selectedPkmn.nature}</p>
+                <p className="text-[10px] text-white/40">Lv.{selectedPkmn.level} • {getNatureLabel(selectedPkmn.nature)}</p>
               </div>
               <button onClick={() => { setSelectedPkmn(null); setCode(''); }} className="p-1.5 bg-white/5 rounded-lg">
                 <X size={14} />

@@ -182,6 +182,54 @@ export const NATURE_MODS: Record<string, { up: string; down: string }> = {
   Careful:  { up: 'spDef',   down: 'spAtk'   },
 };
 
+export const NATURE_LABELS: Record<string, string> = {
+  Hardy: 'Determinato',
+  Lonely: 'Solitario',
+  Brave: 'Ardente',
+  Adamant: 'Deciso',
+  Naughty: 'Birbante',
+  Bold: 'Risoluto',
+  Docile: 'Docile',
+  Relaxed: 'Pacifico',
+  Impish: 'Scaltro',
+  Lax: 'Trasandato',
+  Timid: 'Timido',
+  Hasty: 'Lesto',
+  Serious: 'Serio',
+  Jolly: 'Allegro',
+  Naive: 'Ingenuo',
+  Modest: 'Modesto',
+  Mild: 'Mite',
+  Quiet: 'Quieto',
+  Bashful: 'Vergognoso',
+  Rash: 'Arrogante',
+  Calm: 'Calmo',
+  Gentle: 'Gentile',
+  Sassy: 'Altero',
+  Careful: 'Cauto',
+  Quirky: 'Strano',
+};
+
+export const NATURE_TRANSFER_MAP: Record<string, string> = Object.fromEntries(
+  Object.entries(NATURE_LABELS).map(([english, italian]) => [english, italian])
+);
+
+export const NATURE_TRANSFER_REVERSE_MAP: Record<string, string> = Object.fromEntries(
+  Object.entries(NATURE_LABELS).map(([english, italian]) => [italian, english])
+);
+
+export function getNatureLabel(nature: string): string {
+  return NATURE_LABELS[nature] ?? nature;
+}
+
+export function serializeNatureForTransfer(nature: string): string {
+  return NATURE_TRANSFER_MAP[nature] ?? nature;
+}
+
+export function deserializeNatureFromTransfer(nature: string): string {
+  return NATURE_TRANSFER_REVERSE_MAP[nature] ?? nature;
+}
+
 import { getExpForLevel } from './utils/expUtils';
 
 export const BattleEngine = {

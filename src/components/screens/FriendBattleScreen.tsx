@@ -5,6 +5,7 @@ import { ArrowLeft, Copy, Check, Sword, Users } from 'lucide-react';
 import TypeBadge from '../ui/TypeBadge';
 import PokemonSprite from '../ui/PokemonSprite';
 import { fetchSquads, uploadSquad, CommunitySquad } from '../../lib/supabaseClient';
+import { getNatureLabel, serializeNatureForTransfer, deserializeNatureFromTransfer } from '../../BattleEngine';
 
 export default function FriendBattleScreen() {
   const { team, player, setScreen, setFriendBattleTeam } = useStore();
@@ -29,6 +30,7 @@ export default function FriendBattleScreen() {
       trainerName: player.name,
       team: team.map(p => ({
         ...p,
+        nature: serializeNatureForTransfer(p.nature),
         currentHp: p.stats.hp, // sempre HP pieno
       })),
     };
@@ -99,6 +101,7 @@ export default function FriendBattleScreen() {
         ) throw new Error('Pokémon non valido');
         return {
           ...p,
+          nature: deserializeNatureFromTransfer(p.nature),
           currentHp: p.stats.hp,
           status: null,
         };
@@ -310,7 +313,7 @@ export default function FriendBattleScreen() {
                       </div>
                       <div className="text-right">
                         <div className="text-[10px] font-black text-white/60">{p.stats.hp} HP</div>
-                        <div className="text-[9px] text-white/30">{p.nature}</div>
+                        <div className="text-[9px] text-white/30">{getNatureLabel(p.nature)}</div>
                       </div>
                     </div>
                   ))}

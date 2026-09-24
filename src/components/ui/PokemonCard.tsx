@@ -141,7 +141,7 @@ const PokemonCard = React.memo(({
         <div className="flex items-center gap-3 mt-0.5">
           <span className="text-[10px] text-white/40">#{String(pokemon.pokemonId).padStart(3, '0')}</span>
           <span className="text-[10px] text-[#e63946] font-bold">Lv.{pokemon.level}</span>
-          <span className="text-[10px] text-white/30">{pokemon.nature}</span>
+          <span className="text-[10px] text-white/30">{getNatureLabel(pokemon.nature)}</span>
         </div>
       </div>
       <div className="shrink-0 text-right">

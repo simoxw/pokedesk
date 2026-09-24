@@ -1,5 +1,6 @@
 import React from 'react';
 import { useStore } from '../../store';
+import { getNatureLabel } from '../../BattleEngine';
 
 const NATURE_MODS: Record<string, { up: string; down: string }> = {
   Lonely: { up: 'attack', down: 'defense' }, Brave: { up: 'attack', down: 'speed' },
@@ -138,7 +139,7 @@ export default function PokemonDetailsModal({ pokemon: initialPokemon, onClose }
               </div>
               <div className="space-y-1">
                 <p className="text-[10px] uppercase font-black text-white/30">Natura</p>
-                <p className="font-bold text-lg">{pokemon.nature}</p>
+                <p className="font-bold text-lg">{getNatureLabel(pokemon.nature)}</p>
                 {natureMod ? (
                   <p className="text-[11px] font-bold">
                     <span className="text-green-400">+{STAT_LABELS_NATURE[natureMod.up]}</span>

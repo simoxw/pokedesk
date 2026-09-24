@@ -1,5 +1,20 @@
 import { describe, it, expect } from 'vitest';
-import { BattleEngine } from './BattleEngine';
+import { BattleEngine, getNatureLabel, serializeNatureForTransfer, deserializeNatureFromTransfer } from './BattleEngine';
+
+describe('BattleEngine - Nature labels', () => {
+  it('should display nature names in Italian for UI purposes', () => {
+    expect(getNatureLabel('Modest')).toBe('Modesto');
+    expect(getNatureLabel('Timid')).toBe('Timido');
+    expect(getNatureLabel('Quirky')).toBe('Strano');
+  });
+
+  it('should round-trip nature values between English and Italian for transfer payloads', () => {
+    expect(serializeNatureForTransfer('Modest')).toBe('Modesto');
+    expect(deserializeNatureFromTransfer('Modesto')).toBe('Modest');
+    expect(deserializeNatureFromTransfer('Timido')).toBe('Timid');
+    expect(deserializeNatureFromTransfer('Vergognoso')).toBe('Bashful');
+  });
+});
 
 describe('BattleEngine - Stats Formula', () => {
   describe('HP Formula', () => {

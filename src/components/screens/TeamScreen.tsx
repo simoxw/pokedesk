@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { ArrowLeft, Trash2, Info, ArrowUpDown } from 'lucide-react';
 import { useStore } from '../../store';
+import { getNatureLabel } from '../../BattleEngine';
 import PokemonDetailsModal from '../ui/PokemonDetailsModal';
 import TypeBadge from '../ui/TypeBadge';
 import PokemonSprite from '../ui/PokemonSprite';
@@ -56,7 +57,7 @@ function PokemonSlot({ pokemon, index, onRemove, onSelect, onUseCandy, onCandyCo
           </div> 
         )} 
         <div className="flex items-center gap-3 mt-1">
-          <span className="text-white/40 text-[10px] uppercase">[{pokemon.nature}]</span>
+          <span className="text-white/40 text-[10px] uppercase">[{getNatureLabel(pokemon.nature)}]</span>
           <span className="text-white/40 text-[10px]">IV: {
             (pokemon.ivs.hp + pokemon.ivs.attack + pokemon.ivs.defense + 
              pokemon.ivs.spAtk + pokemon.ivs.spDef + pokemon.ivs.speed)
