@@ -77,8 +77,8 @@ export default function MasterBattleScreen() {
         trainer.pokemon.map(async (entry) => {
           const data = await api.getPokemon(entry.id);
           const species = await api.getSpecies(entry.id);
-          const ivs = generateMasterIvs();
-          const evs = generateMasterEvs({ 
+          const ivs = entry.ivs ?? generateMasterIvs();
+          const evs = entry.evs ?? generateMasterEvs({ 
             attack: data.stats[1].base_stat, 
             spAtk: data.stats[3].base_stat, 
             speed: data.stats[5].base_stat, 
@@ -96,9 +96,11 @@ export default function MasterBattleScreen() {
             baseStats,
             ivs,
             evs,
-            'Quirky'
+            entry.nature ?? 'Quirky'
           );
-          const moves = await api.getPokemonMoves(data, entry.level);
+          const moves = entry.moves?.length
+            ? await api.getMovesByNames(entry.moves)
+            : await api.getPokemonMoves(data, entry.level);
           return {
             id: Math.random().toString(36).substr(2, 9),
             pokemonId: entry.id,
@@ -110,7 +112,7 @@ export default function MasterBattleScreen() {
             baseStats,
             ivs,
             evs,
-            nature: 'Quirky',
+            nature: entry.nature ?? 'Quirky',
             moves,
             rawStats: data.stats,
             types: data.types.map((t: any) => t.type.name),

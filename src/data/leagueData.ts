@@ -1,3 +1,5 @@
+import type { Stats } from '../types';
+
 export interface LeaguePokemon {
   id: number;
   level: number;
@@ -972,12 +974,23 @@ export interface MasterTrainer {
   id: string;
   name: string;
   spriteFile: string;
-  pokemon: { id: number; level: number }[];
+  pokemon: {
+    id: number;
+    level: number;
+    nature?: string;
+    ivs?: Stats;
+    evs?: Stats;
+    moves?: string[];
+  }[];
   intro: string[];
   win: string[];
   lose: string[];
   reward: { coins: number; items: Record<string, number> };
 }
+
+const MASTER_IVS = { hp: 31, attack: 31, defense: 31, spAtk: 31, spDef: 31, speed: 31 };
+const MASTER_SPECIAL_ATTACK_IVS = { ...MASTER_IVS, attack: 0 };
+const MASTER_PHYSICAL_IVS = { ...MASTER_IVS, spAtk: 0 };
 
 export const MASTER_TRAINERS: MasterTrainer[] = [
   {
@@ -1282,5 +1295,213 @@ export const MASTER_TRAINERS: MasterTrainer[] = [
     win: ['...Magnifico. Il tuo legame brilla più delle pietre più rare.', 'Sei degno di questo titolo.'],
     lose: ["L'acciaio e le mega non cedono a chi non è pronto.", 'Torna quando il tuo legame sarà completo.'],
     reward: { coins: 8000, items: { rare_candy: 5, masterball: 2 } },
+  },
+  {
+    id: 'kukui',
+    name: 'Kukui',
+    spriteFile: 'kukui',
+    pokemon: [
+      {
+        id: 745,
+        level: 100,
+        nature: 'Jolly',
+        ivs: MASTER_PHYSICAL_IVS,
+        evs: { hp: 4, attack: 252, defense: 0, spAtk: 0, spDef: 0, speed: 252 },
+        moves: ['stone-edge', 'accelerock', 'close-combat', 'swords-dance'],
+      },
+      {
+        id: 628,
+        level: 100,
+        nature: 'Jolly',
+        ivs: MASTER_PHYSICAL_IVS,
+        evs: { hp: 4, attack: 252, defense: 0, spAtk: 0, spDef: 0, speed: 252 },
+        moves: ['brave-bird', 'close-combat', 'u-turn', 'roost'],
+      },
+      {
+        id: 462,
+        level: 100,
+        nature: 'Modest',
+        ivs: MASTER_SPECIAL_ATTACK_IVS,
+        evs: { hp: 252, attack: 0, defense: 0, spAtk: 252, spDef: 4, speed: 0 },
+        moves: ['thunderbolt', 'flash-cannon', 'volt-switch', 'thunder-wave'],
+      },
+      {
+        id: 143,
+        level: 100,
+        nature: 'Adamant',
+        ivs: MASTER_PHYSICAL_IVS,
+        evs: { hp: 252, attack: 252, defense: 4, spAtk: 0, spDef: 0, speed: 0 },
+        moves: ['body-slam', 'earthquake', 'crunch', 'rest'],
+      },
+    ],
+    intro: [
+      'Aloha! Finalmente una sfida degna di un Campione di Alola!',
+      'Niente teoria stavolta: vediamo quanto valgono davvero i tuoi Pokémon!',
+    ],
+    win: [
+      'Wow! Questa battaglia è stata una vera lezione da Campione.',
+      'Continua a seguire la tua passione: i tuoi Pokémon lo sentono!',
+    ],
+    lose: [
+      'Ecco cosa succede quando teoria e passione si incontrano!',
+      'Non scoraggiarti: ogni lotta è un esperimento. Riproviamo presto!',
+    ],
+    reward: { coins: 6000, items: { rare_candy: 4, full_heal: 3 } },
+  },
+  {
+    id: 'wallace',
+    name: 'Wallace',
+    spriteFile: 'wallace',
+    pokemon: [
+      {
+        id: 350,
+        level: 100,
+        nature: 'Bold',
+        ivs: { ...MASTER_SPECIAL_ATTACK_IVS, defense: 31 },
+        evs: { hp: 252, attack: 0, defense: 252, spAtk: 0, spDef: 4, speed: 0 },
+        moves: ['scald', 'ice-beam', 'recover', 'toxic'],
+      },
+      {
+        id: 321,
+        level: 100,
+        nature: 'Modest',
+        ivs: MASTER_SPECIAL_ATTACK_IVS,
+        evs: { hp: 252, attack: 0, defense: 0, spAtk: 252, spDef: 4, speed: 0 },
+        moves: ['water-spout', 'hydro-pump', 'ice-beam', 'amnesia'],
+      },
+      {
+        id: 272,
+        level: 100,
+        nature: 'Timid',
+        ivs: MASTER_SPECIAL_ATTACK_IVS,
+        evs: { hp: 4, attack: 0, defense: 0, spAtk: 252, spDef: 0, speed: 252 },
+        moves: ['giga-drain', 'scald', 'ice-beam', 'focus-blast'],
+      },
+      {
+        id: 130,
+        level: 100,
+        nature: 'Jolly',
+        ivs: MASTER_PHYSICAL_IVS,
+        evs: { hp: 4, attack: 252, defense: 0, spAtk: 0, spDef: 0, speed: 252 },
+        moves: ['waterfall', 'dragon-dance', 'earthquake', 'ice-fang'],
+      },
+    ],
+    intro: [
+      'La bellezza di una battaglia nasce dall’armonia tra allenatore e Pokémon.',
+      'Lascia che la corrente ci guidi verso uno scontro indimenticabile!',
+    ],
+    win: [
+      'Magnifico! Hai trasformato ogni mossa in una pennellata perfetta.',
+      'La tua squadra possiede una grazia rara. Abbine cura.',
+    ],
+    lose: [
+      'Anche la corrente più forte può cambiare direzione.',
+      'Ritrova il tuo ritmo e torna a sfidarmi!',
+    ],
+    reward: { coins: 6500, items: { rare_candy: 4, full_heal: 4 } },
+  },
+  {
+    id: 'iris',
+    name: 'Iris',
+    spriteFile: 'iris',
+    pokemon: [
+      {
+        id: 635,
+        level: 100,
+        nature: 'Timid',
+        ivs: MASTER_SPECIAL_ATTACK_IVS,
+        evs: { hp: 4, attack: 0, defense: 0, spAtk: 252, spDef: 0, speed: 252 },
+        moves: ['draco-meteor', 'dark-pulse', 'flamethrower', 'flash-cannon'],
+      },
+      {
+        id: 612,
+        level: 100,
+        nature: 'Jolly',
+        ivs: MASTER_PHYSICAL_IVS,
+        evs: { hp: 4, attack: 252, defense: 0, spAtk: 0, spDef: 0, speed: 252 },
+        moves: ['dragon-dance', 'outrage', 'earthquake', 'poison-jab'],
+      },
+      {
+        id: 621,
+        level: 100,
+        nature: 'Adamant',
+        ivs: MASTER_PHYSICAL_IVS,
+        evs: { hp: 252, attack: 252, defense: 4, spAtk: 0, spDef: 0, speed: 0 },
+        moves: ['dragon-claw', 'earthquake', 'fire-punch', 'sucker-punch'],
+      },
+      {
+        id: 567,
+        level: 100,
+        nature: 'Jolly',
+        ivs: MASTER_PHYSICAL_IVS,
+        evs: { hp: 4, attack: 252, defense: 0, spAtk: 0, spDef: 0, speed: 252 },
+        moves: ['acrobatics', 'stone-edge', 'earthquake', 'u-turn'],
+      },
+    ],
+    intro: [
+      'Sono cresciuta affrontando sfide sempre più grandi.',
+      'Adesso tocca a noi: mostra ai miei Pokémon quanto sei forte!',
+    ],
+    win: [
+      'Che lotta incredibile! Hai superato ogni aspettativa.',
+      'Continuerò ad allenarmi: la prossima volta voglio sorprenderti io!',
+    ],
+    lose: [
+      'I miei Pokémon hanno ancora tanta energia!',
+      'Non mollare: rialzati e torna a sfidarmi!',
+    ],
+    reward: { coins: 7000, items: { rare_candy: 4, ultraball: 4 } },
+  },
+  {
+    id: 'mustard',
+    name: 'Mustard',
+    spriteFile: 'mustard',
+    pokemon: [
+      {
+        id: 892,
+        level: 100,
+        nature: 'Adamant',
+        ivs: MASTER_PHYSICAL_IVS,
+        evs: { hp: 4, attack: 252, defense: 0, spAtk: 0, spDef: 0, speed: 252 },
+        moves: ['wicked-blow', 'close-combat', 'u-turn', 'sucker-punch'],
+      },
+      {
+        id: 784,
+        level: 100,
+        nature: 'Timid',
+        ivs: MASTER_SPECIAL_ATTACK_IVS,
+        evs: { hp: 4, attack: 0, defense: 0, spAtk: 252, spDef: 0, speed: 252 },
+        moves: ['clanging-scales', 'aura-sphere', 'flamethrower', 'flash-cannon'],
+      },
+      {
+        id: 823,
+        level: 100,
+        nature: 'Impish',
+        ivs: MASTER_PHYSICAL_IVS,
+        evs: { hp: 252, attack: 0, defense: 252, spAtk: 0, spDef: 4, speed: 0 },
+        moves: ['brave-bird', 'iron-head', 'roost', 'u-turn'],
+      },
+      {
+        id: 778,
+        level: 100,
+        nature: 'Jolly',
+        ivs: MASTER_PHYSICAL_IVS,
+        evs: { hp: 4, attack: 252, defense: 0, spAtk: 0, spDef: 0, speed: 252 },
+        moves: ['play-rough', 'shadow-claw', 'shadow-sneak', 'swords-dance'],
+      },
+    ],
+    intro: [
+      'Ehilà! Le arti marziali insegnano a conoscere i propri limiti.',
+      'Vediamo se sai adattarti quando il ritmo cambia!',
+    ],
+    win: [
+      'Ah! Questa sì che è stata una lezione di alto livello.',
+      'Hai talento e disciplina: continua ad allenarti così!',
+    ],
+    lose: [
+      'La tecnica c’era, ma oggi è mancato il tempismo.',
+      'Fai un bel respiro e riprova: l’Isola dell’Armatura ti aspetta!',
+    ],
+    reward: { coins: 7000, items: { rare_candy: 4, hyperpotion: 4 } },
   },
 ];

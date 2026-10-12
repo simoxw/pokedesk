@@ -83,6 +83,36 @@ export const api = {
     return fetchWithCache(`${BASE_URL}/move/${id}`);
   },
 
+  async getMovesByNames(names: string[]): Promise<Move[]> {
+    return Promise.all(names.map(async (name) => {
+      const moveData = await this.getMove(name);
+      const ailment = moveData.meta?.ailment?.name;
+      const statusEffect: Move['statusEffect'] = ailment === 'sleep' ? 'SLP'
+        : ailment === 'poison' || ailment === 'bad-poison' ? 'PSN'
+        : ailment === 'burn' ? 'BRN'
+        : ailment === 'paralysis' ? 'PAR'
+        : ailment === 'freeze' ? 'FRZ'
+        : undefined;
+      return {
+        id: moveData.id.toString(),
+        name: this.getItalianName(moveData.names),
+        type: moveData.type.name,
+        power: moveData.power || 0,
+        accuracy: moveData.accuracy || 100,
+        pp: moveData.pp,
+        maxPp: moveData.pp,
+        priority: moveData.priority || 0,
+        category: moveData.damage_class.name as Move['category'],
+        description: this.getItalianDescription(moveData.flavor_text_entries),
+        meta: moveData.meta,
+        statusEffect,
+        effectChance: moveData.meta?.ailment_chance || moveData.effect_chance || undefined,
+        target: moveData.target?.name,
+        stat_changes: moveData.stat_changes ?? [],
+      };
+    }));
+  },
+
   async getEvolutionChain(url: string): Promise<any> {
     return fetchWithCache(url);
   },
