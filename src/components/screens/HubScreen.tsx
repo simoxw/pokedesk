@@ -11,6 +11,7 @@ import { LEGENDARY_IDS, GEN_RANGES } from '../../data/legendaryIds';
  import { usePreloader } from '../../usePreloader'; 
  import { useImagePreloader } from '../../useImagePreloader'; 
 import { REGIONAL_FORMS } from '../../data/regionalForms';
+import { matchesLocalDate } from '../../utils/localDate';
 
 const getStatTotal = (ivs: Stats) => (Object.values(ivs) as number[]).reduce((a, b) => a + b, 0);
 
@@ -115,8 +116,7 @@ export default function HubScreen() {
 
   useEffect(() => {
     checkDailyMissions();
-    const today = new Date().toISOString().split('T')[0];
-    if (lastStreakDate !== today) {
+    if (!matchesLocalDate(lastStreakDate, new Date())) {
       setShowStreak(true);
       setStreakClaimed(false);
     }

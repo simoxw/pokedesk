@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { useStore } from '../store';
 import type { Pokemon } from '../types';
 
@@ -65,6 +65,51 @@ describe('Store Gameplay Slices', () => {
       pendingMissionToast: null,
       activePresetCategory: null,
     });
+  });
+
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
+  it('awards the daily streak reward once per local day and preserves consecutive streaks', () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date(2026, 9, 12, 23, 59));
+    useStore.setState({ lastStreakDate: null, streak: 0, coins: 0, inventory: {} });
+
+    useStore.getState().claimStreak();
+    expect(useStore.getState().lastStreakDate).toBe('2026-10-12');
+    expect(useStore.getState().coins).toBe(50);
+    expect(useStore.getState().inventory.pokeball).toBe(3);
+
+    useStore.getState().claimStreak();
+    expect(useStore.getState().coins).toBe(50);
+    expect(useStore.getState().inventory.pokeball).toBe(3);
+
+    vi.setSystemTime(new Date(2026, 9, 13, 0, 1));
+    useStore.getState().claimStreak();
+    expect(useStore.getState().lastStreakDate).toBe('2026-10-13');
+    expect(useStore.getState().streak).toBe(2);
+    expect(useStore.getState().coins).toBe(100);
+    expect(useStore.getState().inventory.potion).toBe(3);
+  });
+
+  it('does not pay again when the saved claim uses the previous date format', () => {
+    vi.useFakeTimers();
+    const now = new Date(2026, 9, 12, 12);
+    vi.setSystemTime(now);
+    useStore.setState({
+      lastStreakDate: now.toLocaleDateString('en-CA'),
+      streak: 4,
+      coins: 123,
+      inventory: { potion: 2 },
+    });
+
+    useStore.getState().claimStreak();
+
+    expect(useStore.getState().lastStreakDate).toBe(now.toLocaleDateString('en-CA'));
+    expect(useStore.getState().streak).toBe(4);
+    expect(useStore.getState().coins).toBe(123);
+    expect(useStore.getState().inventory).toEqual({ potion: 2 });
   });
 
   it('addPokemon puts pokemon in team and updates pokedex', () => {

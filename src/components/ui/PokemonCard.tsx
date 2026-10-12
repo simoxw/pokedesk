@@ -1,5 +1,6 @@
 import React from 'react';
 import { Pokemon, Move } from '../../types';
+import { getNatureLabel } from '../../BattleEngine';
 import { CheckSquare, Square, Sparkles } from 'lucide-react';
 import PokemonSprite from './PokemonSprite';
 

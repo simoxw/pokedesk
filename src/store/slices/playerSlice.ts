@@ -1,5 +1,6 @@
 import { StateCreator } from 'zustand';
 import { GameStore } from '../types';
+import { getLocalDateKey, matchesLocalDate, matchesPreviousLocalDate } from '../../utils/localDate';
 
 export type PlayerSlice = Pick<
   GameStore,
@@ -42,10 +43,12 @@ export const createPlayerSlice: StateCreator<GameStore, [], [], PlayerSlice> = (
     })),
   claimStreak: () =>
     set((state) => {
-      const today = new Date().toLocaleDateString('en-CA');
-      if (state.lastStreakDate === today) return {};
-      const yesterday = new Date(Date.now() - 86400000).toLocaleDateString('en-CA');
-      const nextStreak = state.lastStreakDate === yesterday ? (state.streak || 0) + 1 : 1;
+      const now = new Date();
+      const today = getLocalDateKey(now);
+      if (matchesLocalDate(state.lastStreakDate, now)) return {};
+      const nextStreak = matchesPreviousLocalDate(state.lastStreakDate, now)
+        ? (state.streak || 0) + 1
+        : 1;
       const streak = ((nextStreak - 1) % STREAK_REWARDS.length) + 1;
       const reward = STREAK_REWARDS[streak - 1];
       return {
