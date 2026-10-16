@@ -4,9 +4,10 @@ Un simulatore di battaglie e cattura Pokémon moderno, sviluppato come Progressi
 
 ## 🚀 Caratteristiche Principali
 
-- **Sistema di Battaglia**: Battaglie a turni avanzate con gestione tipi, stati alterati, modificatori di stadio e priorità delle mosse.
+- **Sistema di Battaglia**: turni ordinati per priorità e velocità effettiva (stadi e paralisi), precisione influenzata da precisione/elusione, effetti di stato, multi-hit basati sui metadati e PP. Esauriti i PP, entrambi i lati usano Scontro con rinculo. Riposo mantiene la variante custom che cura il 50% senza addormentare.
 - **Cattura e Safari**: Meccaniche di cattura dedicate, inclusa la **Zona Safari** con spawn di Pokémon di sesta generazione e oltre.
-- **Progressione e Sfide**: Livellamento, evoluzioni, medaglie e sfide contro **Capopalestra**, **Lega Pokémon**, **Master Trainers** e la scalata della **Torre Lotta**.
+- **Progressione e Sfide**: Livellamento, evoluzioni, medaglie e sfide contro **Capopalestra**, **Lega Pokémon**, **Master Trainer** e la scalata della **Torre Lotta**.
+- **Master Trainer**: sfide end-game con squadre dedicate. Kukui, Wallace, Iris e Mustard hanno team al livello 100 con mosse, nature e distribuzioni IV/EV configurate; gli altri allenatori mantengono la generazione standard.
 - **Torre Lotta**: Modalità infinita a piani con difficoltà crescente e ricompense esclusive (sbloccata dopo la Lega).
 - **Missioni Giornaliere**: Sistema di obiettivi quotidiani, incluse sfide specifiche per la Torre Lotta, con ricompense in monete e strumenti.
 - **Achievement**: Sistema di obiettivi a lungo termine con ricompense speciali per catture, lotte e completamento Pokédex.
@@ -27,7 +28,7 @@ Un simulatore di battaglie e cattura Pokémon moderno, sviluppato come Progressi
 - **Framework**: React 19, Vite, TypeScript
 - **Styling**: Tailwind CSS 4
 - **Animazioni**: Motion (framer-motion) & Canvas Confetti
-- **State Management**: Zustand con persistenza locale (`pokedesk-save`)
+- **State Management**: Zustand con store composto da slice e persistenza (`pokedesk-save`) su IndexedDB con fallback `localStorage`
 - **AI Integration**: Google Generative AI (Gemini) per quiz e contenuti dinamici
 - **Drag & Drop**: @dnd-kit per la gestione della squadra e del box
 - **API**: [PokeAPI](https://pokeapi.co/) con sistema di cache LRU personalizzato
@@ -42,10 +43,12 @@ Un simulatore di battaglie e cattura Pokémon moderno, sviluppato come Progressi
 
 ## 📂 Struttura (File principali)
 
-- `src/store.ts`: Cuore pulsante dell'app, gestisce lo stato globale e la logica di gioco complessa.
+- `src/store/index.ts` e `src/store/sliced-store.ts`: punto d'ingresso e composizione dello store Zustand attivo; lo stato è organizzato in slice sotto `src/store/slices/`.
+- `src/store/old-store.ts`: implementazione legacy, non importata dal percorso attivo dell'app.
 - `src/BattleEngine.ts`: Motore di calcolo per danni, statistiche e turni di lotta.
 - `src/CatchEngine.ts`: Algoritmi per probabilità di cattura, nature e shiny.
-- `src/api.ts`: Interfaccia verso PokeAPI con traduzioni in italiano e logica evolutiva integrata.
+- `src/api.ts`: Interfaccia verso PokeAPI con cache, traduzioni in italiano e caricamento delle mosse nominate per le squadre Master.
+- `src/data/leagueData.ts`: dati della Lega e roster dei Master Trainer.
 - `src/components/screens/`: Interfaccia utente modulare divisa in schermate funzionali.
 - `PROJECT_FILE_MAP.md`: mappa completa delle cartelle e dei file del progetto con descrizioni dettagliate.
 
@@ -53,13 +56,21 @@ Un simulatore di battaglie e cattura Pokémon moderno, sviluppato come Progressi
 
 Il progetto implementa un `TickSystem.ts` robusto per la rigenerazione dello stato in background (cariche, schiusa uova) e utilizza un sistema di routing basato su stati in `App.tsx` per una transizione fluida tra le schermate stile app nativa.
 
+Le date della ricompensa giornaliera della streak sono calcolate con una chiave di calendario locale condivisa tra Hub e store; le missioni giornaliere mantengono il proprio ciclo indipendente.
+
 ## Documentazione di progetto aggiornata
-- `PROJECT_FILE_MAP.md`: nuova documentazione con l'albero completo delle cartelle del progetto e la descrizione di ciascun file.
+- `PROJECT_FILE_MAP.md`: mappa di riferimento con l'albero delle cartelle e la descrizione dei file del progetto.
 
 ## Aggiornamenti Recenti
-- **Preset per categoria**: supporto categorie `gen1..gen8`, `legendary`, `favorite` con validazione al salvataggio.
+- **Master Trainer con squadre dedicate**: aggiunti Kukui, Wallace, Iris e Mustard con sprite Pokémon Showdown, quattro Pokémon al livello 100, mosse specifiche caricate da PokeAPI, nature e spread IV/EV espliciti, dialoghi e ricompense. La configurazione è opzionale e non modifica i roster preesistenti.
+- **Ricompensa giornaliera streak**: allineato il controllo di disponibilità e il claim alla data locale, mantenendo compatibilità con le date già salvate e proteggendo i claim duplicati.
+- **Test aggiunti**: `src/data/masterTrainers.test.ts` verifica i roster dei Master configurati; `src/utils/localDate.test.ts` verifica le chiavi data locali e la compatibilità delle date salvate.
+- **Preset per categoria**: supporto categorie per generazione e categorie speciali, con validazione al salvataggio.
 - **Ordinamento Box per data**: aggiunto filtro `date` nel PC Box usando `caughtAt`.
 - **Fix danno immunità tipo**: mosse con moltiplicatore `0x` ora infliggono correttamente `0` danni.
+- **Risoluzione mosse**: priorità confrontata per entrambi i combattenti, spareggio casuale a velocità pari, precisione modificata dagli stadi, multi-hit con interruzione al KO e tentennamento solo quando il bersaglio sopravvive.
+- **PP esauriti**: Scontro è uniforme per giocatore e avversario, ignora immunità Spettro e STAB e applica rinculo pari a un quarto dei PS massimi.
+- **Riposo**: comportamento intenzionalmente semplificato; cura il 50% dei PS e non applica sonno.
 - **GEN CHALLENGE**: seconda linea missioni giornaliere separata dalle daily classiche, con tab dedicata in Hub.
 - **Categoria attiva visiva**: etichetta in Hub (`Categoria attiva: ...`) con stato `progresso attivo/sospeso`.
 - **Pool giornaliero GEN CHALLENGE**: 4 missioni pescate da pool più ampio, con slot skill garantito per `gen6+` e `legendary`.

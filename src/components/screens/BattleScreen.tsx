@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useStore } from '../../store';
 import { api } from '../../api';
-import { BattleEngine } from '../../BattleEngine';
+import { BattleEngine, STRUGGLE_MOVE } from '../../BattleEngine';
 import { CatchEngine } from '../../CatchEngine';
 import { motion, AnimatePresence } from 'motion/react';
 import { Sword, Backpack, ArrowLeftRight, Shield, ArrowLeft, X, Heart } from 'lucide-react';
@@ -40,6 +40,12 @@ export default function BattleScreen() {
   const [enemyStages, setEnemyStages] = useState<Record<string, number>>({ attack: 0, defense: 0, spAtk: 0, spDef: 0, speed: 0, accuracy: 0, evasion: 0 }); 
   const [enemyFlinch, setEnemyFlinch] = useState(false);
   const [playerFlinch, setPlayerFlinch] = useState(false);
+  const enemyFlinchRef = React.useRef(false);
+  const playerFlinchRef = React.useRef(false);
+  useEffect(() => {
+    if (!enemyFlinch) enemyFlinchRef.current = false;
+    if (!playerFlinch) playerFlinchRef.current = false;
+  }, [enemyFlinch, playerFlinch]);
   const [enemyPhase, setEnemyPhase] = useState(1); 
   const [enemy2, setEnemy2] = useState<any>(null); 
   const [enemy3, setEnemy3] = useState<any>(null);
@@ -812,13 +818,98 @@ export default function BattleScreen() {
     return false; // end battle
   };
 
-  const executeEnemyTurn = async (currentPlayerPkmn: any) => {
+  const selectEnemyMove = (liveEnemy: any, currentPlayerPkmn: any) => {
+    const validMoves = BattleEngine.getAvailableMoves(liveEnemy.moves);
+    if (validMoves[0]?.id === 'struggle') return STRUGGLE_MOVE;
+
+    const effectiveEnemy = {
+      ...liveEnemy,
+      stats: {
+        ...liveEnemy.stats,
+        attack: applyStage(liveEnemy.stats.attack, enemyStages.attack),
+        spAtk: applyStage(liveEnemy.stats.spAtk, enemyStages.spAtk),
+      }
+    };
+    const effectivePlayer = {
+      ...currentPlayerPkmn,
+      stats: {
+        ...currentPlayerPkmn.stats,
+        defense: applyStage(currentPlayerPkmn.stats.defense, playerStages.defense),
+        spDef: applyStage(currentPlayerPkmn.stats.spDef, playerStages.spDef),
+      }
+    };
+    const koMove = validMoves.find((candidate: any) =>
+      candidate.category !== 'status' &&
+      BattleEngine.calculateDamage(effectiveEnemy, effectivePlayer, candidate, false) >= currentPlayerPkmn.currentHp
+    );
+    if (koMove) return koMove;
+
+    const HEAL_MOVES: Record<string, number> = {
+      '105': 0.5, '135': 0.5, '208': 0.5, '303': 0.5, '355': 0.5,
+      '236': 0.5, '235': 0.5, '234': 0.5, '505': 0.5, '392': 0.25, '156': 0.5,
+      '588': 0.5, '456': 0.5, '273': 0.5
+    };
+    const healMove = validMoves.find((candidate: any) =>
+      (HEAL_MOVES[candidate.id] || candidate.name.toLowerCase().includes('recup')) &&
+      liveEnemy.currentHp / liveEnemy.maxHp < 0.5
+    );
+    const superEffective = validMoves.filter((candidate: any) =>
+      candidate.category !== 'status' &&
+      BattleEngine.getTypeEffectiveness(candidate.type, currentPlayerPkmn.types) >= 2
+    );
+    const offensiveMoves = validMoves.filter((candidate: any) => candidate.category !== 'status');
+    const getExpectedDamage = (candidate: any) => {
+      const damage = BattleEngine.calculateDamage(effectiveEnemy, effectivePlayer, candidate, false);
+      const accuracy = BattleEngine.calculateAccuracy(
+        candidate.accuracy ?? 100,
+        enemyStages.accuracy,
+        playerStages.evasion
+      ) / 100;
+      return damage * accuracy;
+    };
+    const bestSuperEffective = superEffective
+      .slice()
+      .sort((left: any, right: any) => getExpectedDamage(right) - getExpectedDamage(left))[0];
+    const bestOffensive = offensiveMoves
+      .slice()
+      .sort((left: any, right: any) => getExpectedDamage(right) - getExpectedDamage(left))[0];
+    const statusMoves = validMoves.filter((candidate: any) =>
+      candidate.category === 'status' &&
+      !BattleEngine.isUserTargetedMove(candidate.target) &&
+      candidate.statusEffect &&
+      !currentPlayerPkmn.status &&
+      !isImmuneToStatus(currentPlayerPkmn.types, candidate.statusEffect)
+    );
+    const isEliteAI = isLeagueBattle || isMasterBattle;
+    const healChance = isEliteAI ? 0.8 : 0.7;
+    const superEffectiveChance = isEliteAI ? 0.92 : 0.75;
+    const statusChance = isEliteAI ? 0.2 : 0.4;
+
+    if (healMove && Math.random() < healChance) return healMove;
+    if (bestSuperEffective && Math.random() < superEffectiveChance) return bestSuperEffective;
+    if (statusMoves.length > 0 && liveEnemy.currentHp / liveEnemy.maxHp > 0.5 && Math.random() < statusChance) {
+      return statusMoves[Math.floor(Math.random() * statusMoves.length)];
+    }
+    return bestOffensive ?? validMoves[Math.floor(Math.random() * validMoves.length)];
+  };
+
+  const executeEnemyTurn = async (currentPlayerPkmn: any, plannedMove?: any) => {
     console.log('[Battle] Enemy turn starting...');
     await new Promise(r => setTimeout(r, 800));
     const liveEnemy = enemyRef.current ?? enemy;
     if (!liveEnemy || liveEnemy.currentHp <= 0) return;
 
-    const validMoves = liveEnemy.moves.filter((m: any) => m.pp > 0);
+    if (enemyFlinchRef.current) {
+      enemyFlinchRef.current = false;
+      setEnemyFlinch(false);
+      addLog(`${liveEnemy.name} ha tentennato e non può muoversi!`);
+      setTurn('player');
+      setIsAnimating(false);
+      return;
+    }
+
+    const hasAvailableMoves = liveEnemy.moves.some((m: any) => m.pp > 0);
+    if (!hasAvailableMoves) addLog(`${liveEnemy.name} non ha più PP! Usa Scontro!`);
 
     // Boss/Lega/Master usano Iperpozione se HP < 30%
     const isEliteBattle = isBoss || isLeagueBattle || isMasterBattle || wasTowerBattle.current;
@@ -836,110 +927,8 @@ export default function BattleScreen() {
       return;
     }
 
-    // AI priority list
-    let enemyMove: any;
-
-    // Priorità 1: mossa che fa KO
-    const effEnemyAtkTemp = {
-      ...liveEnemy,
-      stats: {
-        ...liveEnemy.stats,
-        attack: applyStage(liveEnemy.stats.attack, enemyStages.attack),
-        spAtk: applyStage(liveEnemy.stats.spAtk, enemyStages.spAtk),
-      }
-    };
-    const effPlayerDefTemp = {
-      ...currentPlayerPkmn,
-      stats: {
-        ...currentPlayerPkmn.stats,
-        defense: applyStage(currentPlayerPkmn.stats.defense, playerStages.defense),
-        spDef: applyStage(currentPlayerPkmn.stats.spDef, playerStages.spDef),
-      }
-    };
-
-    const koMove = validMoves.find((m: any) => {
-      if (m.category === 'status') return false;
-      const dmg = BattleEngine.calculateDamage(effEnemyAtkTemp as any, effPlayerDefTemp as any, m, false);
-      return dmg >= currentPlayerPkmn.currentHp;
-    });
-
-    if (koMove) {
-      enemyMove = koMove;
-    }
-    // Priorità 2: mossa superefficace
-    else {
-      // Priorità 1.5: Cura se HP < 50%
-      const HEAL_MOVES: Record<string, number> = {
-        '105': 0.5, '135': 0.5, '208': 0.5, '303': 0.5, '355': 0.5,
-        '236': 0.5, '235': 0.5, '234': 0.5, '505': 0.5, '392': 0.25,
-        '588': 0.5, '456': 0.5, '273': 0.5, '156': 0.5
-      };
-      const healMove = validMoves.find((m: any) => 
-        (HEAL_MOVES[m.id] || m.name.toLowerCase().includes('recup')) && 
-        liveEnemy.currentHp / liveEnemy.maxHp < 0.5
-      );
-
-      const superEffective = validMoves.filter((m: any) =>
-        m.category !== 'status' &&
-        BattleEngine.getTypeEffectiveness(m.type, currentPlayerPkmn.types) >= 2
-      );
-      const offensiveMoves = validMoves.filter((m: any) => m.category !== 'status');
-      const getExpectedDamage = (move: any) => {
-        const dmg = BattleEngine.calculateDamage(effEnemyAtkTemp as any, effPlayerDefTemp as any, move, false);
-        const acc = Math.max(0.5, (move.accuracy ?? 100) / 100);
-        return dmg * acc;
-      };
-      const bestSuperEffective = superEffective
-        .slice()
-        .sort((a: any, b: any) => getExpectedDamage(b) - getExpectedDamage(a))[0];
-      const bestOffensive = offensiveMoves
-        .slice()
-        .sort((a: any, b: any) => getExpectedDamage(b) - getExpectedDamage(a))[0];
-
-      // Priorità 3: mossa di stato se player non ha status e nemico ha >50% HP
-      const statusMoves = validMoves.filter((m: any) =>
-        m.category === 'status' && 
-        m.statusEffect && 
-        !currentPlayerPkmn.status &&
-        !isImmuneToStatus(currentPlayerPkmn.types, m.statusEffect)
-      );
-      const isEliteAI = isLeagueBattle || isMasterBattle;
-      const healChance = isEliteAI ? 0.8 : 0.7;
-      const superEffectiveChance = isEliteAI ? 0.92 : 0.75;
-      const statusChance = isEliteAI ? 0.2 : 0.4;
-
-      if (healMove && Math.random() < healChance) {
-        enemyMove = healMove;
-      } else if (bestSuperEffective && Math.random() < superEffectiveChance) {
-        enemyMove = bestSuperEffective;
-      } else if (statusMoves.length > 0 && liveEnemy.currentHp / liveEnemy.maxHp > 0.5 && Math.random() < statusChance) {
-        enemyMove = statusMoves[Math.floor(Math.random() * statusMoves.length)];
-      } else {
-        enemyMove = bestOffensive ?? validMoves[Math.floor(Math.random() * validMoves.length)];
-      }
-    }
-
+    const enemyMove = plannedMove ?? selectEnemyMove(liveEnemy, currentPlayerPkmn);
     console.log('[Battle] Enemy chose move:', enemyMove?.name);
-
-    // Fallback assoluto
-    if (!enemyMove) {
-      if (validMoves.length === 0) {
-        addLog(`${liveEnemy.name} non ha più PP! Usa Lotta!`);
-      }
-      enemyMove = validMoves.length > 0
-        ? validMoves[Math.floor(Math.random() * validMoves.length)]
-        : { name: 'Lotta', type: 'normal', power: 40, category: 'physical', pp: 1, maxPp: 1, id: '0', accuracy: 100, priority: 0, description: '' };
-    }
-
-    setEnemy((prev: any) => {
-      if (!prev) return prev;
-      const updatedMoves = prev.moves.map((m: any) =>
-        m.id === enemyMove.id ? { ...m, pp: Math.max(0, m.pp - 1) } : m
-      );
-      const next = { ...prev, moves: updatedMoves };
-      enemyRef.current = next;
-      return next;
-    });
 
     // --- CHECK STATUS NEMICO: blocca il turno se necessario ---
     // SLP: 20% chance di svegliarsi ogni turno
@@ -987,25 +976,28 @@ export default function BattleScreen() {
     // --- FINE CHECK STATUS NEMICO ---
 
     // Accuracy Check per il nemico
-    const enemyAccStage = enemyStages.accuracy - playerStages.evasion;
-    const enemyAccMultiplier = enemyAccStage >= 0 ? (3 + enemyAccStage) / 3 : 3 / (3 - enemyAccStage);
-    const enemyFinalAccuracy = (enemyMove.accuracy || 100) * enemyAccMultiplier;
-
-    if (enemyMove.category !== 'status' && enemyMove.accuracy && enemyMove.accuracy < 100) { 
-      if (Math.random() * 100 >= enemyFinalAccuracy) { 
-        addLog(`${liveEnemy.name} usa ${enemyMove.name}!`); 
-        addLog('Ma ha mancato!'); 
-        await new Promise(r => setTimeout(r, 800)); 
-        setTurn('player'); 
-        setIsAnimating(false); 
-        return; 
-      } 
+    if (enemyMove.id !== STRUGGLE_MOVE.id) {
+      setEnemy((prev: any) => {
+        if (!prev) return prev;
+        const updatedMoves = prev.moves.map((m: any) =>
+          m.id === enemyMove.id ? { ...m, pp: Math.max(0, m.pp - 1) } : m
+        );
+        const next = { ...prev, moves: updatedMoves };
+        enemyRef.current = next;
+        return next;
+      });
     }
 
-    // Check Flinch
-    if (playerFlinch) {
-      addLog(`${currentPlayerPkmn.name} ha tentennato e non può muoversi!`);
-      setPlayerFlinch(false);
+    const enemyFinalAccuracy = enemyMove.target === 'user' ? 100 : BattleEngine.calculateAccuracy(
+      enemyMove.accuracy ?? 100,
+      enemyStages.accuracy,
+      playerStages.evasion
+    );
+
+    if (enemyMove.target !== 'user' && Math.random() * 100 >= enemyFinalAccuracy) {
+      addLog(`${liveEnemy.name} usa ${enemyMove.name}!`);
+      addLog('Ma ha mancato!');
+      await new Promise(r => setTimeout(r, 800));
       setTurn('player');
       setIsAnimating(false);
       return;
@@ -1029,12 +1021,14 @@ export default function BattleScreen() {
         spDef: applyStage(currentPlayerPkmn.stats.spDef, playerStages.spDef),
       }
     };
-    const isEnemyCrit = Math.random() < 0.06;
-    const enemyDamage = BattleEngine.calculateDamage(effEnemyAtk as any, effPlayerDef as any, enemyMove, isEnemyCrit);
+    const enemyMoveResult = BattleEngine.calculateMoveDamage(effEnemyAtk as any, effPlayerDef as any, enemyMove);
+    const enemyDamage = enemyMoveResult.damage;
     setLastEnemyMove({ name: enemyMove.name, type: enemyMove.type });
     addLog(`${liveEnemy.name} usa ${enemyMove.name}!${enemyDamage > 0 ? ` (${enemyDamage} danni)` : ''}`);
-    if (isEnemyCrit && enemyDamage > 0) addLog('Brutto colpo!');
-    const typeMultiplier = BattleEngine.getTypeEffectiveness(enemyMove.type, currentPlayerPkmn.types);
+    if (enemyMoveResult.isCritical && enemyDamage > 0) addLog('Brutto colpo!');
+    const typeMultiplier = enemyMove.id === STRUGGLE_MOVE.id
+      ? 1
+      : BattleEngine.getTypeEffectiveness(enemyMove.type, currentPlayerPkmn.types);
     const effLabel = BattleEngine.getTypeEffectivenessLabel(typeMultiplier);
     if (effLabel && (enemyDamage > 0 || typeMultiplier === 0)) addLog(effLabel);
     if (typeMultiplier >= 2) playSound('hitSuper');
@@ -1048,7 +1042,7 @@ export default function BattleScreen() {
     };
     const enemyHealRatio = ENEMY_HEAL_MOVES[enemyMove.id] ?? (enemyMove.name.toLowerCase().includes('recup') ? 0.5 : 0);
     if (enemyHealRatio > 0 || enemyMove.id === '156') {
-      const healed = Math.floor(liveEnemy.maxHp * 0.5);
+      const healed = Math.floor(liveEnemy.maxHp * (enemyHealRatio || 0.5));
       const newEnemyHp = Math.min(liveEnemy.maxHp, liveEnemy.currentHp + healed);
       const actualHeal = newEnemyHp - liveEnemy.currentHp;
       setEnemy((prev: any) => {
@@ -1061,15 +1055,14 @@ export default function BattleScreen() {
     }
 
     // Check Flinch inflitto dal nemico al giocatore
-    if (enemyMove.meta?.flinch_chance > 0) {
-      if (Math.random() * 100 < enemyMove.meta.flinch_chance) {
-        setPlayerFlinch(true);
-      }
+    if (BattleEngine.shouldFlinch(enemyMove.meta?.flinch_chance ?? 0, enemyDamage, currentPlayerPkmn.currentHp)) {
+      playerFlinchRef.current = true;
+      setPlayerFlinch(true);
     }
 
     // Applica effetto di stato nemico (solo se la mossa ha effetto sul tipo) 
     const statusChance = (!enemyMove.effectChance || enemyMove.effectChance === 0) ? 100 : enemyMove.effectChance; 
-    if (typeMultiplier > 0 && enemyMove.statusEffect && !currentPlayerPkmn.status && Math.random() * 100 < statusChance) {
+    if (BattleEngine.canApplyStatusToOpponent(enemyMove.target, typeMultiplier) && enemyMove.statusEffect && !currentPlayerPkmn.status && Math.random() * 100 < statusChance) {
       if (isImmuneToStatus(currentPlayerPkmn.types, enemyMove.statusEffect)) {
         addLog(`${currentPlayerPkmn.name} è immune a ${enemyMove.statusEffect}!`);
       } else {
@@ -1086,23 +1079,38 @@ export default function BattleScreen() {
         speed: 'speed', accuracy: 'accuracy', evasion: 'evasion',
       };
       let playerDebuffed = false;
+      let playerBoosted = false;
+      let enemyDebuffed = false;
       let enemyBoosted = false;
       for (const sc of enemyMove.stat_changes) {
         const statKey = STAT_MAP[sc.stat.name];
         if (!statKey) continue;
-        if (sc.change < 0) {
-          // Mosse status con change negativo colpiscono l'avversario (es. Ruggito, Colpo Coda)
-          setPlayerStages(prev => ({ ...prev, [statKey]: Math.max(-6, (prev[statKey] ?? 0) + sc.change) }));
-          playerDebuffed = true;
+        const affectsUser = BattleEngine.getStatChangeRecipient(
+          enemyMove.target,
+          enemyMove.category,
+          sc.change
+        ) === 'user';
+        if (affectsUser) {
+          setEnemyStages(prev => ({ ...prev, [statKey]: Math.max(-6, Math.min(6, (prev[statKey] ?? 0) + sc.change)) }));
+          if (sc.change < 0) enemyDebuffed = true;
+          else enemyBoosted = true;
         } else {
-          // Mosse status con change positivo potenziano chi le usa (es. Danza Spada, Agilità)
-          setEnemyStages(prev => ({ ...prev, [statKey]: Math.min(6, (prev[statKey] ?? 0) + sc.change) }));
-          enemyBoosted = true;
+          setPlayerStages(prev => ({ ...prev, [statKey]: Math.max(-6, (prev[statKey] ?? 0) + sc.change) }));
+          if (sc.change < 0) playerDebuffed = true;
+          else playerBoosted = true;
         }
       }
       if (playerDebuffed) {
         setStatChanges({ label: '↓ STAT −', positive: false });
         addLog(`Le statistiche di ${currentPlayerPkmn.name} sono diminuite!`);
+      }
+      if (playerBoosted) {
+        setStatChanges({ label: '↑ STAT +', positive: true });
+        addLog(`Le statistiche di ${currentPlayerPkmn.name} sono aumentate!`);
+      }
+      if (enemyDebuffed) {
+        setStatChanges({ label: '↓ STAT −', positive: false });
+        addLog(`Le statistiche di ${liveEnemy.name} sono diminuite!`);
       }
       if (enemyBoosted) {
         setStatChanges({ label: '↑ STAT +', positive: true });
@@ -1120,8 +1128,16 @@ export default function BattleScreen() {
 
     // --- RECOIL: il nemico subisce danno di rimbalzo ---
     const enemyRecoilPct = enemyMove.meta?.recoil ?? 0;
-    if (enemyRecoilPct > 0 && enemyDamage > 0) {
-      const enemyRecoilDmg = Math.max(1, Math.floor(enemyDamage * enemyRecoilPct / 100));
+    const enemyRecoilMaxHp = enemyMove.meta?.recoil_max_hp ?? 0;
+    if (enemyDamage > 0) {
+      const enemyMaxHp = liveEnemy.stats?.hp ?? liveEnemy.maxHp ?? 1;
+      const enemyRecoilDmg = BattleEngine.calculateRecoilDamage(
+        enemyDamage,
+        enemyMaxHp,
+        enemyRecoilPct,
+        enemyRecoilMaxHp
+      );
+      if (enemyRecoilDmg > 0) {
       setEnemy((prev: any) => {
         const nextHp = Math.max(0, prev.currentHp - enemyRecoilDmg);
         const next = { ...prev, currentHp: nextHp };
@@ -1129,6 +1145,7 @@ export default function BattleScreen() {
         addLog(`${prev.name} subisce ${enemyRecoilDmg} danni di rimbalzo!`);
         return next;
       });
+      }
     }
 
     // --- DRAIN: il nemico si cura in base al valore drain di PokeAPI ---
@@ -1166,7 +1183,7 @@ export default function BattleScreen() {
     const isEnemyRecoil = enemyMetaDrain < 0;
     if (isEnemyRecoil && enemyDamage > 0) {
       const enemyRecoilRatio = Math.abs(enemyMetaDrain) / 100;
-      const enemyRecoilDmg = Math.max(1, Math.floor(enemyDamage * enemyRecoilRatio));
+      const enemyRecoilDmg = BattleEngine.calculateRecoilDamage(enemyDamage, liveEnemy.maxHp, enemyRecoilRatio * 100);
       const hpAfterRecoil = Math.max(0, (enemyRef.current?.currentHp ?? 0) - enemyRecoilDmg);
       setEnemy((prev: any) => {
         const next = { ...prev, currentHp: hpAfterRecoil };
@@ -1223,20 +1240,23 @@ export default function BattleScreen() {
       for (const sc of enemyMove.stat_changes) {
         const statKey = STAT_MAP[sc.stat.name];
         if (!statKey) continue;
+        const recipient = BattleEngine.getStatChangeRecipient(
+          enemyMove.target,
+          enemyMove.category,
+          sc.change,
+          SELF_DROP_MOVE_IDS.has(enemyMove.id) || statChance === 0
+        );
         if (statChance === 0) {
-          // Self-drop garantito: sempre sul nemico stesso
           setEnemyStages(prev => ({ ...prev, [statKey]: Math.min(6, Math.max(-6, (prev[statKey] ?? 0) + sc.change)) }));
           if (sc.change < 0) addLog(`Le statistiche di ${liveEnemy.name} sono diminuite!`);
           if (sc.change > 0) addLog(`Le statistiche di ${liveEnemy.name} sono aumentate!`);
         } else if (Math.random() * 100 < statChance) {
-          if (sc.change < 0) {
-            // Effetto secondario sul giocatore (es. Crunch -DEF, Psichica -SpDef)
-            setPlayerStages(prev => ({ ...prev, [statKey]: Math.max(-6, (prev[statKey] ?? 0) + sc.change) }));
-            addLog(`Le statistiche di ${currentPlayerPkmn.name} sono diminuite!`);
-          } else {
-            // Self-boost secondario nemico (es. Pugno Meteora +ATK)
+          if (recipient === 'user') {
             setEnemyStages(prev => ({ ...prev, [statKey]: Math.min(6, (prev[statKey] ?? 0) + sc.change) }));
-            addLog(`Le statistiche di ${liveEnemy.name} sono aumentate!`);
+            addLog(`Le statistiche di ${liveEnemy.name} sono ${sc.change < 0 ? 'diminuite' : 'aumentate'}!`);
+          } else {
+            setPlayerStages(prev => ({ ...prev, [statKey]: Math.max(-6, Math.min(6, (prev[statKey] ?? 0) + sc.change)) }));
+            addLog(`Le statistiche di ${currentPlayerPkmn.name} sono ${sc.change < 0 ? 'diminuite' : 'aumentate'}!`);
           }
         }
       }
@@ -1325,10 +1345,9 @@ export default function BattleScreen() {
 
   const applyPlayerMoveEffects = (move: any, currentEnemy: any, realDamage = 0): { newStatus?: any, message?: string } => { 
     // --- FLINCH ---
-    if (move.meta?.flinch_chance > 0) {
-      if (Math.random() * 100 < move.meta.flinch_chance) {
-        setEnemyFlinch(true);
-      }
+    if (BattleEngine.shouldFlinch(move.meta?.flinch_chance ?? 0, realDamage, currentEnemy?.currentHp ?? 0)) {
+      enemyFlinchRef.current = true;
+      setEnemyFlinch(true);
     }
 
     // --- ACCURACY / EVASION ---
@@ -1357,7 +1376,7 @@ export default function BattleScreen() {
     // Recupera i dati freschi del Pokémon per evitare bug di HP stale se il nemico ha attaccato prima 
     const freshPkmn = useStore.getState().team.find(p => p.id === playerPkmn.id) ?? playerPkmn;
 
-    // Riposo: cura tutto ma addormenta 
+    // Riposo custom: cura il 50% dei PS senza infliggere sonno.
     if (move.id === '156') { 
       const healed = Math.floor(freshPkmn.stats.hp * 0.5); 
       const newHp = Math.min(freshPkmn.stats.hp, freshPkmn.currentHp + healed); 
@@ -1409,18 +1428,25 @@ export default function BattleScreen() {
           speed: 'speed', accuracy: 'accuracy', evasion: 'evasion',
         };
         let enemyDebuffed = false;
+        let enemyBoosted = false;
+        let playerDebuffed = false;
         let playerBoosted = false;
         for (const sc of move.stat_changes) {
           const statKey = STAT_MAP[sc.stat.name];
           if (!statKey) continue;
-          if (sc.change < 0) {
-            // Mosse status con change negativo colpiscono l'avversario (es. Ruggito, Colpo Coda)
-            setEnemyStages(prev => ({ ...prev, [statKey]: Math.max(-6, (prev[statKey] ?? 0) + sc.change) }));
-            enemyDebuffed = true;
+          const affectsUser = BattleEngine.getStatChangeRecipient(
+            move.target,
+            move.category,
+            sc.change
+          ) === 'user';
+          if (affectsUser) {
+            setPlayerStages(prev => ({ ...prev, [statKey]: Math.max(-6, Math.min(6, (prev[statKey] ?? 0) + sc.change)) }));
+            if (sc.change < 0) playerDebuffed = true;
+            else playerBoosted = true;
           } else {
-            // Mosse status con change positivo potenziano chi le usa (es. Danza Spada, Agilità)
-            setPlayerStages(prev => ({ ...prev, [statKey]: Math.min(6, (prev[statKey] ?? 0) + sc.change) }));
-            playerBoosted = true;
+            setEnemyStages(prev => ({ ...prev, [statKey]: Math.max(-6, (prev[statKey] ?? 0) + sc.change) }));
+            if (sc.change < 0) enemyDebuffed = true;
+            else enemyBoosted = true;
           }
         }
         if (enemyDebuffed) {
@@ -1431,6 +1457,14 @@ export default function BattleScreen() {
           setStatChanges({ label: '↑ STAT +', positive: true });
           addLog(`Le statistiche di ${playerPkmn.name} sono aumentate!`);
         }
+        if (enemyDebuffed) {
+          setStatChanges({ label: '↓ STAT −', positive: false });
+          addLog(`Le statistiche di ${currentEnemy?.name} sono diminuite!`);
+        }
+        if (enemyBoosted) {
+          setStatChanges({ label: '↑ STAT +', positive: true });
+          addLog(`Le statistiche di ${currentEnemy?.name} sono aumentate!`);
+        }
       }
 
       // Se non ci sono stat_changes nel meta, mantieni il comportamento esistente
@@ -1438,7 +1472,10 @@ export default function BattleScreen() {
       const statusEffect = move.statusEffect ?? (move.name?.toLowerCase().includes('fulmisguardo') ? 'PAR' : undefined);
       const effectChance = (!move.effectChance || move.effectChance === 0) ? 100 : move.effectChance ?? 100;
 
-      if (statusEffect && currentEnemy && !currentEnemy.status) { 
+      const statusEffectiveness = currentEnemy
+        ? BattleEngine.getTypeEffectiveness(move.type, currentEnemy.types)
+        : 0;
+      if (statusEffect && currentEnemy && BattleEngine.canApplyStatusToOpponent(move.target, statusEffectiveness) && !currentEnemy.status) {
         if (Math.random() * 100 < effectChance) { 
           const nomi: Record<string, string> = { 
             'SLP': 'si è addormentato', 'PSN': 'è stato avvelenato', 
@@ -1514,23 +1551,23 @@ export default function BattleScreen() {
       for (const sc of move.stat_changes) {
         const statKey = STAT_MAP[sc.stat.name];
         if (!statKey) continue;
+        const recipient = BattleEngine.getStatChangeRecipient(
+          move.target,
+          move.category,
+          sc.change,
+          SELF_DROP_MOVE_IDS.has(move.id) || statChance === 0
+        );
         if (statChance === 0) {
-          // Self-drop garantito: sempre sul giocatore stesso
           setPlayerStages(prev => ({ ...prev, [statKey]: Math.min(6, Math.max(-6, (prev[statKey] ?? 0) + sc.change)) }));
           if (sc.change < 0) addLog(`Le statistiche di ${playerPkmn.name} sono diminuite!`);
           if (sc.change > 0) addLog(`Le statistiche di ${playerPkmn.name} sono aumentate!`);
         } else if (Math.random() * 100 < statChance) {
-          if (sc.change < 0 && SELF_DROP_MOVE_IDS.has(move.id)) {
-            setPlayerStages(prev => ({ ...prev, [statKey]: Math.max(-6, (prev[statKey] ?? 0) + sc.change) }));
-            addLog(`Le statistiche di ${playerPkmn.name} sono diminuite!`);
-          } else if (sc.change < 0) {
-            // Effetto secondario sul nemico (es. Crunch -DEF, Psichica -SpDef)
-            setEnemyStages(prev => ({ ...prev, [statKey]: Math.max(-6, (prev[statKey] ?? 0) + sc.change) }));
-            addLog(`Le statistiche di ${currentEnemy?.name} sono diminuite!`);
-          } else {
-            // Self-boost secondario giocatore (es. Pugno Meteora +ATK)
+          if (recipient === 'user') {
             setPlayerStages(prev => ({ ...prev, [statKey]: Math.min(6, (prev[statKey] ?? 0) + sc.change) }));
-            addLog(`Le statistiche di ${playerPkmn.name} sono aumentate!`);
+            addLog(`Le statistiche di ${playerPkmn.name} sono ${sc.change < 0 ? 'diminuite' : 'aumentate'}!`);
+          } else {
+            setEnemyStages(prev => ({ ...prev, [statKey]: Math.max(-6, Math.min(6, (prev[statKey] ?? 0) + sc.change)) }));
+            addLog(`Le statistiche di ${currentEnemy?.name} sono ${sc.change < 0 ? 'diminuite' : 'aumentate'}!`);
           }
         }
       }
@@ -1557,9 +1594,10 @@ export default function BattleScreen() {
     console.log('[Battle] Player move:', move.name);
 
     // --- CHECK FLINCH ---
-    if (enemyFlinch) {
+    if (playerFlinchRef.current) {
       addLog(`${playerPkmn.name} ha tentennato!`);
-      setEnemyFlinch(false);
+      playerFlinchRef.current = false;
+      setPlayerFlinch(false);
       setTurn('enemy');
       const fresh = (useStore.getState() as any).team.find((p: any) => p.id === playerPkmn.id) ?? playerPkmn; 
       await executeEnemyTurn(fresh);
@@ -1614,35 +1652,37 @@ export default function BattleScreen() {
     // --- FINE CHECK STATUS --- 
 
     // Accuracy Check
-    const accStage = playerStages.accuracy - enemyStages.evasion;
-    const accMultiplier = accStage >= 0 ? (3 + accStage) / 3 : 3 / (3 - accStage);
-    const finalAccuracy = (move.accuracy || 100) * accMultiplier;
+    if (move.id !== STRUGGLE_MOVE.id) {
+      const updatedMoves = playerPkmn.moves.map((candidate: any) =>
+        candidate.id === move.id ? { ...candidate, pp: Math.max(0, candidate.pp - 1) } : candidate
+      );
+      updatePokemon(playerPkmn.id, { moves: updatedMoves });
+    }
 
-    if (move.category !== 'status' && move.accuracy && move.accuracy < 100) { 
-      if (Math.random() * 100 >= finalAccuracy) { 
-        setIsAnimating(true); 
-        addLog(`${playerPkmn.name} usa ${move.name}!`); 
-        addLog('Ma ha mancato!'); 
-        await new Promise(r => setTimeout(r, 800)); 
-        setTurn('enemy'); 
-        await executeEnemyTurn(playerPkmn); 
-        setIsAnimating(false); 
-        return; 
-      } 
-    } 
+    const finalAccuracy = move.target === 'user' ? 100 : BattleEngine.calculateAccuracy(
+      move.accuracy ?? 100,
+      playerStages.accuracy,
+      enemyStages.evasion
+    );
+
+    if (move.target !== 'user' && Math.random() * 100 >= finalAccuracy) {
+      setIsAnimating(true);
+      addLog(`${playerPkmn.name} usa ${move.name}!`);
+      addLog('Ma ha mancato!');
+      await new Promise(r => setTimeout(r, 800));
+      setTurn('enemy');
+      await executeEnemyTurn(playerPkmn);
+      setIsAnimating(false);
+      return;
+    }
 
     setIsAnimating(true);
     setAttackAnim(true);
     setTimeout(() => setAttackAnim(false), 400);
 
-    // Scala i PP della mossa nel team 
-    const updatedMoves = playerPkmn.moves.map((m: any) =>
-      m.id === move.id ? { ...m, pp: Math.max(0, m.pp - 1) } : m
-    );
-    updatePokemon(playerPkmn.id, { moves: updatedMoves });
-
     // Player Turn — order by speed 
     const liveEnemyAtStartOfMove = enemyRef.current ?? enemy;
+    const plannedEnemyMove = selectEnemyMove(liveEnemyAtStartOfMove, playerPkmn);
     const effPlayer = { 
       ...playerPkmn, 
       stats: { 
@@ -1664,19 +1704,33 @@ export default function BattleScreen() {
       } 
     }; 
 
-    const playerFirst = effPlayer.stats.speed >= (effEnemy?.stats?.speed ?? 0) || move.priority > 0;
+    const playerSpeed = BattleEngine.getEffectiveSpeed(
+      playerPkmn.stats.speed,
+      playerStages.speed,
+      playerPkmn.status
+    );
+    const enemySpeed = BattleEngine.getEffectiveSpeed(
+      liveEnemyAtStartOfMove.stats.speed,
+      enemyStages.speed,
+      liveEnemyAtStartOfMove.status
+    );
+    const playerFirst = BattleEngine.determineTurnOrder(
+      move.priority ?? 0,
+      plannedEnemyMove.priority ?? 0,
+      playerSpeed,
+      enemySpeed
+    ) === 'player';
 
     if (playerFirst) {
-      const isCrit = Math.random() < 0.06;
-      const isMultiHit = (move.meta?.min_hits ?? 1) > 1;
-      const baseDmg = BattleEngine.calculateDamage(effPlayer as any, effEnemy as any, move, isCrit);
-      const hitCount = isMultiHit ? 3 : 1;
-      const damage = isMultiHit ? baseDmg * hitCount : baseDmg;
-      const typeMultiplier = BattleEngine.getTypeEffectiveness(move.type, effEnemy.types);
+      const moveResult = BattleEngine.calculateMoveDamage(effPlayer as any, effEnemy as any, move);
+      const { damage, isCritical: isCrit, hits: hitCount } = moveResult;
+      const typeMultiplier = move.id === STRUGGLE_MOVE.id
+        ? 1
+        : BattleEngine.getTypeEffectiveness(move.type, effEnemy.types);
       const effLabel = BattleEngine.getTypeEffectivenessLabel(typeMultiplier);
       const newEnemyHp = Math.max(0, (liveEnemyAtStartOfMove?.currentHp ?? 0) - damage);
 
-      addLog(`${playerPkmn.name} usa ${move.name}!${damage > 0 ? ` (${damage} danni)` : ''}`);
+      addLog(`${playerPkmn.name} usa ${move.name}!${damage > 0 ? ` (${damage} danni${hitCount > 1 ? `, ${hitCount} colpi` : ''})` : ''}`);
       
       // Pure healing moves (non-drain) bypass type immunity — they heal the user, not affect the enemy
       // Mosse di cura pura (senza assorbimento dal nemico)
@@ -1722,13 +1776,15 @@ export default function BattleScreen() {
       // Apply damage and effects ONLY for non-healing moves
       if (!isHealMove) {
         // Status e Healing logica (salta se bersaglio immune al tipo) 
-        const { newStatus, message } = typeMultiplier > 0 ? applyPlayerMoveEffects(move, liveEnemyAtStartOfMove, damage) : {}; 
+        const { newStatus, message } = BattleEngine.isUserTargetedMove(move.target) || typeMultiplier > 0
+          ? applyPlayerMoveEffects(move, liveEnemyAtStartOfMove, damage)
+          : {};
         if (message) addLog(message);
 
         if (isCrit) addLog('Brutto colpo!');
-        if (effLabel && (damage > 0 || typeMultiplier === 0)) addLog(effLabel);
-        if (typeMultiplier >= 2) playSound('hitSuper');
-        else if (typeMultiplier > 0 && typeMultiplier < 1) playSound('hitWeak');
+        if (!BattleEngine.isUserTargetedMove(move.target) && effLabel && (damage > 0 || typeMultiplier === 0)) addLog(effLabel);
+        if (!BattleEngine.isUserTargetedMove(move.target) && typeMultiplier >= 2) playSound('hitSuper');
+        else if (!BattleEngine.isUserTargetedMove(move.target) && typeMultiplier > 0 && typeMultiplier < 1) playSound('hitWeak');
 
         // Applica stato con immunità
         let finalStatus = liveEnemyAtStartOfMove.status;
@@ -1757,11 +1813,14 @@ export default function BattleScreen() {
 
         // Recoil giocatore
         const recoilPctP = move.meta?.recoil ?? 0;
-        if (recoilPctP > 0 && damage > 0) {
-          const recoilDmgP = Math.max(1, Math.floor(damage * recoilPctP / 100));
+        const recoilMaxHpP = move.meta?.recoil_max_hp ?? 0;
+        if (damage > 0) {
           const freshPkmnR = useStore.getState().team.find((p: any) => p.id === playerPkmn.id) ?? playerPkmn;
-          updatePokemon(freshPkmnR.id, { currentHp: Math.max(0, freshPkmnR.currentHp - recoilDmgP) });
-          addLog(`${playerPkmn.name} subisce ${recoilDmgP} danni di rimbalzo!`);
+          const recoilDmgP = BattleEngine.calculateRecoilDamage(damage, freshPkmnR.stats.hp, recoilPctP, recoilMaxHpP);
+          if (recoilDmgP > 0) {
+            updatePokemon(freshPkmnR.id, { currentHp: Math.max(0, freshPkmnR.currentHp - recoilDmgP) });
+            addLog(`${playerPkmn.name} subisce ${recoilDmgP} danni di rimbalzo!`);
+          }
         }
       }
 
@@ -1773,14 +1832,13 @@ export default function BattleScreen() {
       }
 
       setTurn('enemy');
-      setEnemyFlinch(false); // Reset flinch at end of turn
       const freshForEnemyTurn = useStore.getState().team.find((p: any) => p.id === playerPkmn.id) ?? playerPkmn; 
-      await executeEnemyTurn(freshForEnemyTurn);
+      await executeEnemyTurn(freshForEnemyTurn, plannedEnemyMove);
     } else {
       // Nemico più veloce: attacca prima 
       setTurn('enemy');
       const freshForEnemyTurnPre = useStore.getState().team.find((p: any) => p.id === playerPkmn.id) ?? playerPkmn;
-      await executeEnemyTurn(freshForEnemyTurnPre);
+      await executeEnemyTurn(freshForEnemyTurnPre, plannedEnemyMove);
       const freshPlayerPkmn = useStore.getState().team.find((p: any) => p.id === playerPkmn.id) ?? playerPkmn;
       if (freshPlayerPkmn.currentHp <= 0) {
         setPlayerStages({ attack: 0, defense: 0, spAtk: 0, spDef: 0, speed: 0, accuracy: 0, evasion: 0 });
@@ -1791,6 +1849,15 @@ export default function BattleScreen() {
         return;
       }
 
+      let playerMoveWasFlinched = false;
+      if (playerFlinchRef.current) {
+        playerFlinchRef.current = false;
+        setPlayerFlinch(false);
+        addLog(`${freshPlayerPkmn.name} ha tentennato e non può muoversi!`);
+        playerMoveWasFlinched = true;
+      }
+
+      if (!playerMoveWasFlinched) {
       // Ricontrolla status dopo il turno nemico (può aver appena applicato SLP/PAR/FRZ)
       if (freshPlayerPkmn.status === 'SLP') {
         if (Math.random() < 0.2) {
@@ -1823,26 +1890,27 @@ export default function BattleScreen() {
         return;
       }
 
-      const isCrit = Math.random() < 0.06;
-      const isMultiHit2 = (move.meta?.min_hits ?? 1) > 1;
-      const baseDmg2 = BattleEngine.calculateDamage(effPlayer as any, effEnemy as any, move, isCrit);
-      const hitCount2 = isMultiHit2 ? 3 : 1;
-      const damage = isMultiHit2 ? baseDmg2 * hitCount2 : baseDmg2;
-      const typeMultiplier = BattleEngine.getTypeEffectiveness(move.type, effEnemy.types);
+      const moveResult = BattleEngine.calculateMoveDamage(effPlayer as any, effEnemy as any, move);
+      const { damage, isCritical: isCrit, hits: hitCount } = moveResult;
+      const typeMultiplier = move.id === STRUGGLE_MOVE.id
+        ? 1
+        : BattleEngine.getTypeEffectiveness(move.type, effEnemy.types);
       const effLabel = BattleEngine.getTypeEffectivenessLabel(typeMultiplier);
       const currentEnemyAfterEnemyTurn = enemyRef.current ?? liveEnemyAtStartOfMove;
       const newEnemyHp = Math.max(0, (currentEnemyAfterEnemyTurn?.currentHp ?? 0) - damage);
 
-      addLog(`${playerPkmn.name} usa ${move.name}!${damage > 0 ? ` (${damage} danni)` : ''}`);
+      addLog(`${playerPkmn.name} usa ${move.name}!${damage > 0 ? ` (${damage} danni${hitCount > 1 ? `, ${hitCount} colpi` : ''})` : ''}`);
       
       // Status e Healing logica (salta se bersaglio immune al tipo) 
-      const { newStatus, message } = typeMultiplier > 0 ? applyPlayerMoveEffects(move, currentEnemyAfterEnemyTurn, damage) : {}; 
+      const { newStatus, message } = BattleEngine.isUserTargetedMove(move.target) || typeMultiplier > 0
+        ? applyPlayerMoveEffects(move, currentEnemyAfterEnemyTurn, damage)
+        : {};
       if (message) addLog(message);
 
       if (isCrit) addLog('Brutto colpo!');
-      if (effLabel && (damage > 0 || typeMultiplier === 0)) addLog(effLabel);
-      if (typeMultiplier >= 2) playSound('hitSuper');
-      else if (typeMultiplier > 0 && typeMultiplier < 1) playSound('hitWeak');
+      if (!BattleEngine.isUserTargetedMove(move.target) && effLabel && (damage > 0 || typeMultiplier === 0)) addLog(effLabel);
+      if (!BattleEngine.isUserTargetedMove(move.target) && typeMultiplier >= 2) playSound('hitSuper');
+      else if (!BattleEngine.isUserTargetedMove(move.target) && typeMultiplier > 0 && typeMultiplier < 1) playSound('hitWeak');
 
       // Applica stato con immunità
       let finalStatus = currentEnemyAfterEnemyTurn.status;
@@ -1871,11 +1939,14 @@ export default function BattleScreen() {
 
       // Recoil giocatore (branch lento)
       const recoilPctP2 = move.meta?.recoil ?? 0;
-      if (recoilPctP2 > 0 && damage > 0) {
-        const recoilDmgP2 = Math.max(1, Math.floor(damage * recoilPctP2 / 100));
+      const recoilMaxHpP2 = move.meta?.recoil_max_hp ?? 0;
+      if (damage > 0) {
         const freshPkmnR2 = useStore.getState().team.find((p: any) => p.id === playerPkmn.id) ?? playerPkmn;
-        updatePokemon(freshPkmnR2.id, { currentHp: Math.max(0, freshPkmnR2.currentHp - recoilDmgP2) });
-        addLog(`${playerPkmn.name} subisce ${recoilDmgP2} danni di rimbalzo!`);
+        const recoilDmgP2 = BattleEngine.calculateRecoilDamage(damage, freshPkmnR2.stats.hp, recoilPctP2, recoilMaxHpP2);
+        if (recoilDmgP2 > 0) {
+          updatePokemon(freshPkmnR2.id, { currentHp: Math.max(0, freshPkmnR2.currentHp - recoilDmgP2) });
+          addLog(`${playerPkmn.name} subisce ${recoilDmgP2} danni di rimbalzo!`);
+        }
       }
 
       await new Promise(r => setTimeout(r, 800));
@@ -1884,10 +1955,9 @@ export default function BattleScreen() {
         await processEnemyDefeat(enemyRef.current);
         return;
       }
+      }
     }
     
-    setEnemyFlinch(false);
-    setPlayerFlinch(false);
     const freshForEndTurn = useStore.getState().team.find((p: any) => p.id === playerPkmn.id) ?? playerPkmn; 
     let finalPlayerHp = freshForEndTurn.currentHp;
 
@@ -1940,6 +2010,8 @@ export default function BattleScreen() {
       <div className="text-white/50 animate-pulse font-bold">Caricamento battaglia...</div>
     </div>
   );
+
+  const availablePlayerMoves = BattleEngine.getAvailableMoves(playerPkmn?.moves ?? []);
 
   return (
     <div 
@@ -2688,7 +2760,7 @@ export default function BattleScreen() {
         ) : (
           <>
             <div className="grid grid-cols-2 gap-2">
-              {playerPkmn?.moves?.map((move: any, idx: number) => (
+              {availablePlayerMoves.map((move: any, idx: number) => (
                 <button
                   key={`${move.id}-${idx}`}
                   onPointerDown={(_e) => {
@@ -2751,7 +2823,9 @@ export default function BattleScreen() {
                   <div className="flex justify-between w-full items-center mt-1 gap-2">
                     <span className="text-[10px] opacity-50 uppercase font-bold">{move.category}</span>
                     {(() => {
-                      const moveMultiplier = BattleEngine.getTypeEffectiveness(move.type, enemy?.types ?? []);
+                      const moveMultiplier = move.category === 'status' || BattleEngine.isUserTargetedMove(move.target) || move.id === STRUGGLE_MOVE.id
+                        ? 1
+                        : BattleEngine.getTypeEffectiveness(move.type, enemy?.types ?? []);
                       const badge = BattleEngine.getTypeEffectivenessBadge(moveMultiplier);
                       return badge ? (
                         <span className={`text-[8px] font-black px-1.5 py-[2px] rounded border ${badge.tone}`}>
@@ -2763,7 +2837,7 @@ export default function BattleScreen() {
                   </div>
                 </button>
               ))}
-              {Array.from({ length: 4 - (playerPkmn?.moves?.length ?? 0) }).map((_, i) => (
+              {Array.from({ length: 4 - availablePlayerMoves.length }).map((_, i) => (
                 <div key={i} className="bg-[#1a1a2e]/30 border border-dashed border-white/5 rounded-xl flex items-center justify-center text-[10px] opacity-20 italic h-16">
                   Slot Vuoto
                 </div>

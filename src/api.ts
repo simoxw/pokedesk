@@ -1,5 +1,6 @@
 import { Pokemon, Move, Item, Medal, GameState, ScreenName, PokemonSpecies, EvolutionChain } from './types';
 import { apiCache } from './lib/apiCache';
+import { STRUGGLE_MOVE } from './BattleEngine';
 
 const BASE_URL = 'https://pokeapi.co/api/v2';
 const MAX_CACHE = 200;
@@ -228,18 +229,7 @@ export const api = {
 
     // Fallback if no moves found (shouldn't happen for most pokemon, but just in case)
     if (moves.length === 0) {
-      moves.push({
-        id: '1',
-        name: 'Scontro',
-        type: 'normal',
-        power: 50,
-        accuracy: 100,
-        pp: 35,
-        maxPp: 35,
-        priority: 0,
-        category: 'physical',
-        description: 'Un attacco fisico standard.',
-      });
+      moves.push(STRUGGLE_MOVE);
     }
 
     await apiCache.set(cacheKey, moves);

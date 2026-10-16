@@ -1,5 +1,19 @@
 import { Pokemon, Move, StatusEffect, PokemonType } from './types';
 
+export const STRUGGLE_MOVE: Move = {
+  id: 'struggle',
+  name: 'Scontro',
+  type: 'normal',
+  power: 50,
+  accuracy: 100,
+  pp: 1,
+  maxPp: 1,
+  priority: 0,
+  category: 'physical',
+  description: 'Usata quando tutte le mosse hanno esaurito i PP.',
+  meta: { recoil_max_hp: 0.25 },
+};
+
 export const TYPE_CHART: Record<PokemonType, Partial<Record<PokemonType, number>>> = {
   normal: {
     rock: 0.5,
@@ -233,6 +247,30 @@ export function deserializeNatureFromTransfer(nature: string): string {
 import { getExpForLevel } from './utils/expUtils';
 
 export const BattleEngine = {
+  isUserTargetedMove(target?: string): boolean {
+    return target === 'user';
+  },
+
+  canApplyStatusToOpponent(target: string | undefined, typeEffectiveness: number): boolean {
+    return !this.isUserTargetedMove(target) && typeEffectiveness > 0;
+  },
+
+  getStatChangeRecipient(
+    target: string | undefined,
+    category: Move['category'],
+    change: number,
+    isSelfDrop = false
+  ): 'user' | 'opponent' {
+    if (this.isUserTargetedMove(target) || isSelfDrop) return 'user';
+    if (category === 'status') return 'opponent';
+    return change > 0 ? 'user' : 'opponent';
+  },
+
+  getAvailableMoves(moves: Move[]): Move[] {
+    const availableMoves = moves.filter(move => move.pp > 0);
+    return availableMoves.length > 0 ? availableMoves : [STRUGGLE_MOVE];
+  },
+
   getStageMultiplier(stage: number): number {
     const s = Math.max(-6, Math.min(6, stage));
     if (s >= 0) {
@@ -242,7 +280,94 @@ export const BattleEngine = {
     }
   },
 
-  calculateDamage(attacker: Pokemon, defender: Pokemon, move: Move, isCritical: boolean): number {
+  getEffectiveSpeed(baseSpeed: number, stage: number, status?: StatusEffect): number {
+    const speed = Math.floor(baseSpeed * this.getStageMultiplier(stage));
+    return Math.max(1, Math.floor(speed * (status === 'PAR' ? 0.5 : 1)));
+  },
+
+  determineTurnOrder(
+    playerPriority: number,
+    enemyPriority: number,
+    playerSpeed: number,
+    enemySpeed: number,
+    random: () => number = Math.random
+  ): 'player' | 'enemy' {
+    if (playerPriority !== enemyPriority) {
+      return playerPriority > enemyPriority ? 'player' : 'enemy';
+    }
+    if (playerSpeed !== enemySpeed) {
+      return playerSpeed > enemySpeed ? 'player' : 'enemy';
+    }
+    return random() < 0.5 ? 'player' : 'enemy';
+  },
+
+  calculateAccuracy(accuracy: number, accuracyStage: number, evasionStage: number): number {
+    const stage = accuracyStage - evasionStage;
+    const multiplier = stage >= 0 ? (3 + stage) / 3 : 3 / (3 - stage);
+    return Math.max(0, Math.min(100, Math.floor(accuracy * multiplier)));
+  },
+
+  getMultiHitCount(minHits: number, maxHits: number, random: () => number = Math.random): number {
+    const minimum = Math.max(1, Math.floor(minHits));
+    const maximum = Math.max(minimum, Math.floor(maxHits));
+    if (minimum === maximum) return minimum;
+
+    const roll = random();
+    if (minimum === 2 && maximum === 5) {
+      if (roll < 0.35) return 2;
+      if (roll < 0.7) return 3;
+      if (roll < 0.85) return 4;
+      return 5;
+    }
+    return minimum + Math.floor(roll * (maximum - minimum + 1));
+  },
+
+  calculateRecoilDamage(damage: number, maxHp: number, recoilPercent = 0, recoilMaxHpRatio = 0): number {
+    if (damage <= 0) return 0;
+    if (recoilMaxHpRatio > 0) return Math.max(1, Math.floor(maxHp * recoilMaxHpRatio));
+    if (recoilPercent > 0) return Math.max(1, Math.floor(damage * recoilPercent / 100));
+    return 0;
+  },
+
+  shouldFlinch(flinchChance: number, damage: number, targetHp: number, random: () => number = Math.random): boolean {
+    return flinchChance > 0 && damage > 0 && damage < targetHp && random() * 100 < flinchChance;
+  },
+
+  calculateMoveDamage(
+    attacker: Pokemon,
+    defender: Pokemon,
+    move: Move,
+    random: () => number = Math.random
+  ): { damage: number; isCritical: boolean; hits: number } {
+    if (move.category === 'status' || !move.power) {
+      return { damage: 0, isCritical: false, hits: 0 };
+    }
+
+    const minimumHits = move.meta?.min_hits ?? 1;
+    const maximumHits = move.meta?.max_hits ?? minimumHits;
+    const hitCount = this.getMultiHitCount(minimumHits, maximumHits, random);
+    const targetHp = Math.max(0, defender.currentHp);
+    let damage = 0;
+    let isCritical = false;
+    let hits = 0;
+
+    for (let hit = 0; hit < hitCount && damage < targetHp; hit++) {
+      const hitIsCritical = random() < 0.06;
+      isCritical ||= hitIsCritical;
+      damage += this.calculateDamage(attacker, defender, move, hitIsCritical, random);
+      hits++;
+    }
+
+    return { damage, isCritical, hits };
+  },
+
+  calculateDamage(
+    attacker: Pokemon,
+    defender: Pokemon,
+    move: Move,
+    isCritical: boolean,
+    random: () => number = Math.random
+  ): number {
     if (move.category === 'status') return 0;
 
     const level = attacker.level;
@@ -254,12 +379,13 @@ export const BattleEngine = {
     let damage = Math.floor(Math.floor(Math.floor(2 * level / 5 + 2) * attack * power / defense) / 50 + 2);
 
     // STAB
-    if (attacker.types.includes(move.type)) {
+    const isStruggle = move.id === STRUGGLE_MOVE.id;
+    if (!isStruggle && attacker.types.includes(move.type)) {
       damage = Math.floor(damage * 1.5);
     }
 
     // Type Effectiveness
-    const typeMultiplier = this.getTypeEffectiveness(move.type, defender.types);
+    const typeMultiplier = isStruggle ? 1 : this.getTypeEffectiveness(move.type, defender.types);
     damage = Math.floor(damage * typeMultiplier);
 
     // Critical
@@ -268,8 +394,8 @@ export const BattleEngine = {
     }
 
     // Random Gen 5: intero 85-100 / 100
-    const random = (Math.floor(Math.random() * 16) + 85) / 100;
-    damage = Math.floor(damage * random);
+    const randomFactor = (Math.floor(random() * 16) + 85) / 100;
+    damage = Math.floor(damage * randomFactor);
 
     // BRN: -50% attacco fisico 
     if (attacker.status === 'BRN' && move.category === 'physical') {

@@ -8,8 +8,10 @@ Mappa completa del progetto PokéDesk con struttura cartelle e descrizioni detta
 ```text
 pokedesk/
 ├── .env.example
+├── .env (locale, non versionato; valori omessi)
 ├── .gitignore
 ├── check_icon_sizes.js
+├── CONSOLE_DEBUG_HELP.md
 ├── index.html
 ├── metadata.json
 ├── package-lock.json
@@ -40,6 +42,7 @@ pokedesk/
 │   ├── App.tsx
 │   ├── AudioService.ts
 │   ├── BattleEngine.ts
+│   ├── BattleMechanics.test.ts
 │   ├── BattleStages.test.ts
 │   ├── CatchEngine.test.ts
 │   ├── CatchEngine.ts
@@ -49,15 +52,35 @@ pokedesk/
 │   ├── index.css
 │   ├── main.tsx
 │   ├── NotificationService.ts
+│   ├── debugConsole.ts
+│   ├── ErrorBoundary.tsx
+│   ├── expBar.test.ts
 │   ├── rarityTable.ts
 │   ├── StatsFormula.test.ts
-│   ├── store.ts
-│   ├── store/types.ts
+│   ├── store.ts (facciata verso store/index.ts)
 │   ├── TickSystem.ts
 │   ├── TypeChart.test.ts
 │   ├── types.ts
+│   ├── useImagePreloader.ts
+│   ├── useLoadingWatchdog.ts
+│   ├── usePreloader.ts
 │   ├── useSoundEffects.ts
 │   ├── vite-env.d.ts
+│   ├── data/
+│   │   ├── leagueData.ts
+│   │   ├── legendaryIds.ts
+│   │   ├── masterTrainers.test.ts
+│   │   └── regionalForms.ts
+│   ├── lib/
+│   │   ├── apiCache.ts
+│   │   └── supabaseClient.ts
+│   ├── services/
+│   │   ├── battleTowerService.ts
+│   │   └── levelUpService.ts
+│   ├── utils/
+│   │   ├── expUtils.ts
+│   │   ├── localDate.test.ts
+│   │   └── localDate.ts
 │   ├── components/
 │   │   ├── screens/
 │   │   │   ├── AchievementScreen.tsx
@@ -74,7 +97,9 @@ pokedesk/
 │   │   │   ├── MasterBattleScreen.tsx
 │   │   │   ├── OptionsScreen.tsx
 │   │   │   ├── PokedexScreen.tsx
+│   │   │   ├── ProfessorIntroScreen.tsx
 │   │   │   ├── ProfileScreen.tsx
+│   │   │   ├── RegionalCatchScreen.tsx
 │   │   │   ├── SafariScreen.tsx
 │   │   │   ├── ShopScreen.tsx
 │   │   │   ├── StarterDraft.tsx
@@ -87,25 +112,22 @@ pokedesk/
 │   │       ├── FloatingMuteButton.tsx
 │   │       ├── GameboyDialog.tsx
 │   │       ├── HPBar.tsx
+│   │       ├── NatureSelector.tsx
 │   │       ├── PokemonCard.tsx
 │   │       ├── PokemonDetailsModal.tsx
 │   │       ├── PokemonSprite.tsx
+│   │       ├── StatComparison.tsx
 │   │       └── TypeBadge.tsx
-│   ├── data/
-│   │   ├── leagueData.ts
-│   │   ├── legendaryIds.ts
-│   │   └── regionalForms.ts
-│   ├── services/
-│   │   ├── battleTowerService.ts
-│   │   └── levelUpService.ts
 │   └── store/
 │       ├── index.ts
 │       ├── old-store.ts
 │       ├── sliced-store.ts
+│       ├── types.ts
 │       ├── storeGameplaySlices.test.ts
 │       ├── storePersistenceSmoke.test.ts
 │       └── slices/
 │           ├── achievementSlice.ts
+│           ├── breedingSlice.test.ts
 │           ├── breedingSlice.ts
 │           ├── inventorySlice.ts
 │           ├── missionSlice.ts
@@ -115,7 +137,8 @@ pokedesk/
 │           ├── teamSlice.ts
 │           └── uiSlice.ts
 ├── tsconfig.json
-└── vite.config.ts
+├── vite.config.ts
+└── vitest.config.ts
 ```
 
 ## Descrizione dei file principali
@@ -131,6 +154,8 @@ pokedesk/
 - `README.md`: documentazione principale del progetto con feature, tecnologie e note di architettura.
 - `PROJECT_STRUCTURE.md`: descrizione ad alto livello dell'architettura e della struttura del progetto.
 - `PROJECT_FILE_MAP.md`: questo file, con l'albero completo e spiegazioni dettagliate file per file.
+- `CONSOLE_DEBUG_HELP.md`: guida ai comandi `window.PokeDeskDebug` della console.
+- `tsconfig.json`, `vite.config.ts`, `vitest.config.ts`: configurazioni TypeScript, Vite e Vitest.
 
 ### Cartella `public/`
 - `manifest.json`: configurazione PWA, inclusi nome dell'app, colori, orientamento e icone.
@@ -147,14 +172,24 @@ pokedesk/
 - `resize-icons.mjs`: script che ridimensiona e genera icone in diverse risoluzioni per il manifest PWA.
 
 ### Cartella `src/`
-- `api.ts`: wrapper per PokeAPI; gestisce fetch, traduzioni in italiano, cache e risoluzione delle evoluzioni.
+- `api.ts`: client PokeAPI con cache e traduzioni; `getMovesByNames` carica i dettagli delle mosse per i roster Master personalizzati.
 - `App.tsx`: componente root React. Gestisce il routing basato su stato, la transizione tra schermate e il layout globale.
 - `AudioService.ts`: servizio per la riproduzione audio di sottofondo; gestisce le transizioni tra tracce e la muting.
-- `BattleEngine.ts`: logica di calcolo delle battaglie, danni, tipi, priorità e gestione delle mosse.
+- `BattleEngine.ts`: logica di calcolo delle battaglie, danni, tipi, stadi, velocità effettiva, iniziativa, precisione, multi-hit, rinculo e Scontro.
 - `CatchEngine.ts`: logica di cattura, probabilità, generazione nature, shiny e dinamiche di breeding.
 - `NotificationService.ts`: motore centralizzato per notifiche, toast e messaggi in-app.
-- `store.ts`: stato globale principale con Zustand. Gestisce progressi, team, box, missioni, inventory, persistence e sincronizzazione del salvataggio.
-- `store/types.ts`: definizioni TypeScript condivise per lo store e le entità di gioco.
+- `store/index.ts`: entry point importato dall'app, che esporta lo store sliced.
+- `store/sliced-store.ts`: composizione delle slice e configurazione persistenza IndexedDB/fallback.
+- `store.ts`: facciata compatibile che riesporta `store/index.ts` ed è usata dagli import storici dell'app.
+- `store/old-store.ts`: implementazione legacy non importata dal percorso attivo.
+- `store/types.ts`: contratti TypeScript condivisi per lo store.
+- `store/slices/`: logica modulare per giocatore, Pokémon, progressione, missioni, squadra, inventario, breeding, UI e achievement.
+- `data/leagueData.ts`: dati della Lega e roster Master; Kukui, Wallace, Iris e Mustard hanno mosse, nature e spread IV/EV espliciti.
+- `utils/localDate.ts`: chiavi e confronti di data locale condivisi dal claim della streak e dalla schermata Hub.
+- `utils/expUtils.ts`: helper per i calcoli di esperienza.
+- `debugConsole.ts`: registrazione dei comandi diagnostici del browser.
+- `lib/apiCache.ts` e `lib/supabaseClient.ts`: cache API e client Supabase.
+- `useImagePreloader.ts`, `usePreloader.ts`, `useLoadingWatchdog.ts`: hook di precaricamento e monitoraggio.
 - `TickSystem.ts`: loop temporizzato per rigenerazione cariche, gestione timer uova e aggiornamento dello stato in background.
 - `types.ts`: tipi globali usati in tutta l'app.
 - `useSoundEffects.ts`: hook personalizzato per riprodurre effetti sonori in risposta ad azioni utente.
@@ -165,7 +200,7 @@ pokedesk/
 ### Cartella `src/components/screens/`
 - `AchievementScreen.tsx`: visualizzazione degli achievement e sblocco ricompense.
 - `BagScreen.tsx`: gestione dell'inventario disponibile al giocatore.
-- `BattleScreen.tsx`: UI principale della battaglia turn-based.
+- `BattleScreen.tsx`: orchestrazione e UI della battaglia turn-based, inclusi ordine azioni, AI, PP e applicazione degli effetti.
 - `BattleTowerScreen.tsx`: schermata per la Torre Lotta con sfide a piani.
 - `BoxScreen.tsx`: gestione del PC Box e dei preset di squadra.
 - `CatchScreen.tsx`: interfaccia standard di cattura Pokémon.
@@ -177,7 +212,9 @@ pokedesk/
 - `MasterBattleScreen.tsx`: schermata end-game per sfide contro master trainers.
 - `OptionsScreen.tsx`: impostazioni di audio, notifiche, export/import salvataggi e preferenze.
 - `PokedexScreen.tsx`: Pokédex con statistiche e dettagli delle specie.
+- `ProfessorIntroScreen.tsx`: introduzione narrativa del Professore.
 - `ProfileScreen.tsx`: scheda profilo giocatore e informazioni personali.
+- `RegionalCatchScreen.tsx`: schermata per gli incontri regionali.
 - `SafariScreen.tsx`: modalità Safari con incontri a tempo e oggetti speciali.
 - `ShopScreen.tsx`: negozio con acquisti di strumenti e caramelle rare.
 - `StarterDraft.tsx`: selezione starter iniziale con draft e apertura della partita.
@@ -191,9 +228,11 @@ pokedesk/
 - `FloatingMuteButton.tsx`: pulsante flottante per muting audio.
 - `GameboyDialog.tsx`: componente dialog in stile retro, usato per messaggi di gioco.
 - `HPBar.tsx`: barra di salute dinamica per i Pokémon.
+- `NatureSelector.tsx`: selezione della natura.
 - `PokemonCard.tsx`: scheda Pokémon riutilizzabile con statistiche e informazioni rapide.
 - `PokemonDetailsModal.tsx`: modal con informazioni dettagliate sul Pokémon selezionato.
 - `PokemonSprite.tsx`: gestione sprite standard e shiny, animazioni e variant.
+- `StatComparison.tsx`: confronto visuale delle statistiche.
 - `TypeBadge.tsx`: badge visuale per il tipo del Pokémon.
 
 ### Cartella `src/data/`
@@ -206,15 +245,17 @@ pokedesk/
 - `levelUpService.ts`: gestione delle evoluzioni, apprendimento mosse, crescita dei Pokémon e supporto alle forme regionali.
 
 ### Cartella `src/store/`
-- `index.ts`: inizializzazione dello store, composizione delle slice e helper per la persistenza.
-- `old-store.ts`: versione legacy dello store conservata per riferimento o migrazione.
+- `index.ts`: entry point dello store attivo.
+- `old-store.ts`: versione legacy non importata dal percorso attivo; resta inclusa nel controllo TypeScript del progetto.
 - `sliced-store.ts`: store modulare che organizza lo stato in slice più piccoli.
+- `types.ts`: tipi dello store e delle sue azioni.
 - `storeGameplaySlices.test.ts`: test delle slice di gameplay e delle regole di persist.
 - `storePersistenceSmoke.test.ts`: test di base per la persistenza del salvataggio del gioco.
 
 #### `src/store/slices/`
 - `achievementSlice.ts`: stato e reducers per gli achievement di gioco.
 - `breedingSlice.ts`: gestione delle dinamiche di breeding e uova.
+- `breedingSlice.test.ts`: test mirati delle regole di breeding.
 - `inventorySlice.ts`: logica di inventario e utilizzo oggetti.
 - `missionSlice.ts`: stato, logic e progressione delle missioni giornaliere e challenge.
 - `playerSlice.ts`: dati giocatore, profilo e stats globali.
@@ -224,7 +265,13 @@ pokedesk/
 - `uiSlice.ts`: stato dell'interfaccia, modali e notifiche.
 
 ### File di test principali
-- `BattleStages.test.ts`: verifica i passaggi di fase della battaglia.
+- `data/masterTrainers.test.ts`: verifica livelli, nature, IV, EV e mosse dei roster Master personalizzati.
+- `utils/localDate.test.ts`: test delle chiavi data locali, cambio di giorno e compatibilità con date salvate in precedenza.
+- `store/storeGameplaySlices.test.ts`: verifica le azioni delle slice, incluse le ricompense giornaliere.
+- `store/storePersistenceSmoke.test.ts`: controllo essenziale della persistenza.
+- `expBar.test.ts`: test della progressione della barra ESP.
+- `BattleMechanics.test.ts`: verifica iniziativa, velocità, precisione, multi-hit, rinculo e Scontro.
+- `BattleStages.test.ts`: verifica i modificatori di stadio e i calcoli di danno associati.
 - `CatchEngine.test.ts`: test della logica di cattura e probabilità.
 - `Evolution.test.ts`: verifica dei nodi di evoluzione e transizioni.
 - `evolutionService.test.ts`: test mirati per la logica di evoluzione regionale, evoluzioni a pietra e controllo delle evoluzioni al livello.
