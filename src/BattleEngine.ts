@@ -14,6 +14,8 @@ export const STRUGGLE_MOVE: Move = {
   meta: { recoil_max_hp: 0.25 },
 };
 
+export const FALSE_SWIPE_MOVE_ID = '206';
+
 export const TYPE_CHART: Record<PokemonType, Partial<Record<PokemonType, number>>> = {
   normal: {
     rock: 0.5,
@@ -251,8 +253,33 @@ export const BattleEngine = {
     return target === 'user';
   },
 
-  canApplyStatusToOpponent(target: string | undefined, typeEffectiveness: number): boolean {
-    return !this.isUserTargetedMove(target) && typeEffectiveness > 0;
+  isTypeImmuneToStatus(types: string[], status?: string): boolean {
+    const normalizedTypes = types.map(type => type.toLowerCase());
+    if (status === 'PAR') return normalizedTypes.includes('electric');
+    if (status === 'BRN') return normalizedTypes.includes('fire');
+    if (status === 'FRZ') return normalizedTypes.includes('ice');
+    if (status === 'PSN') return normalizedTypes.includes('poison') || normalizedTypes.includes('steel');
+    return false;
+  },
+
+  canApplyStatusToOpponent(
+    target: string | undefined,
+    category: Move['category'],
+    moveType: PokemonType,
+    targetTypes: PokemonType[],
+    status?: string
+  ): boolean {
+    if (this.isUserTargetedMove(target) || this.isTypeImmuneToStatus(targetTypes, status)) return false;
+    if (category !== 'status') return this.getTypeEffectiveness(moveType, targetTypes) > 0;
+    return !(status === 'PAR' && moveType === 'electric' && targetTypes.includes('ground'));
+  },
+
+  applyMoveDamage(currentHp: number, damage: number, moveId: string): number {
+    const remainingHp = Math.max(0, currentHp - damage);
+    if (moveId === FALSE_SWIPE_MOVE_ID && currentHp > 0) {
+      return Math.max(1, remainingHp);
+    }
+    return remainingHp;
   },
 
   getStatChangeRecipient(

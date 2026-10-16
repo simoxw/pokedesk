@@ -68,7 +68,8 @@ Le date della ricompensa giornaliera della streak sono calcolate con una chiave 
 - **Preset per categoria**: supporto categorie per generazione e categorie speciali, con validazione al salvataggio.
 - **Ordinamento Box per data**: aggiunto filtro `date` nel PC Box usando `caughtAt`.
 - **Fix danno immunità tipo**: mosse con moltiplicatore `0x` ora infliggono correttamente `0` danni.
-- **Risoluzione mosse**: priorità confrontata per entrambi i combattenti, spareggio casuale a velocità pari, precisione modificata dagli stadi, multi-hit con interruzione al KO e tentennamento solo quando il bersaglio sopravvive.
+- **Risoluzione mosse**: priorità confrontata per entrambi i combattenti, spareggio casuale a velocità pari, precisione modificata dagli stadi, multi-hit con interruzione al KO, immunità status specifiche e tentennamento solo quando il bersaglio sopravvive.
+- **Falsofinale**: mossa apprendibile che lascia il bersaglio a 1 PS quando il colpo sarebbe letale.
 - **PP esauriti**: Scontro è uniforme per giocatore e avversario, ignora immunità Spettro e STAB e applica rinculo pari a un quarto dei PS massimi.
 - **Riposo**: comportamento intenzionalmente semplificato; cura il 50% dei PS e non applica sonno.
 - **GEN CHALLENGE**: seconda linea missioni giornaliere separata dalle daily classiche, con tab dedicata in Hub.

@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useStore } from '../../store';
 import { api } from '../../api';
-import { BattleEngine, STRUGGLE_MOVE } from '../../BattleEngine';
+import { BattleEngine, FALSE_SWIPE_MOVE_ID, STRUGGLE_MOVE } from '../../BattleEngine';
 import { CatchEngine } from '../../CatchEngine';
 import { motion, AnimatePresence } from 'motion/react';
 import { Sword, Backpack, ArrowLeftRight, Shield, ArrowLeft, X, Heart } from 'lucide-react';
@@ -165,13 +165,8 @@ export default function BattleScreen() {
     return Math.floor(base * BattleEngine.getStageMultiplier(stage)); 
   }; 
 
-  const isImmuneToStatus = (pokemonTypes: string[], status: string): boolean => { 
-    if (status === 'BRN' && pokemonTypes.includes('fire')) return true; 
-    if (status === 'PAR' && pokemonTypes.includes('electric')) return true; 
-    if (status === 'FRZ' && pokemonTypes.includes('ice')) return true; 
-    if (status === 'PSN' && (pokemonTypes.includes('poison') || pokemonTypes.includes('steel'))) return true; 
-    return false; 
-  }; 
+  const isImmuneToStatus = (pokemonTypes: string[], status: string): boolean =>
+    BattleEngine.isTypeImmuneToStatus(pokemonTypes, status);
 
   useEffect(() => {
     battleTimeoutRef.current = setTimeout(() => { 
@@ -1062,7 +1057,13 @@ export default function BattleScreen() {
 
     // Applica effetto di stato nemico (solo se la mossa ha effetto sul tipo) 
     const statusChance = (!enemyMove.effectChance || enemyMove.effectChance === 0) ? 100 : enemyMove.effectChance; 
-    if (BattleEngine.canApplyStatusToOpponent(enemyMove.target, typeMultiplier) && enemyMove.statusEffect && !currentPlayerPkmn.status && Math.random() * 100 < statusChance) {
+    if (BattleEngine.canApplyStatusToOpponent(
+      enemyMove.target,
+      enemyMove.category,
+      enemyMove.type,
+      currentPlayerPkmn.types,
+      enemyMove.statusEffect
+    ) && enemyMove.statusEffect && !currentPlayerPkmn.status && Math.random() * 100 < statusChance) {
       if (isImmuneToStatus(currentPlayerPkmn.types, enemyMove.statusEffect)) {
         addLog(`${currentPlayerPkmn.name} è immune a ${enemyMove.statusEffect}!`);
       } else {
@@ -1118,7 +1119,10 @@ export default function BattleScreen() {
       }
     }
 
-    const newPlayerHp = Math.max(0, currentPlayerPkmn.currentHp - enemyDamage);
+    const newPlayerHp = BattleEngine.applyMoveDamage(currentPlayerPkmn.currentHp, enemyDamage, enemyMove.id);
+    if (enemyMove.id === FALSE_SWIPE_MOVE_ID && enemyDamage >= currentPlayerPkmn.currentHp && currentPlayerPkmn.currentHp > 0) {
+      addLog(`${currentPlayerPkmn.name} resiste con 1 PS grazie a Falsofinale!`);
+    }
     updatePokemon(currentPlayerPkmn.id, { currentHp: newPlayerHp });
     if (enemyDamage > 0) {
       setPlayerTookDamage(true);
@@ -1472,10 +1476,13 @@ export default function BattleScreen() {
       const statusEffect = move.statusEffect ?? (move.name?.toLowerCase().includes('fulmisguardo') ? 'PAR' : undefined);
       const effectChance = (!move.effectChance || move.effectChance === 0) ? 100 : move.effectChance ?? 100;
 
-      const statusEffectiveness = currentEnemy
-        ? BattleEngine.getTypeEffectiveness(move.type, currentEnemy.types)
-        : 0;
-      if (statusEffect && currentEnemy && BattleEngine.canApplyStatusToOpponent(move.target, statusEffectiveness) && !currentEnemy.status) {
+      if (statusEffect && currentEnemy && BattleEngine.canApplyStatusToOpponent(
+        move.target,
+        move.category,
+        move.type,
+        currentEnemy.types,
+        statusEffect
+      ) && !currentEnemy.status) {
         if (Math.random() * 100 < effectChance) { 
           const nomi: Record<string, string> = { 
             'SLP': 'si è addormentato', 'PSN': 'è stato avvelenato', 
@@ -1728,7 +1735,10 @@ export default function BattleScreen() {
         ? 1
         : BattleEngine.getTypeEffectiveness(move.type, effEnemy.types);
       const effLabel = BattleEngine.getTypeEffectivenessLabel(typeMultiplier);
-      const newEnemyHp = Math.max(0, (liveEnemyAtStartOfMove?.currentHp ?? 0) - damage);
+      const newEnemyHp = BattleEngine.applyMoveDamage(liveEnemyAtStartOfMove?.currentHp ?? 0, damage, move.id);
+      if (move.id === FALSE_SWIPE_MOVE_ID && damage >= (liveEnemyAtStartOfMove?.currentHp ?? 0) && (liveEnemyAtStartOfMove?.currentHp ?? 0) > 0) {
+        addLog(`${liveEnemyAtStartOfMove.name} resiste con 1 PS grazie a Falsofinale!`);
+      }
 
       addLog(`${playerPkmn.name} usa ${move.name}!${damage > 0 ? ` (${damage} danni${hitCount > 1 ? `, ${hitCount} colpi` : ''})` : ''}`);
       
@@ -1776,7 +1786,7 @@ export default function BattleScreen() {
       // Apply damage and effects ONLY for non-healing moves
       if (!isHealMove) {
         // Status e Healing logica (salta se bersaglio immune al tipo) 
-        const { newStatus, message } = BattleEngine.isUserTargetedMove(move.target) || typeMultiplier > 0
+        const { newStatus, message } = move.category === 'status' || typeMultiplier > 0
           ? applyPlayerMoveEffects(move, liveEnemyAtStartOfMove, damage)
           : {};
         if (message) addLog(message);
@@ -1897,12 +1907,15 @@ export default function BattleScreen() {
         : BattleEngine.getTypeEffectiveness(move.type, effEnemy.types);
       const effLabel = BattleEngine.getTypeEffectivenessLabel(typeMultiplier);
       const currentEnemyAfterEnemyTurn = enemyRef.current ?? liveEnemyAtStartOfMove;
-      const newEnemyHp = Math.max(0, (currentEnemyAfterEnemyTurn?.currentHp ?? 0) - damage);
+      const newEnemyHp = BattleEngine.applyMoveDamage(currentEnemyAfterEnemyTurn?.currentHp ?? 0, damage, move.id);
+      if (move.id === FALSE_SWIPE_MOVE_ID && damage >= (currentEnemyAfterEnemyTurn?.currentHp ?? 0) && (currentEnemyAfterEnemyTurn?.currentHp ?? 0) > 0) {
+        addLog(`${currentEnemyAfterEnemyTurn.name} resiste con 1 PS grazie a Falsofinale!`);
+      }
 
       addLog(`${playerPkmn.name} usa ${move.name}!${damage > 0 ? ` (${damage} danni${hitCount > 1 ? `, ${hitCount} colpi` : ''})` : ''}`);
       
       // Status e Healing logica (salta se bersaglio immune al tipo) 
-      const { newStatus, message } = BattleEngine.isUserTargetedMove(move.target) || typeMultiplier > 0
+      const { newStatus, message } = move.category === 'status' || typeMultiplier > 0
         ? applyPlayerMoveEffects(move, currentEnemyAfterEnemyTurn, damage)
         : {};
       if (message) addLog(message);

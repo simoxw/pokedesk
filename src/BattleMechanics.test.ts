@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { BattleEngine, STRUGGLE_MOVE } from './BattleEngine';
+import { BattleEngine, FALSE_SWIPE_MOVE_ID, STRUGGLE_MOVE } from './BattleEngine';
 import { Move, Pokemon } from './types';
 
 const mockPokemon = (currentHp: number): Pokemon => ({
@@ -105,9 +105,20 @@ describe('BattleEngine - turn resolution', () => {
     expect(BattleEngine.isUserTargetedMove('user')).toBe(true);
     expect(BattleEngine.isUserTargetedMove('selected-pokemon')).toBe(false);
     expect(BattleEngine.isUserTargetedMove(undefined)).toBe(false);
-    expect(BattleEngine.canApplyStatusToOpponent('user', 1)).toBe(false);
-    expect(BattleEngine.canApplyStatusToOpponent('selected-pokemon', 0)).toBe(false);
-    expect(BattleEngine.canApplyStatusToOpponent('selected-pokemon', 1)).toBe(true);
+    expect(BattleEngine.canApplyStatusToOpponent('user', 'status', 'normal', ['ghost'], 'PAR')).toBe(false);
+    expect(BattleEngine.canApplyStatusToOpponent('selected-pokemon', 'status', 'normal', ['ghost'], 'PAR')).toBe(true);
+    expect(BattleEngine.canApplyStatusToOpponent('selected-pokemon', 'status', 'electric', ['ground'], 'PAR')).toBe(false);
+    expect(BattleEngine.canApplyStatusToOpponent('selected-pokemon', 'status', 'normal', ['ground'], 'PAR')).toBe(true);
+    expect(BattleEngine.canApplyStatusToOpponent('selected-pokemon', 'status', 'poison', ['steel'], 'PSN')).toBe(false);
+    expect(BattleEngine.canApplyStatusToOpponent('selected-pokemon', 'physical', 'normal', ['ghost'])).toBe(false);
+  });
+
+  it('keeps False Swipe targets at 1 HP instead of fainting them', () => {
+    expect(BattleEngine.applyMoveDamage(100, 150, FALSE_SWIPE_MOVE_ID)).toBe(1);
+    expect(BattleEngine.applyMoveDamage(100, 40, FALSE_SWIPE_MOVE_ID)).toBe(60);
+    expect(BattleEngine.applyMoveDamage(1, 20, FALSE_SWIPE_MOVE_ID)).toBe(1);
+    expect(BattleEngine.applyMoveDamage(100, 150, 'other-move')).toBe(0);
+    expect(BattleEngine.applyMoveDamage(0, 150, FALSE_SWIPE_MOVE_ID)).toBe(0);
   });
 
   it('resolves stat-change recipients from move target and move behavior', () => {

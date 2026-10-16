@@ -175,7 +175,7 @@ pokedesk/
 - `api.ts`: client PokeAPI con cache e traduzioni; `getMovesByNames` carica i dettagli delle mosse per i roster Master personalizzati.
 - `App.tsx`: componente root React. Gestisce il routing basato su stato, la transizione tra schermate e il layout globale.
 - `AudioService.ts`: servizio per la riproduzione audio di sottofondo; gestisce le transizioni tra tracce e la muting.
-- `BattleEngine.ts`: logica di calcolo delle battaglie, danni, tipi, stadi, velocità effettiva, iniziativa, precisione, multi-hit, rinculo e Scontro.
+- `BattleEngine.ts`: logica di calcolo delle battaglie, danni, tipi, stadi, velocità effettiva, iniziativa, precisione, multi-hit, immunità status, rinculo, Scontro e Falsofinale.
 - `CatchEngine.ts`: logica di cattura, probabilità, generazione nature, shiny e dinamiche di breeding.
 - `NotificationService.ts`: motore centralizzato per notifiche, toast e messaggi in-app.
 - `store/index.ts`: entry point importato dall'app, che esporta lo store sliced.
@@ -270,7 +270,7 @@ pokedesk/
 - `store/storeGameplaySlices.test.ts`: verifica le azioni delle slice, incluse le ricompense giornaliere.
 - `store/storePersistenceSmoke.test.ts`: controllo essenziale della persistenza.
 - `expBar.test.ts`: test della progressione della barra ESP.
-- `BattleMechanics.test.ts`: verifica iniziativa, velocità, precisione, multi-hit, rinculo e Scontro.
+- `BattleMechanics.test.ts`: verifica iniziativa, velocità, precisione, multi-hit, immunità agli status, rinculo, Scontro e Falsofinale.
 - `BattleStages.test.ts`: verifica i modificatori di stadio e i calcoli di danno associati.
 - `CatchEngine.test.ts`: test della logica di cattura e probabilità.
 - `Evolution.test.ts`: verifica dei nodi di evoluzione e transizioni.

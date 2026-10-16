@@ -73,7 +73,7 @@ pokedesk/
 
 ### Logica Core
 - **api.ts**: Interfaccia di comunicazione con PokeAPI. Gestisce traduzioni, evoluzioni e caching LRU.
-- **BattleEngine.ts**: Motore matematico per danni, efficacia, stadi, velocità effettiva, iniziativa per priorità, precisione, multi-hit, rinculo e Scontro.
+- **BattleEngine.ts**: Motore matematico per danni, efficacia, stadi, velocità effettiva, iniziativa, precisione, multi-hit, rinculo, immunità specifiche agli status, Scontro e Falsofinale.
 - **CatchEngine.ts**: Gestisce cattura, nature, shiny e sistema di Breeding.
 - **store/index.ts**: entry point usato dall'app; esporta lo store modulare.
 - **store/sliced-store.ts**: compone le slice Zustand e configura IndexedDB con fallback `localStorage`.
@@ -123,7 +123,7 @@ pokedesk/
 ### Test (src/*.test.ts)
 - **Evolution.test.ts**: Test per i flussi di evoluzione e bug fix statistiche.
 - **evolutionService.test.ts**: Test mirati per la logica di evoluzione regionale, le evoluzioni a pietra e il controllo delle evoluzioni al livello.
-- **BattleMechanics.test.ts / BattleStages.test.ts / StatsFormula.test.ts**: Validazione di iniziativa, velocità, precisione, multi-hit, rinculo, Scontro, stadi e danni.
+- **BattleMechanics.test.ts / BattleStages.test.ts / StatsFormula.test.ts**: Validazione di iniziativa, velocità, precisione, multi-hit, rinculo, immunità status, Scontro, Falsofinale, stadi e danni.
 - **CatchEngine.test.ts / ExpSystem.test.ts**: Test su cattura ed esperienza.
 - **TypeChart.test.ts**: Verifica correttezza debolezze e resistenze.
 - **data/masterTrainers.test.ts**: verifica livelli, natura, IV, EV e mosse dei roster Master personalizzati.

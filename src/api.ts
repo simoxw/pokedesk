@@ -155,7 +155,7 @@ export const api = {
       'bestow','embargo','heal-block','perish-song','yawn','imprison',
       'frustration','return','beat-up',
       'leech-seed','ingrain','aqua-ring','curse','nightmare','telekinesis','magnet-rise',
-      'autotomize','charge','recycle','belch','false-swipe','wish','struggle', 'teleport',
+      'autotomize','charge','recycle','belch','wish','struggle', 'teleport',
       'self-destruct', 'explosion', 'wide-guard', 'quick-guard',
     ]);
 
@@ -448,7 +448,7 @@ export const api = {
       'haze','topsy-turvy','trick','switcheroo','fling','bestow','embargo','heal-block', 
       'perish-song','yawn','imprison','frustration','return','beat-up', 
       'leech-seed','ingrain','aqua-ring','curse','nightmare','telekinesis','magnet-rise', 
-      'autotomize','charge','recycle','belch','false-swipe','wish','struggle','teleport', 
+      'autotomize','charge','recycle','belch','wish','struggle','teleport',
     ]); 
     const candidateMoves = pokemonData.moves.filter((m: any) => 
       !BANNED_MOVES_LEVELUP.has(m.move.name) && 
